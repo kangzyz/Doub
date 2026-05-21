@@ -74,7 +74,6 @@ cp config.docker.example.yaml config.yaml
 - `STORAGE_BACKEND`：`local` 或 `s3`
 - `GEOIP_PROVIDER`：`ipwhois`、`ipinfo`、`mmdb` 或 `none`
 - `GEOIP_DATABASE_URL` / `GEOIP_DATABASE_PATH`：MMDB 数据库下载地址与本地缓存路径
-- `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_DISPLAY_NAME`：首次初始化超级管理员；默认开发值为 `deeix-chat` / `deeix-chat-2026` / `System Admin`
 - `OTEL_ENABLED`：是否启用 OpenTelemetry Trace；未设置时，配置了 OTLP Endpoint 会自动启用
 - `OTEL_EXPORTER_OTLP_ENDPOINT`：OTLP gRPC Collector 地址
 - `OTEL_EXPORTER_OTLP_HEADERS`：OTLP 请求头，格式为 `key=value,key2=value2`
@@ -97,6 +96,8 @@ observability:
 
 `config.yaml` 是静态基础设施配置入口，环境变量优先级高于 YAML。未显式配置 `enabled` 时，`endpoint` 非空会自动启用 Trace；显式配置 `enabled: true` 时，`endpoint` 必填。运行时业务设置由数据库 settings 覆盖，不把 OpenTelemetry collector、header/token 等部署层配置放入后台管理。
 
+初始化超级管理员凭据内置为 `deeix-chat` / `deeix-chat-2026` / `System Admin`，仅在数据库中没有超级管理员时创建账号。首次登录会强制修改用户名和密码；后续账号变更不通过 `config.yaml`。
+
 `APP_ENV` 未配置时默认 `prod`。`dev`/`development` 只用于本地开发；公网生产部署应保持 `APP_ENV=prod` 或 `APP_ENV=production` 并使用生产密钥。
 
 生产环境安全校验：
@@ -104,7 +105,6 @@ observability:
 - `APP_ENV` 支持 `dev`/`development` 和 `prod`/`production`，其他值会启动失败。
 - `APP_ENV=prod` 时，`JWT_SECRET` 不能为空、不能过短、不能使用默认开发值。
 - `APP_ENV=prod` 时，`DATA_ENCRYPTION_KEY` 不能为空、不能过短、不能使用默认开发值。
-- `APP_ENV=prod` 时，`ADMIN_PASSWORD` 不能为空，不能使用默认开发值。
 - `APP_ENV=prod` 时，`CORS_ALLOW_ORIGIN` 不能为空或 `*`，`PUBLIC_API_BASE_URL` / `PUBLIC_WEB_BASE_URL` 必须是 HTTPS。
 
 Stripe Webhook 使用公开 API 地址：

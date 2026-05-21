@@ -240,12 +240,13 @@ pnpm build
 | `STORAGE_BACKEND` | `local` 或 `s3`。 |
 | `STORAGE_ROOT_DIR` | 本地存储目录。 |
 | `STORAGE_S3_ENDPOINT`, `STORAGE_S3_REGION`, `STORAGE_S3_BUCKET`, `STORAGE_S3_PREFIX`, `STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY` | S3 兼容对象存储配置。 |
-| `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_DISPLAY_NAME` | 初始化超级管理员。 |
 | `PUBLIC_API_BASE_URL`, `PUBLIC_WEB_BASE_URL` | 用于链接、回调和公开地址生成的外部访问地址。 |
 | `GEOIP_PROVIDER` | GeoIP 服务。默认 `ipwhois` 使用内置公共地址。 |
 | `OTEL_ENABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_INSECURE`, `OTEL_TRACES_SAMPLER_ARG`, `OTEL_SAMPLING_RATE` | OpenTelemetry Trace 配置。 |
 
 生产模式会拒绝不安全的默认密钥、过短的加密密钥、通配 CORS 和非 HTTPS 公开地址。
+
+初始化超级管理员凭据内置为 `deeix-chat` / `deeix-chat-2026` / `System Admin`。它只在数据库中不存在超级管理员时用于首次创建账号。首次登录会强制修改用户名和密码；后续账号变更通过账户流程完成，不再通过 `config.yaml` 修改。
 
 ## 安全说明
 

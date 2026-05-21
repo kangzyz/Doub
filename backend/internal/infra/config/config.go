@@ -16,7 +16,9 @@ import (
 const (
 	defaultJWTSecret                    = "deeix-chat-dev-secret"
 	defaultDataEncryptionKey            = "deeix-chat-dev-data-encryption-key"
+	defaultAdminUsername                = "deeix-chat"
 	defaultAdminPassword                = "deeix-chat-2026"
+	defaultAdminDisplayName             = "System Admin"
 	defaultGeoIPMaxBytes                = 100 * 1024 * 1024
 	defaultHTTPReadHeaderTimeoutSeconds = 10
 	defaultHTTPReadTimeoutSeconds       = 120
@@ -158,11 +160,6 @@ type yamlConfig struct {
 			ForcePathStyle  *bool  `yaml:"force_path_style"`
 		} `yaml:"s3"`
 	} `yaml:"storage"`
-	Admin struct {
-		Username    string `yaml:"username"`
-		Password    string `yaml:"password"`
-		DisplayName string `yaml:"display_name"`
-	} `yaml:"admin"`
 	GeoIP struct {
 		Provider             string `yaml:"provider"`
 		BaseURL              string `yaml:"base_url"`
@@ -415,9 +412,9 @@ func Load() Config {
 		StorageS3AccessKeyID:         envOr("STORAGE_S3_ACCESS_KEY_ID", yc.Storage.S3.AccessKeyID, ""),
 		StorageS3SecretAccessKey:     envOr("STORAGE_S3_SECRET_ACCESS_KEY", yc.Storage.S3.SecretAccessKey, ""),
 		StorageS3ForcePathStyle:      envOrBoolPtr("STORAGE_S3_FORCE_PATH_STYLE", yc.Storage.S3.ForcePathStyle, true),
-		AdminUsername:                envOr("ADMIN_USERNAME", yc.Admin.Username, "deeix-chat"),
-		AdminPassword:                envOr("ADMIN_PASSWORD", yc.Admin.Password, defaultAdminPassword),
-		AdminDisplayName:             envOr("ADMIN_DISPLAY_NAME", yc.Admin.DisplayName, "System Admin"),
+		AdminUsername:                defaultAdminUsername,
+		AdminPassword:                defaultAdminPassword,
+		AdminDisplayName:             defaultAdminDisplayName,
 		GeoIPProvider:                envOr("GEOIP_PROVIDER", yc.GeoIP.Provider, "ipwhois"),
 		GeoIPBaseURL:                 envOr("GEOIP_BASE_URL", yc.GeoIP.BaseURL, "https://ipwho.is"),
 		GeoIPToken:                   envOr("GEOIP_TOKEN", yc.GeoIP.Token, ""),
@@ -582,10 +579,6 @@ func (c Config) Validate() error {
 	}
 	if len(strings.TrimSpace(c.DataEncryptionKey)) < 32 {
 		return errors.New("invalid production config: DATA_ENCRYPTION_KEY is too short")
-	}
-
-	if strings.TrimSpace(c.AdminPassword) == "" || strings.TrimSpace(c.AdminPassword) == defaultAdminPassword {
-		return errors.New("invalid production config: ADMIN_PASSWORD must be explicitly set")
 	}
 
 	if strings.TrimSpace(c.CORSAllowOrigin) == "" || strings.TrimSpace(c.CORSAllowOrigin) == "*" {

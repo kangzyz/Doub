@@ -14,14 +14,14 @@ func TestLoadDefaultsUseBootstrapAdmin(t *testing.T) {
 	if cfg.Env != "prod" {
 		t.Fatalf("expected default env prod, got %q", cfg.Env)
 	}
-	if cfg.AdminUsername != "deeix-chat" {
-		t.Fatalf("expected default admin username deeix-chat, got %q", cfg.AdminUsername)
+	if cfg.AdminUsername != defaultAdminUsername {
+		t.Fatalf("expected default admin username %q, got %q", defaultAdminUsername, cfg.AdminUsername)
 	}
 	if cfg.AdminPassword != defaultAdminPassword {
 		t.Fatalf("expected default admin password %q, got %q", defaultAdminPassword, cfg.AdminPassword)
 	}
-	if cfg.AdminDisplayName != "System Admin" {
-		t.Fatalf("expected default admin display name System Admin, got %q", cfg.AdminDisplayName)
+	if cfg.AdminDisplayName != defaultAdminDisplayName {
+		t.Fatalf("expected default admin display name %q, got %q", defaultAdminDisplayName, cfg.AdminDisplayName)
 	}
 }
 
@@ -80,10 +80,6 @@ server:
 storage:
   local:
     root_dir: ./data/storage
-admin:
-  username: root-admin
-  password: root-admin-password
-  display_name: Root Admin
 geoip:
   database_path: ./data/geoip.mmdb
 `)
@@ -93,14 +89,14 @@ geoip:
 	chdir(t, backendDir)
 
 	cfg := Load()
-	if cfg.AdminUsername != "root-admin" {
-		t.Fatalf("expected root config admin username, got %q", cfg.AdminUsername)
+	if cfg.AdminUsername != defaultAdminUsername {
+		t.Fatalf("expected built-in admin username, got %q", cfg.AdminUsername)
 	}
-	if cfg.AdminPassword != "root-admin-password" {
-		t.Fatalf("expected root config admin password, got %q", cfg.AdminPassword)
+	if cfg.AdminPassword != defaultAdminPassword {
+		t.Fatalf("expected built-in admin password, got %q", cfg.AdminPassword)
 	}
-	if cfg.AdminDisplayName != "Root Admin" {
-		t.Fatalf("expected root config admin display name, got %q", cfg.AdminDisplayName)
+	if cfg.AdminDisplayName != defaultAdminDisplayName {
+		t.Fatalf("expected built-in admin display name, got %q", cfg.AdminDisplayName)
 	}
 	assertPath(t, "frontend dist", cfg.FrontendDistDir, filepath.Join(root, "frontend", "out"))
 	assertPath(t, "storage root", cfg.StorageRootDir, filepath.Join(root, "data", "storage"))
@@ -141,7 +137,6 @@ func validConfigForEnv(env string) Config {
 		StorageBackend:    "local",
 		JWTSecret:         "test-jwt-secret-value",
 		DataEncryptionKey: "test-data-encryption-key-value-32",
-		AdminPassword:     "test-admin-password",
 		CORSAllowOrigin:   "https://example.com",
 		PublicAPIBaseURL:  "https://api.example.com",
 		PublicWebBaseURL:  "https://example.com",
@@ -153,9 +148,6 @@ func cleanupConfigEnv(t *testing.T) {
 	keys := []string{
 		"CONFIG_FILE",
 		"APP_ENV",
-		"ADMIN_USERNAME",
-		"ADMIN_PASSWORD",
-		"ADMIN_DISPLAY_NAME",
 		"FRONTEND_DIST_DIR",
 		"STORAGE_ROOT_DIR",
 		"GEOIP_DATABASE_PATH",

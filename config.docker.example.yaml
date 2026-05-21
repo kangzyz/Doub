@@ -54,12 +54,6 @@ storage:
     secret_access_key: ""
     force_path_style: true
 
-admin:
-  # REQUIRED for deployment: bootstrap credentials only. First login forces changing username and password.
-  username: deeix-chat
-  password: "deeix-chat-2026"
-  display_name: System Admin
-
 geoip:
   # Optional: use none to disable, or mmdb for a local GeoIP database.
   provider: ipwhois

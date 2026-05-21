@@ -240,12 +240,13 @@ Common backend environment variables:
 | `STORAGE_BACKEND` | `local` or `s3`. |
 | `STORAGE_ROOT_DIR` | Local storage root. |
 | `STORAGE_S3_ENDPOINT`, `STORAGE_S3_REGION`, `STORAGE_S3_BUCKET`, `STORAGE_S3_PREFIX`, `STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY` | S3-compatible storage settings. |
-| `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_DISPLAY_NAME` | Initial superadmin bootstrap values. |
 | `PUBLIC_API_BASE_URL`, `PUBLIC_WEB_BASE_URL` | Public URLs used for links and callbacks. |
 | `GEOIP_PROVIDER` | GeoIP provider. The default `ipwhois` uses the built-in public endpoint. |
 | `OTEL_ENABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_INSECURE`, `OTEL_TRACES_SAMPLER_ARG`, `OTEL_SAMPLING_RATE` | OpenTelemetry tracing settings. |
 
 Production mode rejects unsafe default secrets, weak encryption keys, wildcard CORS, and non-HTTPS public URLs.
+
+The initial superadmin bootstrap credentials are built in as `deeix-chat` / `deeix-chat-2026` / `System Admin`. They are used only when the database has no superadmin account. The first login forces changing the username and password; later changes are managed from the account flow, not from `config.yaml`.
 
 ## Security Notes
 
