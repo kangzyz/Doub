@@ -3241,7 +3241,7 @@ info:
   contact: {}
   description: DOUB Chat 后端 API 文档
   title: DOUB Chat API
-  version: 0.1.0
+  version: "0.1.0"
 paths:
   /admin/audit-logs:
     get:
