@@ -25,7 +25,6 @@ import {
 } from "@/features/chat/utils/chat-runtime";
 import { buildChildrenIndex, toBranchKey } from "@/features/chat/model/chat-thread";
 import { sanitizeConversationOptions } from "@/features/chat/model/conversation-options";
-import { buildMediaImagePreviewMarkdown } from "@/features/chat/model/media-image-preview";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import { notifyResponseCompletion } from "@/shared/lib/browser-notifications";
 import {
@@ -425,24 +424,6 @@ export function useChatMessageSubmit({
             setPendingExchange((prev) =>
               prev && prev.key === exchangeKey
                 ? { ...prev, assistantFileProc: true, assistantActivityLabel: activityLabel }
-                : prev,
-            );
-          },
-          onMediaImageDelta: (event) => {
-            const previewMarkdown = buildMediaImagePreviewMarkdown(event, t("imagePreviewAlt"));
-            if (!previewMarkdown) {
-              return;
-            }
-            setPendingExchange((prev) =>
-              prev && prev.key === exchangeKey
-                ? {
-                    ...prev,
-                    assistantPending: false,
-                    assistantStreaming: true,
-                    assistantFileProc: false,
-                    assistantActivityLabel: undefined,
-                    assistantText: previewMarkdown,
-                  }
                 : prev,
             );
           },
