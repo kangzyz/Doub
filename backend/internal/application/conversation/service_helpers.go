@@ -10,12 +10,12 @@ import (
 	"sort"
 	"strings"
 
-	appstorage "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/objectstorage"
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/conv"
+	appstorage "github.com/kangzyz/Doub/backend/internal/application/objectstorage"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/pkg/conv"
 )
 
 func normalizePublicID(raw string) string {

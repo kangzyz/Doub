@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 // FileProcessingMessage 文件处理队列消息。

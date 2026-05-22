@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 )
 
 const (

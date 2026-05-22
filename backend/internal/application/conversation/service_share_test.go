@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 func TestSharedMessagesIncludeFileUsesSnapshotAttachments(t *testing.T) {

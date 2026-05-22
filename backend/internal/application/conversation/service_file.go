@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	appupload "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/upload"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	appupload "github.com/kangzyz/Doub/backend/internal/application/upload"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 )
 

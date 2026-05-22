@@ -8,13 +8,13 @@ import (
 	"net/url"
 	"strings"
 
-	systemeventapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/systemevent"
-	domainmcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	inframcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
+	systemeventapp "github.com/kangzyz/Doub/backend/internal/application/systemevent"
+	domainmcp "github.com/kangzyz/Doub/backend/internal/domain/mcp"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	inframcp "github.com/kangzyz/Doub/backend/internal/infra/mcp"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
 )
 
 var (

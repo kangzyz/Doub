@@ -203,7 +203,7 @@ func TestBuildOpenAIChatCompletionsProviderOptionsMergeAndProtectSystemFields(t 
 		Options: map[string]interface{}{
 			"service_tier": "priority",
 			"metadata": map[string]interface{}{
-				"tenant": "deeix-chat",
+				"tenant": "doub-chat",
 			},
 			"model":          "attacker-model",
 			"messages":       []interface{}{},
@@ -226,7 +226,7 @@ func TestBuildOpenAIChatCompletionsProviderOptionsMergeAndProtectSystemFields(t 
 		t.Fatalf("expected provider option service_tier, got %#v", payload["service_tier"])
 	}
 	metadata, ok := payload["metadata"].(map[string]interface{})
-	if !ok || metadata["tenant"] != "deeix-chat" {
+	if !ok || metadata["tenant"] != "doub-chat" {
 		t.Fatalf("expected provider metadata merge, got %#v", payload["metadata"])
 	}
 }

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	appupload "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/upload"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/google/uuid"
+	appupload "github.com/kangzyz/Doub/backend/internal/application/upload"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 )
 

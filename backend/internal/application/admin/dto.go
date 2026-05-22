@@ -3,10 +3,10 @@ package admin
 import (
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/userview"
-	domainaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/audit"
-	domainsystemevent "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/systemevent"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/application/userview"
+	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
+	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // PatchUserInput 管理员局部更新用户输入。

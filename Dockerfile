@@ -52,8 +52,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
        GOOS=${TARGETOS} \
        GOARCH=${TARGETARCH} \
        go build -trimpath \
-       -ldflags="-s -w -X github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/buildinfo.Version=${VERSION} -X github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/buildinfo.Commit=${GIT_COMMIT} -X github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/buildinfo.BuildTime=${BUILD_TIME}" \
-       -o /out/deeix-chat ./cmd/server
+       -ldflags="-s -w -X github.com/kangzyz/Doub/backend/internal/shared/buildinfo.Version=${VERSION} -X github.com/kangzyz/Doub/backend/internal/shared/buildinfo.Commit=${GIT_COMMIT} -X github.com/kangzyz/Doub/backend/internal/shared/buildinfo.BuildTime=${BUILD_TIME}" \
+       -o /out/doub-chat ./cmd/server
 
 
 FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS runtime-deps
@@ -71,11 +71,11 @@ COPY --from=runtime-deps /etc/ssl/certs /etc/ssl/certs
 COPY --from=runtime-deps /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=runtime-deps /etc/localtime /etc/localtime
 COPY --from=runtime-deps /etc/timezone /etc/timezone
-COPY --from=backend-builder /out/deeix-chat /app/deeix-chat
+COPY --from=backend-builder /out/doub-chat /app/doub-chat
 COPY --from=frontend-builder /src/frontend/out /app/frontend/out
 
 EXPOSE 8080
 
 VOLUME ["/app/storage"]
 
-CMD ["/app/deeix-chat"]
+CMD ["/app/doub-chat"]

@@ -8,10 +8,10 @@ import (
 	"time"
 	"unicode"
 
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/google/uuid"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -13,7 +13,7 @@ type AppLogoProps = {
 };
 
 export function AppLogo({
-  alt = "DEEIX Chat",
+  alt = "DOUB Chat",
   width,
   height,
   priority,

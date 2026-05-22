@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/google/uuid"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 const (

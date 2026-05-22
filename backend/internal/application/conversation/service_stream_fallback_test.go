@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestShouldNotFallbackToNonStreamingForUpstreamParamErrors(t *testing.T) {

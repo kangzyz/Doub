@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
 )
 
 // RateLimiter 封装 HTTP middleware 所需的限流存储能力。

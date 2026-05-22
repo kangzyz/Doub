@@ -3,7 +3,7 @@ package channel
 import (
 	"errors"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 var (

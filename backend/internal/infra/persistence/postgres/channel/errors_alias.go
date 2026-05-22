@@ -1,6 +1,6 @@
 package channel
 
-import "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+import "github.com/kangzyz/Doub/backend/internal/repository"
 
 var (
 	ErrUpstreamNotFound           = repository.ErrUpstreamNotFound

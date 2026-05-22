@@ -1,7 +1,7 @@
 services:
   docling:
-    container_name: deeix-chat-docling
-    image: deeix-chat-docling:latest
+    container_name: doub-chat-docling
+    image: doub-chat-docling:latest
     build:
       context: ../../
       dockerfile: docker/docling/Dockerfile
@@ -9,9 +9,9 @@ services:
       - "127.0.0.1:8005:8005"
     restart: unless-stopped
     networks:
-      - deeix-chat
+      - doub-chat
 
 networks:
-  deeix-chat:
+  doub-chat:
     external: true
-    name: deeix-chat-network
+    name: doub-chat-network

@@ -3,7 +3,7 @@ package conversation
 import (
 	"testing"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 func TestNormalizeDefaultBranchContextSkipsFailedTail(t *testing.T) {

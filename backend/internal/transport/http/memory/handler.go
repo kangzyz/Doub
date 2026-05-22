@@ -3,10 +3,10 @@ package memory
 import (
 	"net/http"
 
-	appmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/memory"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appmemory "github.com/kangzyz/Doub/backend/internal/application/memory"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // Handler 封装记忆 HTTP 处理。

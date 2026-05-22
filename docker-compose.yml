@@ -1,12 +1,12 @@
-name: deeix-chat
+name: doub-chat
 
 services:
   app:
-    image: ${DEEIX_CHAT_IMAGE:-ghcr.io/deeix-ai/deeix-chat:latest}
+    image: ${DOUB_CHAT_IMAGE:-ghcr.io/kangzyz/doub-chat:latest}
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: deeix-chat-app
+    container_name: doub-chat-app
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
@@ -15,11 +15,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - deeix-chat
+      - doub-chat
 volumes:
   app_storage:
-    name: deeix-chat-app-storage
+    name: doub-chat-app-storage
 
 networks:
-  deeix-chat:
-    name: deeix-chat-network
+  doub-chat:
+    name: doub-chat-network

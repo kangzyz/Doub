@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	domainsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // RuntimeSettings 负责把数据库中的动态配置应用到运行时配置，并维护配置缓存。

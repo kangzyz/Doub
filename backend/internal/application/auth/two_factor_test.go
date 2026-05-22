@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 type twoFactorLookupRepo struct {
@@ -201,11 +201,11 @@ func TestGenerateTOTPCodeMatchesRFC6238SHA1ModuloSixDigits(t *testing.T) {
 }
 
 func TestBuildOTPAuthURLPreservesIssuerAccountSeparator(t *testing.T) {
-	got := buildOTPAuthURL("DEEIX Chat", "user@example.com", "ABCDEF")
-	if strings.Contains(got, "DEEIX%20Chat%3A") {
+	got := buildOTPAuthURL("DOUB Chat", "user@example.com", "ABCDEF")
+	if strings.Contains(got, "DOUB%20Chat%3A") {
 		t.Fatalf("issuer/account separator should stay as ':' in otpauth label: %s", got)
 	}
-	if !strings.HasPrefix(got, "otpauth://totp/DEEIX%20Chat:") {
+	if !strings.HasPrefix(got, "otpauth://totp/DOUB%20Chat:") {
 		t.Fatalf("expected otpauth label to start with issuer and raw separator, got %s", got)
 	}
 	parsed, err := url.Parse(got)
@@ -213,7 +213,7 @@ func TestBuildOTPAuthURLPreservesIssuerAccountSeparator(t *testing.T) {
 		t.Fatalf("parse otpauth URL: %v", err)
 	}
 	query := parsed.Query()
-	if query.Get("secret") != "ABCDEF" || query.Get("issuer") != "DEEIX Chat" || query.Get("digits") != "6" || query.Get("period") != "30" {
+	if query.Get("secret") != "ABCDEF" || query.Get("issuer") != "DOUB Chat" || query.Get("digits") != "6" || query.Get("period") != "30" {
 		t.Fatalf("unexpected otpauth query: %s", parsed.RawQuery)
 	}
 }

@@ -3,10 +3,10 @@ package channel
 import (
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	appchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/channel"
-	domainchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	appchannel "github.com/kangzyz/Doub/backend/internal/application/channel"
+	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
 )
 
 // UpstreamResponse 上游响应 DTO。

@@ -1,4 +1,4 @@
-module github.com/DEEIX-AI/DEEIX-Chat/backend
+module github.com/kangzyz/Doub/backend
 
 go 1.25.10
 

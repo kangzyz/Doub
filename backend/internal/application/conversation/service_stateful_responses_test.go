@@ -3,9 +3,9 @@ package conversation
 import (
 	"testing"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/application/channel"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestResolvePreviousResponseIDOnlyEnablesKnownSafeRoutes(t *testing.T) {

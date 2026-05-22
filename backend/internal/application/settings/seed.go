@@ -1,14 +1,14 @@
 package settings
 
 import (
-	domainsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 const (
 	defaultAllowedMIMETypes = "image/jpeg,image/png,image/webp,image/gif,text/plain,text/markdown,text/csv,text/yaml,application/json,application/yaml,application/x-yaml,application/toml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
 	defaultRAGModel         = "sentence-transformers/all-MiniLM-L6-v2"
-	defaultLoginPageTitle   = "Sign in to DEEIX Chat"
+	defaultLoginPageTitle   = "Sign in to DOUB Chat"
 )
 
 // defaultSettings 返回所有动态配置的默认种子数据。

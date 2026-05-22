@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestSummarizeToolTracePayloadCountsFailedCalls(t *testing.T) {
@@ -337,8 +337,8 @@ func TestToolOutputPreviewUsesMCPTextContent(t *testing.T) {
 }
 
 func TestToolOutputPreviewUsesMCPStructuredContent(t *testing.T) {
-	raw := `{"structuredContent":{"results":[{"title":"DEEIX Chat 文档","url":"https://example.com/docs"}]}}`
-	if got := toolOutputPreview(raw); got != "DEEIX Chat 文档 https://example.com/docs" {
+	raw := `{"structuredContent":{"results":[{"title":"DOUB Chat 文档","url":"https://example.com/docs"}]}}`
+	if got := toolOutputPreview(raw); got != "DOUB Chat 文档 https://example.com/docs" {
 		t.Fatalf("expected MCP structured content preview, got %q", got)
 	}
 }
@@ -391,7 +391,7 @@ func TestToolExecutionLedgerNormalizesArguments(t *testing.T) {
 		ToolCallID: "call_1",
 		ToolName:   "bing_search",
 		Status:     "success",
-		InputJSON:  `{"query":"DEEIX Chat","count":3}`,
+		InputJSON:  `{"query":"DOUB Chat","count":3}`,
 		OutputJSON: `{"content":[{"type":"text","text":"ok"}]}`,
 	}
 	record := toolExecutionRecord{
@@ -405,7 +405,7 @@ func TestToolExecutionLedgerNormalizesArguments(t *testing.T) {
 	}
 
 	ledger.store(row.ToolName, row.InputJSON, record)
-	if _, ok := ledger.lookup("BING_SEARCH", `{"count":3,"query":"DEEIX Chat"}`); !ok {
+	if _, ok := ledger.lookup("BING_SEARCH", `{"count":3,"query":"DOUB Chat"}`); !ok {
 		t.Fatal("expected ledger lookup to ignore JSON field order and tool name case")
 	}
 }

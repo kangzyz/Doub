@@ -1,5 +1,5 @@
 app:
-  name: DEEIX Chat
+  name: DOUB Chat
   # REQUIRED for deployment: change to prod and replace security/admin defaults below.
   env: dev
 
@@ -27,7 +27,7 @@ security:
 database:
   postgres:
     # REQUIRED: set this to your local PostgreSQL DSN.
-    dsn: "postgres://deeix_chat:deeix_chat_dev_2026@127.0.0.1:5432/deeix_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
+    dsn: "postgres://doub_chat:doub_chat_dev_2026@127.0.0.1:5432/doub_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
     max_open_conns: 30
     max_idle_conns: 10
     conn_max_lifetime_minutes: 60
@@ -35,7 +35,7 @@ database:
   redis:
     # REQUIRED: set these to your local Redis connection settings.
     addr: "127.0.0.1:6379"
-    password: "deeix_chat_redis_dev"
+    password: "doub_chat_redis_dev"
     db: 0
 
 storage:

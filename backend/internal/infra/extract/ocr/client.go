@@ -14,18 +14,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/pdfrender"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/extract/pdfrender"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 )
 
 const (
 	errOCREmptyContent      = "ocr_empty_content"
 	DefaultTesseractBaseURL = "http://127.0.0.1:8004/ocr"
 	DefaultRapidOCRBaseURL  = "http://127.0.0.1:8002/ocr"
-	ManagedRapidOCRBaseURL  = "http://deeix-chat-rapidocr:8002/ocr"
-	managedRapidOCRHost     = "deeix-chat-rapidocr"
+	ManagedRapidOCRBaseURL  = "http://doub-chat-rapidocr:8002/ocr"
+	managedRapidOCRHost     = "doub-chat-rapidocr"
 	managedRapidOCRSource   = "managed"
 	rapidOCRHealthEndpoint  = "/healthz"
 	defaultLLMOCRPrompt     = "You are an OCR engine for document images. Extract all visible text in reading order. Return plain text only. Preserve the original language of the image text. Do not summarize, translate, explain, or add markdown. Preserve line breaks when they help readability."
@@ -270,7 +270,7 @@ func (c *Client) extractTextWithLLM(ctx context.Context, req Request) (Response,
 	pageTexts := make([]PageText, 0, len(pageNumbers))
 	var pageErrors []string
 	foundAnyImage := false
-	tempDir, err := os.MkdirTemp("", "deeix-chat-llm-ocr-*")
+	tempDir, err := os.MkdirTemp("", "doub-chat-llm-ocr-*")
 	if err != nil {
 		return Response{}, err
 	}

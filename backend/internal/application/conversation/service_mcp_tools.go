@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	domainmcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
+	domainmcp "github.com/kangzyz/Doub/backend/internal/domain/mcp"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/infra/mcp"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
 )
 
 type selectedToolRuntime struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	models "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence/models"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	models "github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
 )
 
 // CreateContextArtifacts 批量写入本轮上下文证据。

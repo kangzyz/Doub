@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	domainsystemevent "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/systemevent"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence/models"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
+	"github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"gorm.io/gorm"
 )
 

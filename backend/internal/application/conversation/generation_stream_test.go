@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 func TestGenerationStreamRegistryReplayAndTerminal(t *testing.T) {

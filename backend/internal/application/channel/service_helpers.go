@@ -7,10 +7,10 @@ import (
 	"time"
 	"unicode"
 
-	domainchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/google/uuid"
+	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ---------------------------------------------------------------------------

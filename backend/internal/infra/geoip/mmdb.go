@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/requestmeta"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/shared/requestmeta"
 	"github.com/oschwald/maxminddb-golang"
 )
 

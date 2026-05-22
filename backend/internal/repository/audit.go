@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	domainaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/audit"
+	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
 )
 
 // AuditLogListFilter 描述审计日志列表查询条件。

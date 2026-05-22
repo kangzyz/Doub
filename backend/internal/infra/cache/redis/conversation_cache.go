@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/go-redis/redis/v8"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ragCachePayload 是 RAG 缓存的序列化格式，仅限 infra 层使用。

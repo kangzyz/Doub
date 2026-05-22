@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 )
 

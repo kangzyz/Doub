@@ -1,6 +1,6 @@
-# DEEIX Chat Backend
+# DOUB Chat Backend
 
-DEEIX Chat 后端是 Go API 服务，负责认证、用户、对话、模型渠道、文件处理、MCP 工具、记忆、计费、支付、系统设置、审计日志与可观测性等核心业务。
+DOUB Chat 后端是 Go API 服务，负责认证、用户、对话、模型渠道、文件处理、MCP 工具、记忆、计费、支付、系统设置、审计日志与可观测性等核心业务。
 
 ## 技术栈
 
@@ -96,7 +96,7 @@ observability:
 
 `config.yaml` 是静态基础设施配置入口，环境变量优先级高于 YAML。未显式配置 `enabled` 时，`endpoint` 非空会自动启用 Trace；显式配置 `enabled: true` 时，`endpoint` 必填。运行时业务设置由数据库 settings 覆盖，不把 OpenTelemetry collector、header/token 等部署层配置放入后台管理。
 
-初始化超级管理员凭据内置为 `deeix-chat` / `deeix-chat-2026` / `System Admin`，仅在数据库中没有超级管理员时创建账号。首次登录会强制修改用户名和密码；后续账号变更不通过 `config.yaml`。
+初始化超级管理员凭据内置为 `doub-chat` / `doub-chat-2026` / `System Admin`，仅在数据库中没有超级管理员时创建账号。首次登录会强制修改用户名和密码；后续账号变更不通过 `config.yaml`。
 
 `APP_ENV` 未配置时默认 `prod`。`dev`/`development` 只用于本地开发；公网生产部署应保持 `APP_ENV=prod` 或 `APP_ENV=production` 并使用生产密钥。
 
@@ -251,10 +251,10 @@ docker compose -f ../docker/docling/docker-compose.yml up -d --build
 RapidOCR：
 
 ```bash
-docker build -t deeix-chat-rapidocr ../docker/rapidocr
+docker build -t doub-chat-rapidocr ../docker/rapidocr
 ```
 
-这些服务默认使用 `deeix-chat-network`。可先执行 `docker network create deeix-chat-network`，或先启动一次根目录 compose 创建基础网络。
+这些服务默认使用 `doub-chat-network`。可先执行 `docker network create doub-chat-network`，或先启动一次根目录 compose 创建基础网络。
 
 ## 常用命令
 

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	appconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/conversation"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appconversation "github.com/kangzyz/Doub/backend/internal/application/conversation"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // SetMessageFeedback godoc

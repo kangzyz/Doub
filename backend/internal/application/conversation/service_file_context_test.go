@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestCollectConversationFileIDsIgnoresFailedHistoricalMessages(t *testing.T) {

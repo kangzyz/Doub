@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	appconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/conversation"
-	appprocessing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/processing"
-	appupload "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/upload"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	appconversation "github.com/kangzyz/Doub/backend/internal/application/conversation"
+	appprocessing "github.com/kangzyz/Doub/backend/internal/application/processing"
+	appupload "github.com/kangzyz/Doub/backend/internal/application/upload"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 // ---------- Conversation ----------

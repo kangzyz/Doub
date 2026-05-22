@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 func TestExecuteToolCallRejectsToolsNotEnabledForRun(t *testing.T) {

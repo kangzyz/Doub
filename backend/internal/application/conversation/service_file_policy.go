@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 const (

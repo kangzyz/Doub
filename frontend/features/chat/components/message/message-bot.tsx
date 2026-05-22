@@ -370,7 +370,7 @@ export function AssistantImageGenerationSkeleton({
         />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="select-none text-[clamp(1.75rem,7vw,4rem)] font-semibold tracking-[0.18em] text-white/30 mix-blend-overlay drop-shadow-sm">
-            DEEIX
+            DOUB
           </span>
         </div>
       </div>

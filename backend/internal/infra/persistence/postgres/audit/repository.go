@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	domainaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/audit"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence/models"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
+	"github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"gorm.io/gorm"
 )
 

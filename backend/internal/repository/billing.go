@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 )
 
 // BillingRepository 定义计费流程依赖的持久化能力。

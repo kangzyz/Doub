@@ -3,7 +3,7 @@ export type SessionSnapshot = {
   sessionID: string;
 };
 
-export const SESSION_SNAPSHOT_CHANGED_EVENT = "deeix-chat:session-snapshot-changed";
+export const SESSION_SNAPSHOT_CHANGED_EVENT = "doub-chat:session-snapshot-changed";
 
 const sessionSnapshot: SessionSnapshot = {
   accessToken: "",

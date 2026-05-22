@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	tracer        = otel.Tracer("github.com/DEEIX-AI/DEEIX-Chat/backend")
+	tracer        = otel.Tracer("github.com/kangzyz/Doub/backend")
 	shutdownFuncs []func(context.Context) error
 )
 
@@ -44,7 +44,7 @@ func Init(ctx context.Context, cfg Config) error {
 	}
 	serviceName := cfg.ServiceName
 	if strings.TrimSpace(serviceName) == "" {
-		serviceName = "deeix-chat"
+		serviceName = "doub-chat"
 	}
 
 	exporter, err := otlptracegrpc.New(ctx, exporterOptions(cfg)...)
@@ -72,7 +72,7 @@ func Init(ctx context.Context, cfg Config) error {
 		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(samplingRate(cfg.SamplingRate)))),
 	)
 	otel.SetTracerProvider(provider)
-	tracer = provider.Tracer("github.com/DEEIX-AI/DEEIX-Chat/backend")
+	tracer = provider.Tracer("github.com/kangzyz/Doub/backend")
 	shutdownFuncs = append(shutdownFuncs, provider.Shutdown)
 	return nil
 }

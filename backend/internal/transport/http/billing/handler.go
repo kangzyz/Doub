@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	appsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	appsettings "github.com/kangzyz/Doub/backend/internal/application/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // Handler 封装计费 HTTP 处理。

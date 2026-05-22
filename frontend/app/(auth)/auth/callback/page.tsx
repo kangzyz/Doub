@@ -17,11 +17,11 @@ function normalizeNextPath(value: string | null): string {
 }
 
 function providerPKCEStorageKey(slug: string): string {
-  return `deeix-chat:oauth:${slug}:pkce_verifier`;
+  return `doub-chat:oauth:${slug}:pkce_verifier`;
 }
 
-const twoFactorChallengeStorageKey = "deeix-chat:2fa:challenge";
-const twoFactorMethodsStorageKey = "deeix-chat:2fa:methods";
+const twoFactorChallengeStorageKey = "doub-chat:2fa:challenge";
+const twoFactorMethodsStorageKey = "doub-chat:2fa:methods";
 
 export default function Page() {
   const t = useTranslations("login.oauthCallback");

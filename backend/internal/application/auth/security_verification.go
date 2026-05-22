@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // SecurityVerificationMethod describes the extra verification factor required

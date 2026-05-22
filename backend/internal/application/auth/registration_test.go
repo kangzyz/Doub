@@ -6,23 +6,23 @@ import (
 	"testing"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/requestmeta"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/shared/requestmeta"
 )
 
 func TestBuildVerificationEmailMessageEncodesChineseSubject(t *testing.T) {
-	message := buildVerificationEmailMessage("DEEIX Chat <no-reply@example.com>", "user@example.com", "123456", verificationEmailTemplate{
-		Subject:      "DEEIX Chat 验证码",
+	message := buildVerificationEmailMessage("DOUB Chat <no-reply@example.com>", "user@example.com", "123456", verificationEmailTemplate{
+		Subject:      "DOUB Chat 验证码",
 		Title:        "完成邮箱注册",
 		SecurityNote: "如果不是您本人操作，请忽略这封邮件。",
-	}, "https://deeix.example/logo.svg")
+	}, "https://doub.example/logo.svg")
 
 	if !strings.Contains(message, "Subject: =?utf-8?") {
 		t.Fatalf("expected encoded utf-8 subject, got:\n%s", message)
 	}
-	if strings.Contains(message, "Subject: DEEIX Chat 验证码") {
+	if strings.Contains(message, "Subject: DOUB Chat 验证码") {
 		t.Fatalf("expected subject to be MIME encoded, got:\n%s", message)
 	}
 	if !strings.Contains(message, "Content-Type: multipart/alternative; boundary=") {
@@ -40,7 +40,7 @@ func TestBuildVerificationEmailMessageEncodesChineseSubject(t *testing.T) {
 	if !strings.Contains(message, "<!doctype html>") || !strings.Contains(message, ">123456<") {
 		t.Fatalf("expected html verification body, got:\n%s", message)
 	}
-	if !strings.Contains(message, `src="https://deeix.example/logo.svg"`) {
+	if !strings.Contains(message, `src="https://doub.example/logo.svg"`) {
 		t.Fatalf("expected html logo, got:\n%s", message)
 	}
 }
@@ -63,14 +63,14 @@ func TestSendRegistrationVerificationEmailRejectsInvalidFrom(t *testing.T) {
 
 func TestValidateEmailRegistrationPolicy(t *testing.T) {
 	cfg := config.Config{
-		EmailRegistrationDomains: "example.com, @deeix-chat.ai\ncorp.cn",
+		EmailRegistrationDomains: "example.com, @doub-chat.ai\ncorp.cn",
 		EmailRegistrationNoAlias: true,
 	}
 
-	if err := validateEmailRegistrationPolicy(cfg, "user@deeix-chat.ai"); err != nil {
-		t.Fatalf("expected deeix-chat.ai to pass, got %v", err)
+	if err := validateEmailRegistrationPolicy(cfg, "user@doub-chat.ai"); err != nil {
+		t.Fatalf("expected doub-chat.ai to pass, got %v", err)
 	}
-	if err := validateEmailRegistrationPolicy(cfg, "user+alias@deeix-chat.ai"); err == nil || err.Error() != "email aliases are not allowed" {
+	if err := validateEmailRegistrationPolicy(cfg, "user+alias@doub-chat.ai"); err == nil || err.Error() != "email aliases are not allowed" {
 		t.Fatalf("expected alias rejection, got %v", err)
 	}
 	if err := validateEmailRegistrationPolicy(cfg, "user@blocked.com"); err == nil || err.Error() != "email domain is not allowed" {

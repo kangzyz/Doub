@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/objectstore"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/objectstore"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 func TestUploadFileReturnsExistingActiveDuplicate(t *testing.T) {

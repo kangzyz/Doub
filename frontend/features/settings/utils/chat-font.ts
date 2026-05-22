@@ -2,10 +2,10 @@
 
 import * as React from "react";
 
-export const CHAT_FONT_STORAGE_KEY = "deeix-chat:chat-font";
-export const CHAT_FONT_UPDATED_EVENT = "deeix-chat:chat-font-updated";
-export const CHAT_FONT_WEIGHT_STORAGE_KEY = "deeix-chat:chat-font-weight";
-export const CHAT_FONT_WEIGHT_UPDATED_EVENT = "deeix-chat:chat-font-weight-updated";
+export const CHAT_FONT_STORAGE_KEY = "doub-chat:chat-font";
+export const CHAT_FONT_UPDATED_EVENT = "doub-chat:chat-font-updated";
+export const CHAT_FONT_WEIGHT_STORAGE_KEY = "doub-chat:chat-font-weight";
+export const CHAT_FONT_WEIGHT_UPDATED_EVENT = "doub-chat:chat-font-weight-updated";
 
 export type ChatFontOption = "default" | "songti" | "heiti" | "mono";
 export type ChatFontWeightOption = "regular" | "medium" | "semibold" | "bold";

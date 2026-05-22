@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // ConversationMetadataRepository 封装会话元信息与用户访问能力。

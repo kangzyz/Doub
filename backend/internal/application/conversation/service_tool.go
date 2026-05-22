@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/mcp"
+	"github.com/kangzyz/Doub/backend/internal/infra/mcp"
 )
 
 // ExecuteToolInput 定义工具执行入参。

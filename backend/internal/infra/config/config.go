@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	defaultJWTSecret                    = "deeix-chat-dev-secret"
-	defaultDataEncryptionKey            = "deeix-chat-dev-data-encryption-key"
-	defaultAdminUsername                = "deeix-chat"
-	defaultAdminPassword                = "deeix-chat-2026"
+	defaultJWTSecret                    = "doub-chat-dev-secret"
+	defaultDataEncryptionKey            = "doub-chat-dev-data-encryption-key"
+	defaultAdminUsername                = "doub-chat"
+	defaultAdminPassword                = "doub-chat-2026"
 	defaultAdminDisplayName             = "System Admin"
 	defaultGeoIPMaxBytes                = 100 * 1024 * 1024
 	defaultHTTPReadHeaderTimeoutSeconds = 10
@@ -383,7 +383,7 @@ func Load() Config {
 	yc := loadYAML()
 	return Config{
 		// 静态基础设施
-		AppName:                      envOr("APP_NAME", yc.App.Name, "DEEIX Chat"),
+		AppName:                      envOr("APP_NAME", yc.App.Name, "DOUB Chat"),
 		Env:                          normalizeEnv(envOrNonEmpty("APP_ENV", yc.App.Env, "prod")),
 		HTTPPort:                     envOr("HTTP_PORT", yc.Server.HTTPPort, "8080"),
 		CORSAllowOrigin:              envOr("CORS_ALLOW_ORIGIN", yc.Server.CORSAllowOrigin, "http://127.0.0.1:8080,http://localhost:8080"),
@@ -398,13 +398,13 @@ func Load() Config {
 		JWTSecret:                    envOr("JWT_SECRET", yc.Security.JWTSecret, defaultJWTSecret),
 		DataEncryptionKey:            envOr("DATA_ENCRYPTION_KEY", yc.Security.DataEncryptionKey, defaultDataEncryptionKey),
 		SSRFProtectionEnabled:        envOrBoolPtr("SSRF_PROTECTION_ENABLED", yc.Security.SSRFProtectionEnabled, false),
-		PostgresDSN:                  envOr("POSTGRES_DSN", yc.Database.Postgres.DSN, "host=127.0.0.1 user=deeix_chat password=deeix_chat_dev_2026 dbname=deeix_chat port=5432 sslmode=disable TimeZone=Asia/Shanghai"),
+		PostgresDSN:                  envOr("POSTGRES_DSN", yc.Database.Postgres.DSN, "host=127.0.0.1 user=doub_chat password=doub_chat_dev_2026 dbname=doub_chat port=5432 sslmode=disable TimeZone=Asia/Shanghai"),
 		PostgresMaxOpenConns:         envOrInt("POSTGRES_MAX_OPEN_CONNS", yc.Database.Postgres.MaxOpenConns, 30),
 		PostgresMaxIdleConns:         envOrInt("POSTGRES_MAX_IDLE_CONNS", yc.Database.Postgres.MaxIdleConns, 10),
 		PostgresConnMaxLifetimeMin:   envOrInt("POSTGRES_CONN_MAX_LIFETIME_MINUTES", yc.Database.Postgres.ConnMaxLifetimeMin, 60),
 		PostgresConnMaxIdleTimeMin:   envOrInt("POSTGRES_CONN_MAX_IDLE_TIME_MINUTES", yc.Database.Postgres.ConnMaxIdleTimeMin, 10),
 		RedisAddr:                    envOr("REDIS_ADDR", yc.Database.Redis.Addr, "127.0.0.1:6379"),
-		RedisPassword:                envOr("REDIS_PASSWORD", yc.Database.Redis.Password, "deeix_chat_redis_dev"),
+		RedisPassword:                envOr("REDIS_PASSWORD", yc.Database.Redis.Password, "doub_chat_redis_dev"),
 		RedisDB:                      envOrInt("REDIS_DB", yc.Database.Redis.DB, 0),
 		StorageBackend:               envOr("STORAGE_BACKEND", yc.Storage.Backend, "local"),
 		StorageRootDir:               envOrPath("STORAGE_ROOT_DIR", yc.Storage.Local.RootDir, "./storage", yc.sourceDir),

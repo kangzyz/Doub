@@ -4,30 +4,30 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
 
-const gormTraceSpanKey = "deeix-chat:postgres-trace-span"
+const gormTraceSpanKey = "doub-chat:postgres-trace-span"
 
 func configureTracing(db *gorm.DB, cfg config.Config) error {
 	attrs := postgresTraceAttributes(cfg)
 	registrations := []error{
-		db.Callback().Create().Before("gorm:create").Register("deeix-chat:trace-before-create", beginGORMTrace("create", attrs)),
-		db.Callback().Create().After("gorm:create").Register("deeix-chat:trace-after-create", endGORMTrace),
-		db.Callback().Query().Before("gorm:query").Register("deeix-chat:trace-before-query", beginGORMTrace("query", attrs)),
-		db.Callback().Query().After("gorm:query").Register("deeix-chat:trace-after-query", endGORMTrace),
-		db.Callback().Update().Before("gorm:update").Register("deeix-chat:trace-before-update", beginGORMTrace("update", attrs)),
-		db.Callback().Update().After("gorm:update").Register("deeix-chat:trace-after-update", endGORMTrace),
-		db.Callback().Delete().Before("gorm:delete").Register("deeix-chat:trace-before-delete", beginGORMTrace("delete", attrs)),
-		db.Callback().Delete().After("gorm:delete").Register("deeix-chat:trace-after-delete", endGORMTrace),
-		db.Callback().Row().Before("gorm:row").Register("deeix-chat:trace-before-row", beginGORMTrace("row", attrs)),
-		db.Callback().Row().After("gorm:row").Register("deeix-chat:trace-after-row", endGORMTrace),
-		db.Callback().Raw().Before("gorm:raw").Register("deeix-chat:trace-before-raw", beginGORMTrace("raw", attrs)),
-		db.Callback().Raw().After("gorm:raw").Register("deeix-chat:trace-after-raw", endGORMTrace),
+		db.Callback().Create().Before("gorm:create").Register("doub-chat:trace-before-create", beginGORMTrace("create", attrs)),
+		db.Callback().Create().After("gorm:create").Register("doub-chat:trace-after-create", endGORMTrace),
+		db.Callback().Query().Before("gorm:query").Register("doub-chat:trace-before-query", beginGORMTrace("query", attrs)),
+		db.Callback().Query().After("gorm:query").Register("doub-chat:trace-after-query", endGORMTrace),
+		db.Callback().Update().Before("gorm:update").Register("doub-chat:trace-before-update", beginGORMTrace("update", attrs)),
+		db.Callback().Update().After("gorm:update").Register("doub-chat:trace-after-update", endGORMTrace),
+		db.Callback().Delete().Before("gorm:delete").Register("doub-chat:trace-before-delete", beginGORMTrace("delete", attrs)),
+		db.Callback().Delete().After("gorm:delete").Register("doub-chat:trace-after-delete", endGORMTrace),
+		db.Callback().Row().Before("gorm:row").Register("doub-chat:trace-before-row", beginGORMTrace("row", attrs)),
+		db.Callback().Row().After("gorm:row").Register("doub-chat:trace-after-row", endGORMTrace),
+		db.Callback().Raw().Before("gorm:raw").Register("doub-chat:trace-before-raw", beginGORMTrace("raw", attrs)),
+		db.Callback().Raw().After("gorm:raw").Register("doub-chat:trace-after-raw", endGORMTrace),
 	}
 	for _, err := range registrations {
 		if err != nil {

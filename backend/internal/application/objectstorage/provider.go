@@ -3,8 +3,8 @@ package objectstorage
 import (
 	"context"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/objectstore"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/objectstore"
 )
 
 // Provider 为应用服务提供对象存储能力，隔离具体存储实现的创建方式。

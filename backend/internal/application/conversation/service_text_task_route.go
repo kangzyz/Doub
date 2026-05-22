@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/channel"
+	"github.com/kangzyz/Doub/backend/internal/application/channel"
 )
 
 const textTaskFollowModel = "follow"

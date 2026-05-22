@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	domainsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
+	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
 )
 
 var sensitiveSettingKeys = map[string]struct{}{

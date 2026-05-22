@@ -1,6 +1,6 @@
 package audit
 
-import appaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/audit"
+import appaudit "github.com/kangzyz/Doub/backend/internal/application/audit"
 
 // Handler 预留审计域 HTTP 处理器。
 type Handler struct{}

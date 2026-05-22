@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
 )
 
 const (

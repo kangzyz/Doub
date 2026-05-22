@@ -1,14 +1,14 @@
 services:
   tika:
     image: apache/tika:3.2.3.0
-    container_name: deeix-chat-tika
+    container_name: doub-chat-tika
     ports:
       - "127.0.0.1:9998:9998"
     restart: unless-stopped
     networks:
-      - deeix-chat
+      - doub-chat
 
 networks:
-  deeix-chat:
+  doub-chat:
     external: true
-    name: deeix-chat-network
+    name: doub-chat-network

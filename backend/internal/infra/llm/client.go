@@ -14,8 +14,8 @@ import (
 	"time"
 	"unicode"
 
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
 )
 
 const (

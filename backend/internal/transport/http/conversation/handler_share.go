@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	appconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appconversation "github.com/kangzyz/Doub/backend/internal/application/conversation"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // GetConversationShare godoc

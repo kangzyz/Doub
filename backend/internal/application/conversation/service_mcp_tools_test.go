@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestInjectMCPToolGuidanceOnlyAddsPolicy(t *testing.T) {
-	messages := []llm.Message{{Role: "user", Content: "搜索 DEEIX Chat"}}
+	messages := []llm.Message{{Role: "user", Content: "搜索 DOUB Chat"}}
 	runtime := selectedToolRuntime{
 		definitions: []llm.ToolDefinition{{
 			Name:        "bing_search",

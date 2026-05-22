@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 const (

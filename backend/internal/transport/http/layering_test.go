@@ -17,8 +17,8 @@ func TestBackendLayeringImports(t *testing.T) {
 		{
 			dir: "transport/http",
 			forbidden: []string{
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence`,
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"`,
+				`"github.com/kangzyz/Doub/backend/internal/infra/persistence`,
+				`"github.com/kangzyz/Doub/backend/internal/repository"`,
 				`"gorm.io/gorm"`,
 				`"github.com/redis/go-redis`,
 			},
@@ -26,7 +26,7 @@ func TestBackendLayeringImports(t *testing.T) {
 		{
 			dir: "application",
 			forbidden: []string{
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence`,
+				`"github.com/kangzyz/Doub/backend/internal/infra/persistence`,
 				`"github.com/gin-gonic/gin"`,
 				`"gorm.io/gorm"`,
 				`"github.com/redis/go-redis`,
@@ -35,9 +35,9 @@ func TestBackendLayeringImports(t *testing.T) {
 		{
 			dir: "repository",
 			forbidden: []string{
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application`,
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport`,
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence`,
+				`"github.com/kangzyz/Doub/backend/internal/application`,
+				`"github.com/kangzyz/Doub/backend/internal/transport`,
+				`"github.com/kangzyz/Doub/backend/internal/infra/persistence`,
 				`"github.com/gin-gonic/gin"`,
 				`"gorm.io/gorm"`,
 				`"github.com/redis/go-redis`,
@@ -46,9 +46,9 @@ func TestBackendLayeringImports(t *testing.T) {
 		{
 			dir: "domain",
 			forbidden: []string{
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application`,
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport`,
-				`"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra`,
+				`"github.com/kangzyz/Doub/backend/internal/application`,
+				`"github.com/kangzyz/Doub/backend/internal/transport`,
+				`"github.com/kangzyz/Doub/backend/internal/infra`,
 				`"github.com/gin-gonic/gin"`,
 				`"gorm.io/gorm"`,
 				`"github.com/redis/go-redis`,

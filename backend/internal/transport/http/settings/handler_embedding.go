@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
 )
 
 // GetEmbeddingRuntime godoc

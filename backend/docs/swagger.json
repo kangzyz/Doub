@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "DEEIX Chat 后端 API 文档",
-        "title": "DEEIX Chat API",
+        "description": "DOUB Chat 后端 API 文档",
+        "title": "DOUB Chat API",
         "contact": {},
         "version": "0.1.0"
     },
@@ -547,6 +547,18 @@
                     },
                     {
                         "type": "string",
+                        "description": "模型厂商",
+                        "name": "vendor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "接口协议",
+                        "name": "protocol",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "排序：sortOrder_asc/updated_desc/id_desc/platformModelName_asc/sourceCount_desc",
                         "name": "sort",
                         "in": "query"
@@ -701,7 +713,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -756,7 +768,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -1002,7 +1014,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "500": {
@@ -1057,7 +1069,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -1284,7 +1296,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -1401,7 +1413,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -1927,7 +1939,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -1989,7 +2001,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -2110,7 +2122,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -2169,7 +2181,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -2212,7 +2224,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2249,7 +2261,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2273,7 +2285,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2297,7 +2309,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2321,7 +2333,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2345,7 +2357,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2369,7 +2381,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2393,7 +2405,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2417,7 +2429,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2441,7 +2453,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2465,7 +2477,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2489,7 +2501,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2513,7 +2525,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2537,7 +2549,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2561,7 +2573,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2585,7 +2597,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -2619,7 +2631,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -3690,7 +3702,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -4014,7 +4026,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc"
                         }
                     },
                     "400": {
@@ -5894,7 +5906,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -5918,7 +5930,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -6114,7 +6126,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -6157,13 +6169,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope"
+                            "$ref": "#/definitions/github_com_kangzyz_Doub_backend_internal_shared_response.Envelope"
                         }
                     }
                 }
@@ -6171,7 +6183,7 @@
         }
     },
     "definitions": {
-        "github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.Envelope": {
+        "github_com_kangzyz_Doub_backend_internal_shared_response.Envelope": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -6187,7 +6199,7 @@
                 }
             }
         },
-        "github_com_DEEIX-AI_DEEIX-Chat_backend_internal_shared_response.SuccessDoc": {
+        "github_com_kangzyz_Doub_backend_internal_shared_response.SuccessDoc": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -6338,7 +6350,8 @@
                 },
                 "displayName": {
                     "type": "string",
-                    "maxLength": 128
+                    "maxLength": 16,
+                    "minLength": 3
                 },
                 "email": {
                     "type": "string",
@@ -6370,7 +6383,7 @@
                 },
                 "username": {
                     "type": "string",
-                    "maxLength": 64,
+                    "maxLength": 16,
                     "minLength": 3
                 }
             }
@@ -6430,7 +6443,8 @@
                 },
                 "displayName": {
                     "type": "string",
-                    "maxLength": 128
+                    "maxLength": 16,
+                    "minLength": 3
                 },
                 "email": {
                     "type": "string",
@@ -7192,7 +7206,8 @@
                 },
                 "displayName": {
                     "type": "string",
-                    "maxLength": 128
+                    "maxLength": 16,
+                    "minLength": 3
                 },
                 "locale": {
                     "type": "string",
@@ -7227,7 +7242,7 @@
             "properties": {
                 "username": {
                     "type": "string",
-                    "maxLength": 32,
+                    "maxLength": 16,
                     "minLength": 3
                 }
             }
@@ -9118,6 +9133,10 @@
             "properties": {
                 "priority": {
                     "type": "integer"
+                },
+                "protocol": {
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "status": {
                     "type": "string",

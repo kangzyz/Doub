@@ -3,12 +3,12 @@ package admin
 import (
 	"time"
 
-	appadmin "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/admin"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/userview"
-	domainaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/audit"
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
-	domainsystemevent "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/systemevent"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	appadmin "github.com/kangzyz/Doub/backend/internal/application/admin"
+	"github.com/kangzyz/Doub/backend/internal/application/userview"
+	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
+	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // ── 请求 DTO ────────────────────────────────────────────────────────────────

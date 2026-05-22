@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 )
 
 // ── 请求 DTO ─────────────────────────────────────────────────────────────────

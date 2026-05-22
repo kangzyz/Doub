@@ -4,7 +4,7 @@ import * as React from "react";
 
 import type { PendingAttachment } from "@/features/chat/types/chat-runtime";
 
-const CHAT_COMPOSER_STORAGE_KEY = "deeix-chat:chat-composer:v1";
+const CHAT_COMPOSER_STORAGE_KEY = "doub-chat:chat-composer:v1";
 const NEW_CONVERSATION_COMPOSER_KEY = "__new__";
 
 type PersistedAttachment = Pick<

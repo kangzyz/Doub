@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	models "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence/models"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	models "github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 func (r *Repo) UpdateFileObjectProcessingState(ctx context.Context, item *domainconversation.FileObjectProcessing) error {

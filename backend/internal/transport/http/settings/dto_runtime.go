@@ -1,8 +1,8 @@
 package settings
 
 import (
-	appembedding "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/embedding"
-	appruntime "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/runtime"
+	appembedding "github.com/kangzyz/Doub/backend/internal/application/embedding"
+	appruntime "github.com/kangzyz/Doub/backend/internal/application/runtime"
 )
 
 type ServiceRuntimeResponse struct {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
 	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 	"go.opentelemetry.io/otel/attribute"
 )
 

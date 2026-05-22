@@ -93,7 +93,7 @@ function formatBillingAmountInput(value: number | null | undefined): string {
 
 function modelPricingExportFilename(): string {
   const date = new Date().toISOString().slice(0, 10);
-  return `deeix-chat-model-pricing-${date}.json`;
+  return `doub-chat-model-pricing-${date}.json`;
 }
 
 function downloadJSONFile(filename: string, value: unknown): void {

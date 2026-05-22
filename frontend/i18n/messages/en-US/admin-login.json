@@ -21,7 +21,7 @@
     "loginPageTitle": {
       "label": "Browser title",
       "description": "Shown in the browser tab for the sign-in page.",
-      "placeholder": "Sign in to DEEIX Chat"
+      "placeholder": "Sign in to DOUB Chat"
     },
     "loginDefaultNextPath": {
       "label": "Default redirect path",

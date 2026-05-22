@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	domainmcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/persistence/models"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainmcp "github.com/kangzyz/Doub/backend/internal/domain/mcp"
+	"github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

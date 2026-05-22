@@ -1,5 +1,5 @@
 app:
-  name: DEEIX Chat
+  name: DOUB Chat
   # REQUIRED for deployment: change to prod and replace security/admin defaults below.
   env: dev
 
@@ -30,7 +30,7 @@ database:
   postgres:
     # docker-compose.full.yml overrides this to postgres:5432.
     # REQUIRED for docker-compose.yml: set this to your external PostgreSQL address.
-    dsn: "postgres://deeix_chat:deeix_chat_dev_2026@your-postgres-host:5432/deeix_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
+    dsn: "postgres://doub_chat:doub_chat_dev_2026@your-postgres-host:5432/doub_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
     max_open_conns: 30
     max_idle_conns: 10
     conn_max_lifetime_minutes: 60
@@ -39,7 +39,7 @@ database:
     # docker-compose.full.yml overrides this to redis:6379.
     # REQUIRED for docker-compose.yml: set these to your external Redis connection settings.
     addr: "your-redis-host:6379"
-    password: "deeix_chat_redis_dev"
+    password: "doub_chat_redis_dev"
     db: 0
 
 storage:

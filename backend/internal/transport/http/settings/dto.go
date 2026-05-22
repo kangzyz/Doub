@@ -3,7 +3,7 @@ package settings
 import (
 	"strings"
 
-	appsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/settings"
+	appsettings "github.com/kangzyz/Doub/backend/internal/application/settings"
 )
 
 // ── 请求 DTO ─────────────────────────────────────────────────────────────────

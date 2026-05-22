@@ -3,8 +3,8 @@ package conversation
 import (
 	"testing"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 )
 
 func TestFilterModelOptionsAllowlistUsesDefaultAndProtocolPaths(t *testing.T) {

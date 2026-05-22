@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	appconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/conversation"
-	appupload "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/upload"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appconversation "github.com/kangzyz/Doub/backend/internal/application/conversation"
+	appupload "github.com/kangzyz/Doub/backend/internal/application/upload"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 const multipartUploadOverheadBytes = 1 << 20

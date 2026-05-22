@@ -585,7 +585,7 @@ export function useChatMessageSubmit({
         notifyResponseCompletion({
           content: completed.assistantMessage.content,
           conversationPublicID: targetConversationID,
-          conversationTitle: targetConversation?.title || "DEEIX Chat",
+          conversationTitle: targetConversation?.title || "DOUB Chat",
         });
         reload();
       } catch (error) {

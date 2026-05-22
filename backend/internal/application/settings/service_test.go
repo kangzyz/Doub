@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	domainsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 type testSettingsRepo struct {

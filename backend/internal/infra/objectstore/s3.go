@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -197,7 +197,7 @@ func (s *S3Store) Materialize(ctx context.Context, key string) (string, func(), 
 		return "", nil, err
 	}
 	defer reader.Close() //nolint:errcheck
-	file, err := os.CreateTemp("", "deeix-chat-object-*")
+	file, err := os.CreateTemp("", "doub-chat-object-*")
 	if err != nil {
 		return "", nil, err
 	}

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 func TestBuildPromptContextArtifactsRecordsRAGFallbackAndRecall(t *testing.T) {
@@ -151,7 +151,7 @@ func TestBuildToolContextArtifactsRecordsLocalAndNativeTools(t *testing.T) {
 				ToolType:   "function",
 				ToolName:   "search_web",
 				Status:     "success",
-				InputJSON:  `{"query":"DEEIX Chat"}`,
+				InputJSON:  `{"query":"DOUB Chat"}`,
 				OutputJSON: `{"answer":"result"}`,
 			},
 			{

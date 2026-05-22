@@ -3,8 +3,8 @@ package embedding
 import (
 	"testing"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
 )
 
 func TestShouldTriggerIncludesOCRImages(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 type persistMessageGenerationInput struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // FileListingRepository 封装文件列表查询能力。

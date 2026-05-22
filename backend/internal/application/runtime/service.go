@@ -6,24 +6,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/extraction"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	doclingextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/docling"
-	mineruextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/mineru"
-	ocrextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/ocr"
-	tikaextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/tika"
+	"github.com/kangzyz/Doub/backend/internal/application/extraction"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	doclingextract "github.com/kangzyz/Doub/backend/internal/infra/extract/docling"
+	mineruextract "github.com/kangzyz/Doub/backend/internal/infra/extract/mineru"
+	ocrextract "github.com/kangzyz/Doub/backend/internal/infra/extract/ocr"
+	tikaextract "github.com/kangzyz/Doub/backend/internal/infra/extract/tika"
 )
 
 const (
-	tikaContainerName      = "deeix-chat-tika"
+	tikaContainerName      = "doub-chat-tika"
 	tikaImage              = "apache/tika:3.2.3.0"
-	tesseractContainerName = "deeix-chat-tesseract"
-	tesseractImage         = "deeix-chat-tesseract:latest"
-	rapidOCRContainerName  = "deeix-chat-rapidocr"
-	rapidOCRImage          = "deeix-chat-rapidocr:latest"
-	doclingContainerName   = "deeix-chat-docling"
-	doclingImage           = "deeix-chat-docling:latest"
-	serviceNetwork         = "deeix-chat-network"
+	tesseractContainerName = "doub-chat-tesseract"
+	tesseractImage         = "doub-chat-tesseract:latest"
+	rapidOCRContainerName  = "doub-chat-rapidocr"
+	rapidOCRImage          = "doub-chat-rapidocr:latest"
+	doclingContainerName   = "doub-chat-docling"
+	doclingImage           = "doub-chat-docling:latest"
+	serviceNetwork         = "doub-chat-network"
 	dockerDefaultTimeout   = 3 * time.Minute
 	dockerBuildTimeout     = 3 * time.Minute
 )

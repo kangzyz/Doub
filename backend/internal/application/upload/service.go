@@ -15,14 +15,14 @@ import (
 	"strings"
 	"time"
 
-	appstorage "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/objectstorage"
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/objectstore"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/conv"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/google/uuid"
+	appstorage "github.com/kangzyz/Doub/backend/internal/application/objectstorage"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/objectstore"
+	"github.com/kangzyz/Doub/backend/internal/pkg/conv"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 )
 

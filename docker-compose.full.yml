@@ -1,20 +1,20 @@
-name: deeix-chat
+name: doub-chat
 
 services:
   app:
-    image: ${DEEIX_CHAT_IMAGE:-ghcr.io/deeix-ai/deeix-chat:latest}
+    image: ${DOUB_CHAT_IMAGE:-ghcr.io/kangzyz/doub-chat:latest}
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: deeix-chat-app
+    container_name: doub-chat-app
     depends_on:
       - postgres
       - redis
     environment:
       # Deployment topology: full compose connects to services on the compose network.
-      POSTGRES_DSN: "postgres://deeix_chat:deeix_chat_2026@postgres:5432/deeix_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
+      POSTGRES_DSN: "postgres://doub_chat:doub_chat_2026@postgres:5432/doub_chat?sslmode=disable&TimeZone=Asia%2FShanghai"
       REDIS_ADDR: "redis:6379"
-      REDIS_PASSWORD: "deeix_chat_2026"
+      REDIS_PASSWORD: "doub_chat_2026"
     ports:
       # Localhost-only by default. Put a reverse proxy in front for public access.
       - "127.0.0.1:8080:8080"
@@ -22,43 +22,43 @@ services:
       - app_storage:/app/storage
       - ./config.yaml:/app/config.yaml:ro
     networks:
-      - deeix-chat
+      - doub-chat
 
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: deeix-chat-postgres
+    container_name: doub-chat-postgres
     environment:
-      POSTGRES_USER: deeix_chat
-      POSTGRES_PASSWORD: deeix_chat_2026
-      POSTGRES_DB: deeix_chat
+      POSTGRES_USER: doub_chat
+      POSTGRES_PASSWORD: doub_chat_2026
+      POSTGRES_DB: doub_chat
     ports:
       # Localhost-only for local administration; the app uses the internal Docker network.
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - deeix-chat
+      - doub-chat
 
   redis:
     image: redis:7
-    container_name: deeix-chat-redis
-    command: redis-server --requirepass deeix_chat_2026
+    container_name: doub-chat-redis
+    command: redis-server --requirepass doub_chat_2026
     ports:
       # Localhost-only for local administration; the app uses the internal Docker network.
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - deeix-chat
+      - doub-chat
 
 volumes:
   app_storage:
-    name: deeix-chat-app-storage
+    name: doub-chat-app-storage
   postgres_data:
-    name: deeix-chat-postgres-data
+    name: doub-chat-postgres-data
   redis_data:
-    name: deeix-chat-redis-data
+    name: doub-chat-redis-data
 
 networks:
-  deeix-chat:
-    name: deeix-chat-network
+  doub-chat:
+    name: doub-chat-network

@@ -32,7 +32,7 @@ import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import type { ConversationOptions } from "@/shared/api/conversation.types";
 import type { MCPToolDTO } from "@/shared/api/mcp.types";
 
-const MODEL_OPTIONS_STORAGE_PREFIX = "deeix-chat:chat-model-options:";
+const MODEL_OPTIONS_STORAGE_PREFIX = "doub-chat:chat-model-options:";
 const EMPTY_CONVERSATION_OPTIONS: ConversationOptions = {};
 
 function modelOptionsStorageKey(platformModelName: string): string {

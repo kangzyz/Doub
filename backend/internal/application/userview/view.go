@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // SubscriptionState 描述用户当前订阅的派生状态。

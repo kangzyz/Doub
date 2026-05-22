@@ -5,7 +5,7 @@ export type LoginMode = "login" | "register";
 export type ProviderAuthIntent = "login" | "register";
 
 export const DEFAULT_LOGIN_SETTINGS: LoginPageSettings = {
-  title: "Sign in to DEEIX Chat",
+  title: "Sign in to DOUB Chat",
   defaultNextPath: "/chat",
 };
 
@@ -17,8 +17,8 @@ export const DEFAULT_LOGIN_OPTIONS: LoginOptionsData = {
   providers: [],
 };
 
-export const TWO_FACTOR_CHALLENGE_STORAGE_KEY = "deeix-chat:2fa:challenge";
-export const TWO_FACTOR_METHODS_STORAGE_KEY = "deeix-chat:2fa:methods";
+export const TWO_FACTOR_CHALLENGE_STORAGE_KEY = "doub-chat:2fa:challenge";
+export const TWO_FACTOR_METHODS_STORAGE_KEY = "doub-chat:2fa:methods";
 
 export function normalizeLocalPath(value: string | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -36,7 +36,7 @@ export function normalizeRegisterCode(value: string): string {
 }
 
 export function providerPKCEStorageKey(slug: string): string {
-  return `deeix-chat:oauth:${slug}:pkce_verifier`;
+  return `doub-chat:oauth:${slug}:pkce_verifier`;
 }
 
 export function isTwoFactorChallengeExpired(error: unknown): boolean {

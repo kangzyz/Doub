@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // circuitProbeTTLSec 半开 probe 令牌的 TTL（秒）。

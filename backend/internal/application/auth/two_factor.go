@@ -20,12 +20,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/token"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/requestmeta"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/pkg/token"
+	"github.com/kangzyz/Doub/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/shared/requestmeta"
 	"go.uber.org/zap"
 )
 
@@ -272,7 +272,7 @@ func (s *Service) StartCurrentTwoFactorSetup(ctx context.Context, userID uint) (
 		}
 		return &TwoFactorSetupStartResult{
 			Secret:     secret,
-			OTPAuthURL: buildOTPAuthURL("DEEIX Chat", firstNonEmpty(item.Email, item.Username), secret),
+			OTPAuthURL: buildOTPAuthURL("DOUB Chat", firstNonEmpty(item.Email, item.Username), secret),
 			ExpiresAt:  *current.TOTPSetupExpiresAt,
 		}, nil
 	}
@@ -296,7 +296,7 @@ func (s *Service) StartCurrentTwoFactorSetup(ctx context.Context, userID uint) (
 	}
 	return &TwoFactorSetupStartResult{
 		Secret:     secret,
-		OTPAuthURL: buildOTPAuthURL("DEEIX Chat", firstNonEmpty(item.Email, item.Username), secret),
+		OTPAuthURL: buildOTPAuthURL("DOUB Chat", firstNonEmpty(item.Email, item.Username), secret),
 		ExpiresAt:  expiresAt,
 	}, nil
 }

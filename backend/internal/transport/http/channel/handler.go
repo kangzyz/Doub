@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	appchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
+	appchannel "github.com/kangzyz/Doub/backend/internal/application/channel"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
 )
 
 // Handler 封装上游与模型管理 HTTP 处理。

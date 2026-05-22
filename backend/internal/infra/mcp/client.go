@@ -14,8 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
 )
 
 const protocolVersion = "2025-06-18"
@@ -121,7 +121,7 @@ func (c *Client) initialize(ctx context.Context, cfg CallConfig) (string, error)
 		"protocolVersion": protocolVersion,
 		"capabilities":    map[string]interface{}{},
 		"clientInfo": map[string]interface{}{
-			"name":    "deeix-chat",
+			"name":    "doub-chat",
 			"version": "0.1.0",
 		},
 	}

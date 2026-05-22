@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	appmcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/mcp"
-	domainmcp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/mcp"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/security"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appmcp "github.com/kangzyz/Doub/backend/internal/application/mcp"
+	domainmcp "github.com/kangzyz/Doub/backend/internal/domain/mcp"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/shared/security"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 type Handler struct {

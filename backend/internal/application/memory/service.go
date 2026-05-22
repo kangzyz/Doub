@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 type embeddingProvider interface {

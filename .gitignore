@@ -163,3 +163,4 @@ frontend/public/vendor/lobehub-icons/
 
 .DS_Store
 .idea
+.ace-tool/

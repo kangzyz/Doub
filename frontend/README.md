@@ -1,6 +1,6 @@
-# DEEIX Chat Frontend
+# DOUB Chat Frontend
 
-DEEIX Chat 前端是基于 Next.js App Router 的管理与对话界面，负责聊天工作区、文件页、最近会话、用户设置、MCP 工具选择和管理员后台。
+DOUB Chat 前端是基于 Next.js App Router 的管理与对话界面，负责聊天工作区、文件页、最近会话、用户设置、MCP 工具选择和管理员后台。
 
 ## 技术栈
 

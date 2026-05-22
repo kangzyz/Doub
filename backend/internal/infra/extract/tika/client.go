@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	platformtracing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/observability/tracing"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 )
 
 // Request 表示 Tika 文本提取请求。
@@ -35,8 +35,8 @@ const (
 	errTikaForbidden           = "tika_forbidden"
 	errTikaUnsupportedMimeType = "tika_unsupported_media_type"
 	DefaultTikaBaseURL         = "http://127.0.0.1:9998"
-	ManagedTikaBaseURL         = "http://deeix-chat-tika:9998"
-	managedTikaHost            = "deeix-chat-tika"
+	ManagedTikaBaseURL         = "http://doub-chat-tika:9998"
+	managedTikaHost            = "doub-chat-tika"
 	tikaSourceManaged          = "managed"
 )
 

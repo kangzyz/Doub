@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	domainchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ---------------------------------------------------------------------------

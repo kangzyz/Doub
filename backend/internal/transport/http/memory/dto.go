@@ -3,7 +3,7 @@ package memory
 import (
 	"time"
 
-	domainmemory "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/memory"
+	domainmemory "github.com/kangzyz/Doub/backend/internal/domain/memory"
 )
 
 // ── 请求 DTO ─────────────────────────────────────────────────────────────────

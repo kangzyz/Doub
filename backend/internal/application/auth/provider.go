@@ -16,13 +16,13 @@ import (
 	"strings"
 	"time"
 
-	userapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/user"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/conv"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/secretbox"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/requestmeta"
 	"github.com/google/uuid"
+	userapp "github.com/kangzyz/Doub/backend/internal/application/user"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/pkg/conv"
+	"github.com/kangzyz/Doub/backend/internal/pkg/secretbox"
+	"github.com/kangzyz/Doub/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/shared/requestmeta"
 	"golang.org/x/crypto/bcrypt"
 )
 

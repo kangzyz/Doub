@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/channel"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/llm"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	"github.com/kangzyz/Doub/backend/internal/application/channel"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 	"go.uber.org/zap"
 )
 

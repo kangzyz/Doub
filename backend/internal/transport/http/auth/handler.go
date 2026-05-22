@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	appauth "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/auth"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appauth "github.com/kangzyz/Doub/backend/internal/application/auth"
+	"github.com/kangzyz/Doub/backend/internal/application/user"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
-const refreshTokenCookieName = "deeix_chat_refresh_token"
+const refreshTokenCookieName = "doub_chat_refresh_token"
 
 // Handler 封装认证 HTTP 处理。
 type Handler struct {

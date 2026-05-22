@@ -3,9 +3,9 @@ package middleware
 import (
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/traceid"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/kangzyz/Doub/backend/internal/pkg/traceid"
 )
 
 // RequestID 为每个请求注入可追踪 ID。

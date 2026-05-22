@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	domainusersettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/usersettings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainusersettings "github.com/kangzyz/Doub/backend/internal/domain/usersettings"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ErrValidation 表示用户输入校验失败，可被 handler 识别并返回 400。

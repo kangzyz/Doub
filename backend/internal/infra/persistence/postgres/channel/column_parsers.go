@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	domainchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/channel"
+	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
 )
 
 // ---------------------------------------------------------------------------

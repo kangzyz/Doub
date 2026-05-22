@@ -1,6 +1,6 @@
-# Contributing to DEEIX Chat
+# Contributing to DOUB Chat
 
-Thank you for contributing to DEEIX Chat.
+Thank you for contributing to DOUB Chat.
 
 ## Before You Start
 

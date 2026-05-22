@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	domainsystemevent "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/systemevent"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/traceid"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
+	"github.com/kangzyz/Doub/backend/internal/pkg/traceid"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ListFilter 描述系统事件筛选条件。

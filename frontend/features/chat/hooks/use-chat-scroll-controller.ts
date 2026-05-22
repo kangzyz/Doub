@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-const CHAT_SCROLL_STORAGE_KEY = "deeix-chat:chat-scroll:v1";
+const CHAT_SCROLL_STORAGE_KEY = "doub-chat:chat-scroll:v1";
 const BOTTOM_THRESHOLD_PX = 96;
 const SCROLL_POSITION_PERSIST_DELAY_MS = 180;
 

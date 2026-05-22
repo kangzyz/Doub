@@ -1,7 +1,7 @@
 services:
   tesseract:
-    container_name: deeix-chat-tesseract
-    image: deeix-chat-tesseract:latest
+    container_name: doub-chat-tesseract
+    image: doub-chat-tesseract:latest
     build:
       context: ../../
       dockerfile: docker/tesseract/Dockerfile
@@ -15,9 +15,9 @@ services:
       TESSERACT_GRAYSCALE: ${TESSERACT_GRAYSCALE:-true}
     restart: unless-stopped
     networks:
-      - deeix-chat
+      - doub-chat
 
 networks:
-  deeix-chat:
+  doub-chat:
     external: true
-    name: deeix-chat-network
+    name: doub-chat-network

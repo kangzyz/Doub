@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	appembedding "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/embedding"
-	appruntime "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/runtime"
-	appsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appembedding "github.com/kangzyz/Doub/backend/internal/application/embedding"
+	appruntime "github.com/kangzyz/Doub/backend/internal/application/runtime"
+	appsettings "github.com/kangzyz/Doub/backend/internal/application/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 const runtimeActionTimeout = 5 * time.Minute
@@ -96,7 +96,7 @@ func (h *Handler) GetLoginPageSettings(c *gin.Context) {
 		return
 	}
 	values := map[string]string{
-		"login_page_title":        "Sign in to DEEIX Chat",
+		"login_page_title":        "Sign in to DOUB Chat",
 		"login_default_next_path": "/chat",
 	}
 	for _, item := range items {
@@ -105,7 +105,7 @@ func (h *Handler) GetLoginPageSettings(c *gin.Context) {
 		}
 	}
 	if strings.TrimSpace(values["login_page_title"]) == "" {
-		values["login_page_title"] = "Sign in to DEEIX Chat"
+		values["login_page_title"] = "Sign in to DOUB Chat"
 	}
 	if strings.TrimSpace(values["login_default_next_path"]) == "" ||
 		!strings.HasPrefix(values["login_default_next_path"], "/") ||

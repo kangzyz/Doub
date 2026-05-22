@@ -8,17 +8,17 @@ import (
 	"time"
 	"unicode"
 
-	auditapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/audit"
-	authapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/auth"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	systemeventapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/systemevent"
-	userapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/userview"
-	domainaudit "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/audit"
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
-	domainsystemevent "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/systemevent"
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	auditapp "github.com/kangzyz/Doub/backend/internal/application/audit"
+	authapp "github.com/kangzyz/Doub/backend/internal/application/auth"
+	"github.com/kangzyz/Doub/backend/internal/application/billing"
+	systemeventapp "github.com/kangzyz/Doub/backend/internal/application/systemevent"
+	userapp "github.com/kangzyz/Doub/backend/internal/application/user"
+	"github.com/kangzyz/Doub/backend/internal/application/userview"
+	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
+	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 type userService interface {

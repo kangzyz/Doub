@@ -3,10 +3,10 @@ package usersettings
 import (
 	"net/http"
 
-	appusersettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/usersettings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appusersettings "github.com/kangzyz/Doub/backend/internal/application/usersettings"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // Handler 封装用户配置 HTTP 处理。

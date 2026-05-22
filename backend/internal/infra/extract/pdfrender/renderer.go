@@ -63,7 +63,7 @@ func (r *Renderer) RenderPageJPEG(ctx context.Context, req Request) ([]byte, err
 	tempDir := strings.TrimSpace(req.TempDir)
 	ownedTempDir := false
 	if tempDir == "" {
-		createdDir, err := os.MkdirTemp("", "deeix-chat-pdf-render-*")
+		createdDir, err := os.MkdirTemp("", "doub-chat-pdf-render-*")
 		if err != nil {
 			return nil, err
 		}

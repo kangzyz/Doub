@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/logo-white.svg" />
-    <img src="./frontend/public/logo-black.svg" alt="DEEIX Chat" width="160" />
+    <img src="./frontend/public/logo-black.svg" alt="DOUB Chat" width="160" />
   </picture>
 </p>
 
@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://deeix.com"><img alt="Website" src="https://img.shields.io/badge/Website-deeix.com-black" /></a>
+  <a href="https://doub.vexown.com"><img alt="Website" src="https://img.shields.io/badge/Website-doub.vexown.com-black" /></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue" /></a>
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black" />
   <img alt="React" src="https://img.shields.io/badge/React-19-149eca" />
@@ -23,11 +23,11 @@
 
 ## Overview
 
-DEEIX Chat gives teams a unified workspace for working with multiple AI models and providers. It combines multimodal chat, model routing, file and RAG workflows, MCP tools, usage billing, identity, audit logs, and operational controls in one product.
+DOUB Chat gives teams a unified workspace for working with multiple AI models and providers. It combines multimodal chat, model routing, file and RAG workflows, MCP tools, usage billing, identity, audit logs, and operational controls in one product.
 
 The architecture is designed for simple deployment, efficient static delivery, and a predictable Go runtime footprint. The admin console centralizes upstream channels, platform model names, routing priority, pricing, subscriptions, users, and security policies, while the conversation workspace keeps the user experience stable and focused.
 
-![DEEIX Chat workspace](./frontend/public/DEEIX-Chat.jpg)
+![DOUB Chat workspace](./frontend/public/DEEIX-Chat.jpg)
 
 ## Features
 
@@ -47,9 +47,9 @@ The architecture is designed for simple deployment, efficient static delivery, a
 | Operations | Efficient static delivery, predictable Go runtime footprint, Docker builds, single-runtime frontend/API serving, Swagger docs, structured logs, request IDs, Redis caching, PostgreSQL pgvector, optional GeoIP, optional OpenTelemetry, and S3-compatible storage. |
 
 <p>
-  <img src="./frontend/public/DEEIX-Chat-Image.png" alt="DEEIX Chat image generation" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Dark.png" alt="DEEIX Chat dark mode" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Usage.png" alt="DEEIX Chat usage and billing" width="32%" />
+  <img src="./frontend/public/DEEIX-Chat-Image.png" alt="DOUB Chat image generation" width="32%" />
+  <img src="./frontend/public/DEEIX-Chat-Dark.png" alt="DOUB Chat dark mode" width="32%" />
+  <img src="./frontend/public/DEEIX-Chat-Usage.png" alt="DOUB Chat usage and billing" width="32%" />
 </p>
 
 ## Architecture
@@ -132,10 +132,10 @@ cp config.docker.example.yaml config.yaml
 docker compose -f docker-compose.full.yml up -d
 ```
 
-The default application image is `ghcr.io/deeix-ai/deeix-chat:latest`. Override it with `DEEIX_CHAT_IMAGE` when testing a custom build:
+The default application image is `ghcr.io/kangzyz/doub-chat:latest`. Override it with `DOUB_CHAT_IMAGE` when testing a custom build:
 
 ```bash
-DEEIX_CHAT_IMAGE=deeix-chat:local docker compose up -d --build
+DOUB_CHAT_IMAGE=doub-chat:local docker compose up -d --build
 ```
 
 Docker URL: `http://localhost:8080`. Keep the Docker `server` section unchanged unless changing ports or public domains; then update compose ports, public URLs, and CORS together.
@@ -154,7 +154,7 @@ Use this mode when the frontend and backend are served from different public ori
    For Docker image builds, pass the frontend API URL at build time:
 
    ```bash
-   docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com -t deeix-chat .
+   docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com -t doub-chat .
    ```
 
 2. Build and publish the frontend.
@@ -246,7 +246,7 @@ Common backend environment variables:
 
 Production mode rejects unsafe default secrets, weak encryption keys, wildcard CORS, and non-HTTPS public URLs.
 
-The initial superadmin bootstrap credentials are built in as `deeix-chat` / `deeix-chat-2026` / `System Admin`. They are used only when the database has no superadmin account. The first login forces changing the username and password; later changes are managed from the account flow, not from `config.yaml`.
+The initial superadmin bootstrap credentials are built in as `doub-chat` / `doub-chat-2026` / `System Admin`. They are used only when the database has no superadmin account. The first login forces changing the username and password; later changes are managed from the account flow, not from `config.yaml`.
 
 ## Security Notes
 
@@ -258,7 +258,7 @@ The initial superadmin bootstrap credentials are built in as `deeix-chat` / `dee
 
 ## Optional Services
 
-The compose files below attach to `deeix-chat-network`. Create it with `docker network create deeix-chat-network`, or start the root compose stack once before launching these services.
+The compose files below attach to `doub-chat-network`. Create it with `docker network create doub-chat-network`, or start the root compose stack once before launching these services.
 
 Apache Tika:
 
@@ -281,7 +281,7 @@ docker compose -f docker/docling/docker-compose.yml up -d --build
 RapidOCR:
 
 ```bash
-docker build -t deeix-chat-rapidocr ./docker/rapidocr
+docker build -t doub-chat-rapidocr ./docker/rapidocr
 ```
 
 These services are optional. The admin file settings decide which extraction or OCR engine is active.
@@ -297,7 +297,7 @@ These services are optional. The admin file settings decide which extraction or 
 
 ## Acknowledgements
 
-DEEIX Chat is built on the open-source ecosystem. Thanks to all maintainers and communities in the AI tooling ecosystem.
+DOUB Chat is built on the open-source ecosystem. Thanks to all maintainers and communities in the AI tooling ecosystem.
 
 - [Next.js](https://nextjs.org)
 - [Go](https://go.dev)
@@ -305,9 +305,9 @@ DEEIX Chat is built on the open-source ecosystem. Thanks to all maintainers and 
 
 ## Contact & Community
 
-- Email: [support@deeix.com](mailto:support@deeix.com)
-- Telegram: [t.me/deeix_chat](https://t.me/deeix_chat)
+- Email: [support@vexown.com](mailto:support@vexown.com)
+- X: [@doubingchat](https://x.com/doubingchat)
 
 ## License
 
-DEEIX Chat is licensed under the [Apache License 2.0](./LICENSE).
+DOUB Chat is licensed under the [Apache License 2.0](./LICENSE).

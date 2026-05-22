@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/extraction"
-	domainsettings "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/settings"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	mineruextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/mineru"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	"github.com/kangzyz/Doub/backend/internal/application/extraction"
+	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	mineruextract "github.com/kangzyz/Doub/backend/internal/infra/extract/mineru"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // Service 封装 settings 业务逻辑。

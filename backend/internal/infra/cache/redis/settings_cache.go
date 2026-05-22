@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
 	"github.com/go-redis/redis/v8"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 const settingsCacheTTL = 60 * time.Second

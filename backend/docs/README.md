@@ -1,4 +1,4 @@
-# DEEIX Chat Backend Documentation
+# DOUB Chat Backend Documentation
 
 This directory contains generated backend API documentation.
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
 // AuthRepository 定义认证流程依赖的持久化能力。

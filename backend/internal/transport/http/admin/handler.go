@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	appadmin "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/admin"
-	auditapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/audit"
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	systemeventapp "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/systemevent"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	appadmin "github.com/kangzyz/Doub/backend/internal/application/admin"
+	auditapp "github.com/kangzyz/Doub/backend/internal/application/audit"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	systemeventapp "github.com/kangzyz/Doub/backend/internal/application/systemevent"
+	"github.com/kangzyz/Doub/backend/internal/application/user"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
+	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
 
 // Handler 封装后台管理 HTTP 处理。

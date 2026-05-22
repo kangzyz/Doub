@@ -24,4 +24,4 @@ Examples of unacceptable behavior:
 
 Project maintainers may remove comments, close issues, reject contributions, or restrict participation when behavior violates this code of conduct.
 
-Report conduct concerns to support@deeix.com.
+Report conduct concerns to support@vexown.com.

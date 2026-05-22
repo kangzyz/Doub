@@ -86,26 +86,26 @@ export function AboutSettingsContent({
   const links: AboutLinkItem[] = [
     {
       label: labels.website,
-      value: "deeix.com",
-      href: "https://deeix.com",
+      value: "doub.vexown.com",
+      href: "https://doub.vexown.com",
       icon: Globe,
     },
     {
       label: labels.official,
-      value: "DEEIX",
-      href: "https://github.com/DEEIX-AI/DEEIX",
+      value: "DOUB",
+      href: "https://github.com/kangzyz/Doub",
       providerIcon: { name: "GitHub", slug: "github" },
     },
     {
       label: labels.social,
-      value: "@DEEIX_AI",
-      href: "https://x.com/DEEIX_AI",
+      value: "@doubingchat",
+      href: "https://x.com/doubingchat",
       providerIcon: { name: "X", slug: "x" },
     },
     {
       label: labels.repository,
-      value: "DEEIX-Chat",
-      href: "https://github.com/DEEIX-AI/DEEIX-Chat",
+      value: "DOUB-Chat",
+      href: "https://github.com/kangzyz/Doub",
       providerIcon: { name: "GitHub", slug: "github" },
     },
     {
@@ -116,8 +116,8 @@ export function AboutSettingsContent({
     },
     {
       label: labels.contact,
-      value: "support@deeix.com",
-      href: "mailto:support@deeix.com",
+      value: "support@vexown.com",
+      href: "mailto:support@vexown.com",
       icon: Mail,
     },
   ];

@@ -12,15 +12,15 @@ import (
 	"time"
 	"unicode"
 
-	appstorage "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/objectstorage"
-	domainconversation "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/builtin"
-	doclingextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/docling"
-	mineruextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/mineru"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/ocr"
-	tikaextract "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/extract/tika"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/objectstore"
+	appstorage "github.com/kangzyz/Doub/backend/internal/application/objectstorage"
+	domainconversation "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/infra/extract/builtin"
+	doclingextract "github.com/kangzyz/Doub/backend/internal/infra/extract/docling"
+	mineruextract "github.com/kangzyz/Doub/backend/internal/infra/extract/mineru"
+	"github.com/kangzyz/Doub/backend/internal/infra/extract/ocr"
+	tikaextract "github.com/kangzyz/Doub/backend/internal/infra/extract/tika"
+	"github.com/kangzyz/Doub/backend/internal/infra/objectstore"
 )
 
 // ErrInvalidStoredFilePath 表示存储路径非法。

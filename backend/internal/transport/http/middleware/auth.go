@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	domainuser "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/user"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/pkg/token"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/requestmeta"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
+	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
+	"github.com/kangzyz/Doub/backend/internal/pkg/token"
+	"github.com/kangzyz/Doub/backend/internal/shared/requestmeta"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
 )
 
 // SessionValidator 校验 access token 对应会话是否有效。

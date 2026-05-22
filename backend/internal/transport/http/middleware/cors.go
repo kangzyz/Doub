@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
+	"github.com/kangzyz/Doub/backend/internal/shared/response"
 )
 
 // CORS 处理跨域请求，支持逗号分隔的 Origin allowlist。

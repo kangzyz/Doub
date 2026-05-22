@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	domainchannel "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/channel"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 )
 
 // ---------------------------------------------------------------------------

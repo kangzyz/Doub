@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	appprocessing "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/processing"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/infra/config"
-	"github.com/DEEIX-AI/DEEIX-Chat/backend/internal/repository"
+	appprocessing "github.com/kangzyz/Doub/backend/internal/application/processing"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
+	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )

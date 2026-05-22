@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/application/billing"
-	domainbilling "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/billing"
-	model "github.com/DEEIX-AI/DEEIX-Chat/backend/internal/domain/conversation"
+	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
+	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
+	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 )
 
 type messageBillingUpdateError struct {
