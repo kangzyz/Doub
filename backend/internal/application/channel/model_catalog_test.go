@@ -307,6 +307,28 @@ func TestIsRouteAllowedForTaskSeparatesChatAndImageProtocols(t *testing.T) {
 	if !IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "openai_image_edits") {
 		t.Fatalf("expected image edit task to allow image edit protocol")
 	}
+	if !IsRouteAllowedForTask(TaskTypeImageEdit, `["image_gen","image_edit"]`, "openai_image_generations") {
+		t.Fatalf("expected dual image route to allow image edit task")
+	}
+	if IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "openai_image_generations") {
+		t.Fatalf("expected single edit-kind route to reject generation protocol")
+	}
+}
+
+func TestRouteProtocolForTaskDerivesDualImageProtocol(t *testing.T) {
+	protocol, ok := routeProtocolForTask(TaskTypeImageEdit, `["image_gen","image_edit"]`, "openai_image_generations")
+	if !ok || protocol != "openai_image_edits" {
+		t.Fatalf("expected edit task to derive openai_image_edits, got %q ok=%v", protocol, ok)
+	}
+
+	protocol, ok = routeProtocolForTask(TaskTypeImageGeneration, `["image_gen","image_edit"]`, "openai_image_edits")
+	if !ok || protocol != "openai_image_generations" {
+		t.Fatalf("expected generation task to derive openai_image_generations, got %q ok=%v", protocol, ok)
+	}
+
+	if protocol, ok = routeProtocolForTask(TaskTypeChat, `["image_gen","image_edit"]`, "openai_image_generations"); ok {
+		t.Fatalf("expected chat task to reject image route, got %q", protocol)
+	}
 }
 
 func TestDefaultRouteModelMatchesTaskFiltersByKind(t *testing.T) {

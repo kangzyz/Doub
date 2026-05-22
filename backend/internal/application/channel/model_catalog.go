@@ -258,30 +258,59 @@ func NormalizeTaskType(raw string) string {
 // IsRouteAllowedForTask 判断指定模型 kind 与协议是否可服务当前任务。
 // 图片任务必须命中图片协议；聊天任务不会误用图片生成/编辑协议。
 func IsRouteAllowedForTask(taskType string, kindsJSON string, protocol string) bool {
+	_, ok := routeProtocolForTask(taskType, kindsJSON, protocol)
+	return ok
+}
+
+// routeProtocolForTask 返回当前任务实际应使用的协议。
+// 双能力 OpenAI Images 模型通常只有一条上游模型绑定；这条绑定可以按任务
+// 在 image generation 与 image edit 协议之间切换，但不能跨出图片协议族。
+func routeProtocolForTask(taskType string, kindsJSON string, protocol string) (string, bool) {
 	kinds := parseKinds(kindsJSON)
 	protocol = strings.TrimSpace(strings.ToLower(protocol))
 	if len(kinds) == 0 {
 		switch NormalizeTaskType(taskType) {
 		case TaskTypeImageGeneration:
-			return protocol == protocolOpenAIImageGenerations
+			return protocol, protocol == protocolOpenAIImageGenerations
 		case TaskTypeImageEdit:
-			return protocol == protocolOpenAIImageEdits
+			return protocol, protocol == protocolOpenAIImageEdits
 		default:
-			return isProtocolAllowedForKind(modelKindChat, protocol) || isProtocolAllowedForKind(modelKindAudio, protocol)
+			if isProtocolAllowedForKind(modelKindChat, protocol) || isProtocolAllowedForKind(modelKindAudio, protocol) {
+				return protocol, true
+			}
+			return "", false
 		}
 	}
 	switch NormalizeTaskType(taskType) {
 	case TaskTypeImageGeneration:
-		return hasModelKind(kinds, modelKindImageGen) && protocol == protocolOpenAIImageGenerations
+		if !hasModelKind(kinds, modelKindImageGen) {
+			return "", false
+		}
+		if protocol == protocolOpenAIImageGenerations {
+			return protocolOpenAIImageGenerations, true
+		}
+		if isDualOpenAIImageRoute(kinds, protocol) {
+			return protocolOpenAIImageGenerations, true
+		}
+		return "", false
 	case TaskTypeImageEdit:
-		return hasModelKind(kinds, modelKindImageEdit) && protocol == protocolOpenAIImageEdits
+		if !hasModelKind(kinds, modelKindImageEdit) {
+			return "", false
+		}
+		if protocol == protocolOpenAIImageEdits {
+			return protocolOpenAIImageEdits, true
+		}
+		if isDualOpenAIImageRoute(kinds, protocol) {
+			return protocolOpenAIImageEdits, true
+		}
+		return "", false
 	default:
 		for _, kind := range kinds {
 			if (kind == modelKindChat || kind == modelKindAudio) && isProtocolAllowedForKind(kind, protocol) {
-				return true
+				return protocol, true
 			}
 		}
-		return false
+		return "", false
 	}
 }
 
@@ -293,6 +322,18 @@ func hasModelKind(kinds []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func isDualOpenAIImageRoute(kinds []string, protocol string) bool {
+	if !hasModelKind(kinds, modelKindImageGen) || !hasModelKind(kinds, modelKindImageEdit) {
+		return false
+	}
+	switch protocol {
+	case protocolOpenAIImageGenerations, protocolOpenAIImageEdits:
+		return true
+	default:
+		return false
+	}
 }
 
 func primaryKindFromKinds(kindsJSON string) string {

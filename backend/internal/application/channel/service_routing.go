@@ -37,9 +37,11 @@ func (s *Service) ResolveRoute(ctx context.Context, input ResolveRouteInput) (*R
 
 	available := make([]repository.ChannelUpstreamRouteRow, 0, len(rows))
 	for _, row := range rows {
-		if !IsRouteAllowedForTask(input.TaskType, row.ModelKindsJSON, row.Protocol) {
+		protocol, ok := routeProtocolForTask(input.TaskType, row.ModelKindsJSON, row.Protocol)
+		if !ok {
 			continue
 		}
+		row.Protocol = protocol
 		available = append(available, row)
 	}
 	if len(available) == 0 {
