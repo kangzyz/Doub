@@ -8,7 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -39,6 +42,34 @@ func (a *openAIImageGenerationsAdapter) GenerateStream(
 
 // ListModels 复用 OpenAI 兼容 models 目录，供渠道校验和展示使用。
 func (a *openAIImageGenerationsAdapter) ListModels(ctx context.Context, route RouteConfig) ([]ModelItem, error) {
+	return a.client.listModelsOpenAICompatible(ctx, route)
+}
+
+// openAIImageEditsAdapter 负责 OpenAI Images API 的图片编辑端点。
+type openAIImageEditsAdapter struct {
+	client *Client
+}
+
+func (a *openAIImageEditsAdapter) Name() string { return AdapterOpenAIImageEdits }
+
+// Generate 调用 OpenAI 图片编辑接口，返回结构化图片结果。
+func (a *openAIImageEditsAdapter) Generate(ctx context.Context, route RouteConfig, input GenerateInput) (*GenerateOutput, error) {
+	route.Endpoint = EndpointImageEdits
+	return a.client.generateOpenAIImageEdits(ctx, route, input)
+}
+
+// GenerateStream 暂不支持图片编辑上游流式，调用方应走非流式请求并继续用本地 SSE 状态事件包装。
+func (a *openAIImageEditsAdapter) GenerateStream(
+	ctx context.Context,
+	route RouteConfig,
+	input GenerateInput,
+	onEvent func(GenerateStreamEvent) error,
+) (*GenerateOutput, error) {
+	return nil, fmt.Errorf("%w: %s", ErrUnsupportedStream, AdapterOpenAIImageEdits)
+}
+
+// ListModels 复用 OpenAI 兼容 models 目录，供渠道校验和展示使用。
+func (a *openAIImageEditsAdapter) ListModels(ctx context.Context, route RouteConfig) ([]ModelItem, error) {
 	return a.client.listModelsOpenAICompatible(ctx, route)
 }
 
@@ -84,6 +115,53 @@ func (c *Client) generateOpenAIImageGenerations(ctx context.Context, route Route
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, parseUpstreamError(resp.StatusCode, body, upstreamDebugSnapshot(req, payload, resp, body))
+	}
+
+	return parseOpenAIImageGenerationOutput(body, modelParamString(input.Options, "output_format"))
+}
+
+// generateOpenAIImageEdits 构造并执行 OpenAI 图片编辑请求。
+func (c *Client) generateOpenAIImageEdits(ctx context.Context, route RouteConfig, input GenerateInput) (*GenerateOutput, error) {
+	requestURL := buildOpenAIRequestURL(route.BaseURL, EndpointImageEdits)
+	if requestURL == "" {
+		return nil, fmt.Errorf("invalid base url")
+	}
+
+	payload, contentType, err := buildOpenAIImageEditMultipartBody(route.UpstreamModel, input)
+	if err != nil {
+		return nil, err
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, resolveReadTimeout(route.ReadTimeoutMS))
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, requestURL, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+	if apiKey := strings.TrimSpace(route.APIKey); apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	setOpenRouterAttributionHeaders(req, route)
+	setAdditionalHeaders(req, route.HeadersJSON)
+
+	resp, err := c.httpClientForRoute(route).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	body, err := readUpstreamBody(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, parseUpstreamError(
+			resp.StatusCode,
+			body,
+			upstreamDebugSnapshot(req, []byte("[multipart form data redacted]"), resp, body),
+		)
 	}
 
 	return parseOpenAIImageGenerationOutput(body, modelParamString(input.Options, "output_format"))
@@ -184,6 +262,157 @@ func (c *Client) generateOpenAIImageGenerationsStream(
 
 func isEventStreamContentType(contentType string) bool {
 	return strings.Contains(strings.ToLower(strings.TrimSpace(contentType)), "text/event-stream")
+}
+
+// buildOpenAIImageEditMultipartBody 只允许图片编辑端点支持的字段进入上游。
+func buildOpenAIImageEditMultipartBody(model string, input GenerateInput) ([]byte, string, error) {
+	prompt := buildOpenAIImageGenerationPrompt(input.Messages)
+	if strings.TrimSpace(prompt) == "" {
+		return nil, "", fmt.Errorf("image edit prompt required")
+	}
+	images := collectOpenAIImageEditParts(input.Messages)
+	if len(images) == 0 {
+		return nil, "", fmt.Errorf("image edit requires at least one image")
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("model", strings.TrimSpace(model)); err != nil {
+		return nil, "", err
+	}
+	if err := writer.WriteField("prompt", prompt); err != nil {
+		return nil, "", err
+	}
+	if err := applyOpenAIImageEditParams(writer, strings.TrimSpace(model), input.Options); err != nil {
+		return nil, "", err
+	}
+	for index, image := range images {
+		if err := writeOpenAIImageEditPart(writer, image, index); err != nil {
+			return nil, "", err
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+	return body.Bytes(), writer.FormDataContentType(), nil
+}
+
+func collectOpenAIImageEditParts(messages []Message) []ContentPart {
+	images := make([]ContentPart, 0)
+	for _, msg := range messages {
+		for _, part := range msg.Parts {
+			if part.Kind != ContentPartImage || len(part.Data) == 0 {
+				continue
+			}
+			images = append(images, part)
+		}
+	}
+	return images
+}
+
+func applyOpenAIImageEditParams(writer *multipart.Writer, model string, options map[string]interface{}) error {
+	if len(options) == 0 {
+		return nil
+	}
+	for _, key := range []string{"quality", "size", "user"} {
+		if value := modelParamString(options, key); value != "" {
+			if err := writer.WriteField(key, value); err != nil {
+				return err
+			}
+		}
+	}
+	if value := modelParamInt(options, "n"); value > 0 {
+		if err := writer.WriteField("n", fmt.Sprintf("%d", value)); err != nil {
+			return err
+		}
+	}
+	if openAIImageGenerationModelSupportsGPTImageParams(model) {
+		for _, key := range []string{"background", "moderation", "output_format", "input_fidelity"} {
+			if value := modelParamString(options, key); value != "" {
+				if err := writer.WriteField(key, value); err != nil {
+					return err
+				}
+			}
+		}
+		if value := modelParamInt(options, "output_compression"); value > 0 {
+			if err := writer.WriteField("output_compression", fmt.Sprintf("%d", value)); err != nil {
+				return err
+			}
+		}
+	}
+	if openAIImageGenerationModelSupportsResponseFormat(model) {
+		if value := modelParamString(options, "response_format"); value != "" {
+			if err := writer.WriteField("response_format", value); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeOpenAIImageEditPart(writer *multipart.Writer, image ContentPart, index int) error {
+	mimeType := strings.TrimSpace(image.MimeType)
+	if mimeType == "" {
+		mimeType = "image/png"
+	}
+	header := make(textproto.MIMEHeader)
+	header.Set(
+		"Content-Disposition",
+		fmt.Sprintf(`form-data; name="image[]"; filename="%s"`, escapeOpenAIImageEditFileName(openAIImageEditFileName(image, index))),
+	)
+	header.Set("Content-Type", mimeType)
+	partWriter, err := writer.CreatePart(header)
+	if err != nil {
+		return err
+	}
+	_, err = partWriter.Write(image.Data)
+	return err
+}
+
+func openAIImageEditFileName(image ContentPart, index int) string {
+	name := sanitizeOpenAIImageEditFileName(image.FileName)
+	if name == "" {
+		name = fmt.Sprintf("image_%02d%s", index+1, openAIImageExtension(image.MimeType))
+	}
+	if filepath.Ext(name) == "" {
+		name += openAIImageExtension(image.MimeType)
+	}
+	return name
+}
+
+func sanitizeOpenAIImageEditFileName(value string) string {
+	name := strings.TrimSpace(value)
+	if name == "" {
+		return ""
+	}
+	name = strings.NewReplacer("\\", "_", "/", "_", "\n", "_", "\r", "_", "\"", "_").Replace(name)
+	name = strings.Trim(name, ". ")
+	if len(name) > 120 {
+		ext := filepath.Ext(name)
+		base := strings.TrimSuffix(name, ext)
+		if len(base) > 100 {
+			base = base[:100]
+		}
+		name = strings.Trim(base, ". ") + ext
+	}
+	return strings.TrimSpace(name)
+}
+
+func escapeOpenAIImageEditFileName(value string) string {
+	return strings.NewReplacer("\\", "\\\\", "\"", "\\\"").Replace(value)
+}
+
+func openAIImageExtension(mimeType string) string {
+	switch strings.ToLower(strings.TrimSpace(mimeType)) {
+	case "image/jpeg", "image/jpg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	default:
+		return ".png"
+	}
 }
 
 // buildOpenAIImageGenerationRequestBody 只允许图片端点支持的请求字段进入上游。

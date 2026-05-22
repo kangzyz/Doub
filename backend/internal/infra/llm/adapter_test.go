@@ -11,6 +11,15 @@ func TestSupportsStreamingAdapter(t *testing.T) {
 	if !SupportsStreamingAdapter(AdapterOpenAIResponses) {
 		t.Fatalf("expected responses adapter to support streaming")
 	}
+	if SupportsStreamingAdapter(AdapterOpenAIImageEdits) {
+		t.Fatalf("expected image edits adapter to remain non-streaming")
+	}
+	if !IsImplementedAdapter(AdapterOpenAIImageEdits) {
+		t.Fatalf("expected image edits adapter to be implemented")
+	}
+	if got := DefaultEndpointForAdapter(AdapterOpenAIImageEdits); got != EndpointImageEdits {
+		t.Fatalf("expected image edits endpoint, got %q", got)
+	}
 }
 
 func TestSupportsImageGenerationStream(t *testing.T) {

@@ -60,7 +60,7 @@ func IsKnownAdapter(raw string) bool {
 // IsImplementedAdapter 返回协议是否已有可用的传输层实现。
 func IsImplementedAdapter(raw string) bool {
 	switch NormalizeAdapter(raw) {
-	case AdapterOpenAIResponses, AdapterOpenAIChatCompletions, AdapterOpenAIImageGenerations, AdapterXAIResponses,
+	case AdapterOpenAIResponses, AdapterOpenAIChatCompletions, AdapterOpenAIImageGenerations, AdapterOpenAIImageEdits, AdapterXAIResponses,
 		AdapterAnthropicMessages, AdapterGoogleGenerateContent:
 		return true
 	default:
@@ -70,7 +70,12 @@ func IsImplementedAdapter(raw string) bool {
 
 // SupportsStreamingAdapter 返回协议是否有真实的上游流式传输。
 func SupportsStreamingAdapter(raw string) bool {
-	return IsImplementedAdapter(raw)
+	switch NormalizeAdapter(raw) {
+	case AdapterOpenAIImageEdits:
+		return false
+	default:
+		return IsImplementedAdapter(raw)
+	}
 }
 
 // SupportsImageGenerationStream 返回图片生成协议和模型是否支持真实上游流式。
@@ -86,6 +91,8 @@ func DefaultEndpointForAdapter(adapter string) string {
 		return EndpointChatCompletions
 	case AdapterOpenAIImageGenerations:
 		return EndpointImageGenerations
+	case AdapterOpenAIImageEdits:
+		return EndpointImageEdits
 	default:
 		// openai_responses、xai_responses 及所有未知值均使用 Responses 端点。
 		return EndpointResponses

@@ -105,6 +105,12 @@ func mapStreamError(err error) streamError {
 	case errors.Is(err, appconversation.ErrInvalidFileReference):
 		status = http.StatusBadRequest
 		message = "invalid file reference"
+	case errors.Is(err, appconversation.ErrFileTooLarge):
+		status = http.StatusBadRequest
+		message = "file too large"
+	case errors.Is(err, appconversation.ErrMIMEBlocked), errors.Is(err, appconversation.ErrDangerousMIMEType):
+		status = http.StatusBadRequest
+		message = "invalid file reference"
 	case errors.Is(err, appconversation.ErrInvalidMessageBranch):
 		status = http.StatusBadRequest
 		message = "invalid message branch"

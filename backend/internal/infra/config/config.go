@@ -66,6 +66,18 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "style",
     "user"
   ],
+  "openai_image_edits": [
+    "background",
+    "input_fidelity",
+    "moderation",
+    "n",
+    "output_compression",
+    "output_format",
+    "quality",
+    "response_format",
+    "size",
+    "user"
+  ],
   "anthropic_messages": [
     "speed",
     "top_k",

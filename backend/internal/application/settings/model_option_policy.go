@@ -9,6 +9,7 @@ import (
 var validModelOptionProtocolKeys = map[string]struct{}{
 	"default":                  {},
 	"openai_chat_completions":  {},
+	"openai_image_edits":       {},
 	"openai_image_generations": {},
 	"openai_responses":         {},
 	"anthropic_messages":       {},

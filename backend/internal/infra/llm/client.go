@@ -25,6 +25,8 @@ const (
 	EndpointChatCompletions = "chat_completions"
 	// EndpointImageGenerations 表示 OpenAI Images API 生成端点。
 	EndpointImageGenerations = "image_generations"
+	// EndpointImageEdits 表示 OpenAI Images API 编辑端点。
+	EndpointImageEdits = "image_edits"
 )
 
 // 超时默认值。
@@ -643,6 +645,7 @@ func NewClientWithEnv(env string, ssrfProtectionEnabled bool) *Client {
 		AdapterOpenAIResponses:        &openAIResponsesAdapter{client: client},
 		AdapterOpenAIChatCompletions:  &openAIChatCompletionsAdapter{client: client},
 		AdapterOpenAIImageGenerations: &openAIImageGenerationsAdapter{client: client},
+		AdapterOpenAIImageEdits:       &openAIImageEditsAdapter{client: client},
 		AdapterXAIResponses:           &xAIResponsesAdapter{client: client},
 		AdapterAnthropicMessages:      &anthropicMessagesAdapter{client: client},
 		AdapterGoogleGenerateContent:  &geminiGenerateContentAdapter{client: client},
@@ -1375,6 +1378,8 @@ func normalizeEndpoint(raw string) string {
 		return EndpointChatCompletions
 	case EndpointImageGenerations:
 		return EndpointImageGenerations
+	case EndpointImageEdits:
+		return EndpointImageEdits
 	default:
 		return EndpointResponses
 	}

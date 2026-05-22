@@ -3,6 +3,8 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -101,6 +103,104 @@ func TestBuildOpenAIImageGenerationRequestBodyDallEParams(t *testing.T) {
 	}
 }
 
+func TestOpenAIImageEditMultipartRequest(t *testing.T) {
+	imageOne := []byte("image-one")
+	imageTwo := []byte("image-two")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/images/edits" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if contentType := r.Header.Get("Content-Type"); contentType == "" {
+			t.Fatalf("expected multipart content type")
+		}
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Fatalf("parse multipart form: %v", err)
+		}
+		form := r.MultipartForm.Value
+		if got := form["model"]; len(got) != 1 || got[0] != "gpt-image-1" {
+			t.Fatalf("unexpected model field: %#v", got)
+		}
+		if got := form["prompt"]; len(got) != 1 || got[0] != "Make the product image warmer" {
+			t.Fatalf("unexpected prompt field: %#v", got)
+		}
+		expectedFields := map[string]string{
+			"size":               "1024x1024",
+			"quality":            "high",
+			"n":                  "2",
+			"background":         "transparent",
+			"moderation":         "low",
+			"output_format":      "webp",
+			"output_compression": "80",
+			"input_fidelity":     "high",
+		}
+		for key, want := range expectedFields {
+			if got := form[key]; len(got) != 1 || got[0] != want {
+				t.Fatalf("unexpected %s field: got %#v want %q", key, got, want)
+			}
+		}
+		files := r.MultipartForm.File["image[]"]
+		if len(files) != 2 {
+			t.Fatalf("expected two image[] parts, got %d", len(files))
+		}
+		if files[0].Filename != "source.png" || files[1].Filename != "reference.webp" {
+			t.Fatalf("unexpected filenames: %q %q", files[0].Filename, files[1].Filename)
+		}
+		if got := readMultipartTestFile(t, files[0]); string(got) != string(imageOne) {
+			t.Fatalf("unexpected first image bytes: %q", string(got))
+		}
+		if got := readMultipartTestFile(t, files[1]); string(got) != string(imageTwo) {
+			t.Fatalf("unexpected second image bytes: %q", string(got))
+		}
+		_, _ = w.Write([]byte(`{
+			"id": "img_edit_1",
+			"data": [{"b64_json": "ZWRpdGVk"}],
+			"usage": {"input_tokens": 12, "output_tokens": 40}
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewClient()
+	output, err := client.Generate(context.Background(), RouteConfig{
+		Protocol:      AdapterOpenAIImageEdits,
+		BaseURL:       server.URL,
+		UpstreamModel: "gpt-image-1",
+	}, GenerateInput{
+		Messages: []Message{{
+			Role: "user",
+			Parts: []ContentPart{
+				{Kind: ContentPartText, Text: "Make the product image warmer"},
+				{Kind: ContentPartImage, MimeType: "image/png", FileName: "source.png", Data: imageOne},
+				{Kind: ContentPartImage, MimeType: "image/webp", FileName: "reference.webp", Data: imageTwo},
+			},
+		}},
+		Options: map[string]interface{}{
+			"size":               "1024x1024",
+			"quality":            "high",
+			"n":                  2,
+			"background":         "transparent",
+			"moderation":         "low",
+			"output_format":      "webp",
+			"output_compression": 80,
+			"input_fidelity":     "high",
+		},
+	})
+	if err != nil {
+		t.Fatalf("generate image edit: %v", err)
+	}
+	if output.ResponseID != "img_edit_1" {
+		t.Fatalf("expected response id, got %q", output.ResponseID)
+	}
+	if len(output.GeneratedImages) != 1 || output.GeneratedImages[0].B64JSON != "ZWRpdGVk" {
+		t.Fatalf("expected edited image output, got %#v", output.GeneratedImages)
+	}
+	if output.GeneratedImages[0].MIMEType != "image/webp" {
+		t.Fatalf("expected output MIME from output_format, got %q", output.GeneratedImages[0].MIMEType)
+	}
+	if output.Usage.InputTokens != 12 || output.Usage.OutputTokens != 40 {
+		t.Fatalf("expected parsed edit usage, got %#v", output.Usage)
+	}
+}
+
 func TestParseOpenAIImageGenerationOutput(t *testing.T) {
 	output, err := parseOpenAIImageGenerationOutput([]byte(`{
 		"created": 1713833628,
@@ -136,6 +236,20 @@ func TestParseOpenAIImageGenerationOutput(t *testing.T) {
 	if output.Usage.InputTokens != 12 || output.Usage.OutputTokens != 40 {
 		t.Fatalf("expected parsed upstream image usage, got %#v", output.Usage)
 	}
+}
+
+func readMultipartTestFile(t *testing.T, fileHeader *multipart.FileHeader) []byte {
+	t.Helper()
+	file, err := fileHeader.Open()
+	if err != nil {
+		t.Fatalf("open multipart file: %v", err)
+	}
+	defer file.Close() //nolint:errcheck
+	data, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("read multipart file: %v", err)
+	}
+	return data
 }
 
 func TestParseOpenAIImageGenerationOutputDoesNotInventUsage(t *testing.T) {

@@ -127,6 +127,8 @@ func modelOptionPolicyProtocolKey(protocol string) string {
 		return "gemini_generate_content"
 	case llm.AdapterOpenAIChatCompletions:
 		return "openai_chat_completions"
+	case llm.AdapterOpenAIImageEdits:
+		return "openai_image_edits"
 	case llm.AdapterOpenAIImageGenerations:
 		return "openai_image_generations"
 	case llm.AdapterAnthropicMessages:

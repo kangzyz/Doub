@@ -167,6 +167,8 @@ func classifyRunErrorCode(err error) string {
 		return "storage_quota_exceeded"
 	case errors.Is(err, ErrFileTooLarge):
 		return "file_too_large"
+	case errors.Is(err, ErrMIMEBlocked), errors.Is(err, ErrDangerousMIMEType):
+		return "invalid_file_reference"
 	case errors.Is(err, ErrModelRouteNotConfigured):
 		return "model_route_not_configured"
 	case errors.Is(err, ErrUpstreamEmptyResponse):
