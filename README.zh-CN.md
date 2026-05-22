@@ -27,7 +27,7 @@ DOUB Chat 为团队提供统一的 AI 工作台，用一个清晰的使用入口
 
 系统围绕简单部署、高效静态分发和可预期的 Go 运行时占用设计。后台集中管理上游渠道、平台模型名、路由优先级、定价、订阅、用户和安全策略，对话工作区则保持稳定、专注的用户体验。
 
-![DOUB Chat 工作区](./frontend/public/DEEIX-Chat.jpg)
+![DOUB Chat 工作区](./frontend/public/DOUB-Chat.png)
 
 ## 核心能力
 
@@ -46,11 +46,6 @@ DOUB Chat 为团队提供统一的 AI 工作台，用一个清晰的使用入口
 | 后台管理 | 用户、角色、身份源、上游、平台模型、路由绑定、模型定价、订阅、余额、调用日志、审计日志、认证事件、系统事件和运行时设置。 |
 | 运维能力 | 高效静态分发、可预期的 Go 运行时占用、Docker 构建、单运行时托管前端和 API、Swagger、结构化日志、请求 ID、Redis 缓存、PostgreSQL pgvector、可选 GeoIP、可选 OpenTelemetry 和 S3 兼容存储。 |
 
-<p>
-  <img src="./frontend/public/DEEIX-Chat-Image.png" alt="DOUB Chat 图片生成" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Dark.png" alt="DOUB Chat 深色模式" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Usage.png" alt="DOUB Chat 用量与计费" width="32%" />
-</p>
 
 ## 架构
 

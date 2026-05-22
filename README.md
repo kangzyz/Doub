@@ -27,7 +27,7 @@ DOUB Chat gives teams a unified workspace for working with multiple AI models an
 
 The architecture is designed for simple deployment, efficient static delivery, and a predictable Go runtime footprint. The admin console centralizes upstream channels, platform model names, routing priority, pricing, subscriptions, users, and security policies, while the conversation workspace keeps the user experience stable and focused.
 
-![DOUB Chat workspace](./frontend/public/DEEIX-Chat.jpg)
+![DOUB Chat workspace](./frontend/public/DOUB-Chat.png)
 
 ## Features
 
@@ -46,11 +46,6 @@ The architecture is designed for simple deployment, efficient static delivery, a
 | Administration | Users, roles, auth providers, upstreams, platform models, route bindings, model pricing, subscriptions, balances, usage logs, audit logs, auth events, system events, and runtime settings. |
 | Operations | Efficient static delivery, predictable Go runtime footprint, Docker builds, single-runtime frontend/API serving, Swagger docs, structured logs, request IDs, Redis caching, PostgreSQL pgvector, optional GeoIP, optional OpenTelemetry, and S3-compatible storage. |
 
-<p>
-  <img src="./frontend/public/DEEIX-Chat-Image.png" alt="DOUB Chat image generation" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Dark.png" alt="DOUB Chat dark mode" width="32%" />
-  <img src="./frontend/public/DEEIX-Chat-Usage.png" alt="DOUB Chat usage and billing" width="32%" />
-</p>
 
 ## Architecture
 
