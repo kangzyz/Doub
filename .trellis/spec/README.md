@@ -1,4 +1,4 @@
-# DEEIX Chat Development Specs
+# DOUB Chat Development Specs
 
 These specs describe the repository as it exists now: a Next.js frontend in
 `frontend/`, a Go API service in `backend/`, and optional runtime services

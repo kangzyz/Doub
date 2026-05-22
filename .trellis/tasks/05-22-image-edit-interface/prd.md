@@ -18,7 +18,7 @@ the uploaded images or calling any upstream adapter.
 `multipart/form-data` for Images API edits: text parameters plus one or more
 `image[]` file fields, with optional `mask`. This matches our backend better
 than Responses API for the first version because our images already live in
-DEEIX object storage as uploaded files.
+DOUB object storage as uploaded files.
 
 ## Requirements
 

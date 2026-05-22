@@ -1,6 +1,6 @@
 # AI, Conversation, And Runtime Guidelines
 
-DEEIX Chat owns AI orchestration in backend application services. Do not add a
+DOUB Chat owns AI orchestration in backend application services. Do not add a
 separate SDK-driven API layer or move provider rules into the frontend.
 
 ## Conversation Flow

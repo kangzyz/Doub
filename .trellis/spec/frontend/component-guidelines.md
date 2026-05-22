@@ -59,7 +59,7 @@ Wrong:
 
 ```tsx
 <h1 className="animate-pulse tracking-widest [text-shadow:4px_4px_0_var(--primary)]">
-  DEEIX
+  DOUB
 </h1>
 ```
 
@@ -67,7 +67,7 @@ Correct:
 
 ```tsx
 <PixelHeading as="h1" mode="wave" className="text-6xl">
-  DEEIX
+  DOUB
 </PixelHeading>
 ```
 
