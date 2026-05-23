@@ -16,8 +16,7 @@ import (
 const (
 	defaultJWTSecret                    = "deeix-chat-dev-secret"
 	defaultDataEncryptionKey            = "deeix-chat-dev-data-encryption-key"
-	defaultAdminUsername                = "deeix-chat"
-	defaultAdminPassword                = "deeix-chat-2026"
+	defaultAdminUsername                = "admin"
 	defaultAdminDisplayName             = "System Admin"
 	defaultGeoIPMaxBytes                = 100 * 1024 * 1024
 	defaultHTTPReadHeaderTimeoutSeconds = 10
@@ -66,6 +65,18 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "style",
     "user"
   ],
+  "openai_image_edits": [
+    "background",
+    "input_fidelity",
+    "n",
+    "output_compression",
+    "output_format",
+    "partial_images",
+    "quality",
+    "response_format",
+    "size",
+    "user"
+  ],
   "google_image_generation": [
     "aspect_ratio",
     "aspectRatio",
@@ -90,6 +101,12 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "reasoning.effort"
   ],
   "xai_image": [
+    "aspect_ratio",
+    "n",
+    "resolution",
+    "response_format"
+  ],
+  "xai_image_edits": [
     "aspect_ratio",
     "n",
     "resolution",
@@ -271,7 +288,6 @@ type Config struct {
 	StorageS3SecretAccessKey     string
 	StorageS3ForcePathStyle      bool
 	AdminUsername                string
-	AdminPassword                string
 	AdminDisplayName             string
 	GeoIPProvider                string
 	GeoIPBaseURL                 string
@@ -317,6 +333,7 @@ type Config struct {
 	ConversationTaskModel    string
 	ConversationTitlePrompt  string
 	ConversationLabelsPrompt string
+	DefaultSystemPrompt      string
 	ModelOptionPolicyMode    string
 	ModelOptionAllowedPaths  string
 	ModelOptionDeniedPaths   string
@@ -327,6 +344,7 @@ type Config struct {
 	MaxMessageFiles       int
 	// 文件处理配置
 	ImageMaxDimension                 int    // 图片缩放最大边长（像素），0 = 不缩放
+	FileFullContextLimitEnabled       bool   // 是否启用全文注入阈值限制
 	FileFullContextMaxBytes           int64  // 文本文件全文注入阈值（字节），超出不注入
 	FileFullContextMaxTokens          int    // 文本文件全文注入阈值（token）
 	FileImageMaxBytes                 int64  // 图片单文件上限（字节）
@@ -457,7 +475,7 @@ func Load() Config {
 		PostgresConnMaxLifetimeMin:   envOrInt("POSTGRES_CONN_MAX_LIFETIME_MINUTES", yc.Database.Postgres.ConnMaxLifetimeMin, 60),
 		PostgresConnMaxIdleTimeMin:   envOrInt("POSTGRES_CONN_MAX_IDLE_TIME_MINUTES", yc.Database.Postgres.ConnMaxIdleTimeMin, 10),
 		RedisAddr:                    envOr("REDIS_ADDR", yc.Database.Redis.Addr, "127.0.0.1:6379"),
-		RedisPassword:                envOr("REDIS_PASSWORD", yc.Database.Redis.Password, "deeix_chat_redis_dev"),
+		RedisPassword:                envOr("REDIS_PASSWORD", yc.Database.Redis.Password, ""),
 		RedisDB:                      envOrInt("REDIS_DB", yc.Database.Redis.DB, 0),
 		StorageBackend:               envOr("STORAGE_BACKEND", yc.Storage.Backend, "local"),
 		StorageRootDir:               envOrPath("STORAGE_ROOT_DIR", yc.Storage.Local.RootDir, "./storage", yc.sourceDir),
@@ -469,7 +487,6 @@ func Load() Config {
 		StorageS3SecretAccessKey:     envOr("STORAGE_S3_SECRET_ACCESS_KEY", yc.Storage.S3.SecretAccessKey, ""),
 		StorageS3ForcePathStyle:      envOrBoolPtr("STORAGE_S3_FORCE_PATH_STYLE", yc.Storage.S3.ForcePathStyle, true),
 		AdminUsername:                defaultAdminUsername,
-		AdminPassword:                defaultAdminPassword,
 		AdminDisplayName:             defaultAdminDisplayName,
 		GeoIPProvider:                envOr("GEOIP_PROVIDER", yc.GeoIP.Provider, "ipwhois"),
 		GeoIPBaseURL:                 envOr("GEOIP_BASE_URL", yc.GeoIP.BaseURL, "https://ipwho.is"),
@@ -513,6 +530,7 @@ func Load() Config {
 		ConversationTaskModel:             "follow",
 		ConversationTitlePrompt:           "",
 		ConversationLabelsPrompt:          "",
+		DefaultSystemPrompt:               "",
 		ModelOptionPolicyMode:             "allowlist",
 		ModelOptionAllowedPaths:           DefaultModelOptionAllowedPathsJSON(),
 		ModelOptionDeniedPaths:            DefaultModelOptionDeniedPathsJSON(),
@@ -521,6 +539,7 @@ func Load() Config {
 		MaxUploadFileBytes:                20971520,
 		MaxMessageFiles:                   10,
 		ImageMaxDimension:                 1024,
+		FileFullContextLimitEnabled:       true,
 		FileFullContextMaxBytes:           51200, // 50KB
 		FileFullContextMaxTokens:          12000,
 		FileImageMaxBytes:                 0,

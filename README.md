@@ -34,9 +34,9 @@ The architecture is designed for simple deployment, efficient static delivery, a
 | Area | Capabilities |
 | --- | --- |
 | Conversations | Multi-branch chat, streaming, retries, edits, feedback, sharing, cloned shared conversations, rich markdown rendering, file cards, model metadata, usage details, and execution traces. |
-| Media generation | Dedicated image generation and image edit flow with task-aware routing, OpenAI Images-compatible protocols, generated file storage, preview, download, and run history separated from text chat. |
+| Media generation | Dedicated image generation and image edit flow with task-aware routing, provider-native OpenAI, Google, and xAI image protocols, generated file storage, preview, download, and run history separated from text chat. |
 | Model control plane | Platform model catalog, upstream channels, real upstream models, route bindings, priority and weight routing, model capability JSON, display ordering, vendor mapping, automatic icons, and circuit breaker state. |
-| Provider protocols | OpenAI Responses and Chat Completions, OpenAI Images, Anthropic Messages, Google/Gemini Generate Content, xAI Responses, OpenRouter defaults, and custom OpenAI-compatible routes. |
+| Provider protocols | OpenAI Responses, Chat Completions, Images Generations, and Images Edits; Anthropic Messages; Google/Gemini Generate Content and Image Generation; xAI Responses, Images Generations, and Images Edits; OpenRouter defaults; and custom OpenAI-compatible routes. |
 | Request governance | Protocol-aware request assembly, user option allowlists and denylists, system-protected fields, previous-response continuation where supported, and context snapshots for review. |
 | Files and RAG | File upload, preview, download, deletion, quota control, MIME detection, text extraction, OCR, full-context injection, image context, chunking, embeddings, and semantic retrieval. |
 | Memory and context | Message-window truncation, token-budget truncation, context compression, conversation memory, long-term user memory, RAG evidence records, and prompt trace inspection. |
@@ -246,7 +246,9 @@ Common backend environment variables:
 
 Production mode rejects unsafe default secrets, weak encryption keys, wildcard CORS, and non-HTTPS public URLs.
 
-The initial superadmin bootstrap credentials are built in as `deeix-chat` / `deeix-chat-2026` / `System Admin`. They are used only when the database has no superadmin account. The first login forces changing the username and password; later changes are managed from the account flow, not from `config.yaml`.
+The initial superadmin username is `admin`. When the database has no superadmin account, the backend generates a random password and prints it once in the startup logs while creating the account. The first login forces changing the username and password; later changes are managed from the account flow, not from `config.yaml`.
+
+To retrieve the initial admin password, inspect the backend logs from the first startup and search for `bootstrap superadmin created`; the `username` and `password` fields are the initial login credentials. If a superadmin already exists in the database, the service does not regenerate or print this password again.
 
 ## Security Notes
 

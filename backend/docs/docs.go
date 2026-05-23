@@ -22,7 +22,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查看全量可追溯审计日志",
+                "description": "管理员分页查看全量可追溯审计日志",
                 "consumes": [
                     "application/json"
                 ],
@@ -32,7 +32,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员查询审计日志",
+                "summary": "管理员查询审计日志",
                 "parameters": [
                     {
                         "type": "integer",
@@ -414,7 +414,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查看全量模型调用与计费用量账本",
+                "description": "管理员分页查看全量模型调用与计费用量账本",
                 "consumes": [
                     "application/json"
                 ],
@@ -424,7 +424,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员查询模型调用日志",
+                "summary": "管理员查询模型调用日志",
                 "parameters": [
                     {
                         "type": "integer",
@@ -510,7 +510,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查询平台模型目录，可按 only_active 过滤",
+                "description": "管理员分页查询平台模型目录，可按 only_active 过滤",
                 "consumes": [
                     "application/json"
                 ],
@@ -592,7 +592,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 新增平台模型目录项",
+                "description": "管理员新增平台模型目录项",
                 "consumes": [
                     "application/json"
                 ],
@@ -649,7 +649,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 批量删除模型目录及其关联路由绑定，保留上游",
+                "description": "管理员批量删除模型目录及其关联路由绑定，保留上游",
                 "consumes": [
                     "application/json"
                 ],
@@ -694,7 +694,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 调整平台模型在用户侧模型选择器中的展示顺序",
+                "description": "管理员调整平台模型在用户侧模型选择器中的展示顺序",
                 "consumes": [
                     "application/json"
                 ],
@@ -751,7 +751,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 删除平台模型目录项及其关联路由绑定",
+                "description": "管理员删除平台模型目录项及其关联路由绑定",
                 "consumes": [
                     "application/json"
                 ],
@@ -804,7 +804,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 更新平台模型目录项",
+                "description": "管理员更新平台模型目录项",
                 "consumes": [
                     "application/json"
                 ],
@@ -868,7 +868,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查询指定模型在各上游上的路由来源",
+                "description": "管理员分页查询指定模型在各上游上的路由来源",
                 "consumes": [
                     "application/json"
                 ],
@@ -935,7 +935,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 快速启停指定模型在某上游上的来源",
+                "description": "管理员快速启停指定模型在某上游上的来源",
                 "consumes": [
                     "application/json"
                 ],
@@ -1006,7 +1006,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 查询 LLM 全局设置列表",
+                "description": "管理员查询 LLM 全局设置列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -1040,7 +1040,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 更新指定 LLM 全局设置项",
+                "description": "管理员更新指定 LLM 全局设置项",
                 "consumes": [
                     "application/json"
                 ],
@@ -1107,7 +1107,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查询 LLM 上游配置",
+                "description": "管理员分页查询 LLM 上游配置",
                 "consumes": [
                     "application/json"
                 ],
@@ -1177,7 +1177,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 新增上游来源配置，内部标识自动分配",
+                "description": "管理员新增上游来源配置，内部标识自动分配",
                 "consumes": [
                     "application/json"
                 ],
@@ -1234,7 +1234,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 批量删除上游及其关联路由绑定，保留模型目录",
+                "description": "管理员批量删除上游及其关联路由绑定，保留模型目录",
                 "consumes": [
                     "application/json"
                 ],
@@ -1279,7 +1279,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 删除上游配置及其关联路由绑定",
+                "description": "管理员删除上游配置及其关联路由绑定",
                 "consumes": [
                     "application/json"
                 ],
@@ -1332,7 +1332,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 更新上游配置（地址、密钥、状态等）",
+                "description": "管理员更新上游配置（地址、密钥、状态等）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1396,7 +1396,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 手动开启上游熔断状态",
+                "description": "管理员手动开启上游熔断状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -1451,7 +1451,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 手动清空上游失败计数并关闭熔断状态",
+                "description": "管理员手动清空上游失败计数并关闭熔断状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -1506,7 +1506,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查询指定上游的路由绑定列表",
+                "description": "管理员分页查询指定上游的路由绑定列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -1545,7 +1545,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "路由状态：active/inactive/unbound",
+                        "description": "路由状态：bound/active/inactive",
                         "name": "route_status",
                         "in": "query"
                     },
@@ -1601,7 +1601,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 配置平台模型到指定上游真实模型的路由绑定与覆盖请求头",
+                "description": "管理员配置平台模型到指定上游真实模型的路由绑定与覆盖请求头",
                 "consumes": [
                     "application/json"
                 ],
@@ -1671,7 +1671,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 批量删除指定上游下的路由绑定，保留模型目录",
+                "description": "管理员批量删除指定上游下的路由绑定，保留模型目录",
                 "consumes": [
                     "application/json"
                 ],
@@ -1915,7 +1915,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 删除指定上游的路由绑定",
+                "description": "管理员删除指定上游的路由绑定",
                 "consumes": [
                     "application/json"
                 ],
@@ -1977,7 +1977,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 手动开启上游模型路由绑定熔断状态",
+                "description": "管理员手动开启上游模型路由绑定熔断状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -2039,7 +2039,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 手动清空上游模型路由绑定失败计数并关闭熔断状态",
+                "description": "管理员手动清空上游模型路由绑定失败计数并关闭熔断状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -2101,7 +2101,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 停用该路由绑定，后续路由不会选中",
+                "description": "管理员停用该路由绑定，后续路由不会选中",
                 "produces": [
                     "application/json"
                 ],
@@ -2160,7 +2160,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 启用该路由绑定，使该上游模型重新参与路由",
+                "description": "管理员启用该路由绑定，使该上游模型重新参与路由",
                 "produces": [
                     "application/json"
                 ],
@@ -2651,7 +2651,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查看后台结构化系统事件",
+                "description": "管理员分页查看后台结构化系统事件",
                 "consumes": [
                     "application/json"
                 ],
@@ -2661,7 +2661,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员查询系统事件",
+                "summary": "管理员查询系统事件",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2747,7 +2747,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查询认证事件，支持 user_id/event_type/result 过滤",
+                "description": "管理员分页查询认证事件，支持 user_id/event_type/result 过滤",
                 "consumes": [
                     "application/json"
                 ],
@@ -2757,7 +2757,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员查询用户认证事件",
+                "summary": "管理员查询用户认证事件",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2819,7 +2819,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 分页查看所有用户，实现账户隔离管理",
+                "description": "管理员分页查看所有用户，实现账户隔离管理",
                 "consumes": [
                     "application/json"
                 ],
@@ -2829,7 +2829,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员查询用户",
+                "summary": "管理员查询用户",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2865,7 +2865,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "创建普通用户账号，superadmin 账号仅允许系统初始化唯一实例",
+                "description": "创建普通用户账号；需要授予管理员权限时，可在账户编辑中调整角色",
                 "consumes": [
                     "application/json"
                 ],
@@ -2875,7 +2875,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员创建用户",
+                "summary": "管理员创建用户",
                 "parameters": [
                     {
                         "description": "用户参数",
@@ -2922,7 +2922,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 硬删除指定普通用户及其主要用户域数据",
+                "description": "管理员硬删除指定普通用户及其主要用户域数据",
                 "consumes": [
                     "application/json"
                 ],
@@ -2932,7 +2932,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员删除用户",
+                "summary": "管理员删除用户",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2981,7 +2981,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 统一维护角色、状态、时区等可编辑字段",
+                "description": "管理员统一维护角色、状态、时区等可编辑字段",
                 "consumes": [
                     "application/json"
                 ],
@@ -2991,7 +2991,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员更新用户可编辑字段",
+                "summary": "管理员更新用户可编辑字段",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3051,7 +3051,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 重置指定用户密码并吊销其全部会话",
+                "description": "管理员重置指定用户密码并吊销其全部会话",
                 "consumes": [
                     "application/json"
                 ],
@@ -3061,7 +3061,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员重置用户密码",
+                "summary": "管理员重置用户密码",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3121,7 +3121,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 吊销指定用户全部活跃会话，用于安全治理和风险控制",
+                "description": "管理员吊销指定用户全部活跃会话，用于安全治理和风险控制",
                 "consumes": [
                     "application/json"
                 ],
@@ -3131,7 +3131,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员吊销用户全部会话",
+                "summary": "管理员吊销用户全部会话",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3176,7 +3176,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "superadmin 维护用户状态（active/locked/suspended/deactivated），并联动会话治理",
+                "description": "管理员维护用户状态（active/locked/suspended/deactivated），并联动会话治理",
                 "consumes": [
                     "application/json"
                 ],
@@ -3186,7 +3186,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "超级管理员更新用户状态",
+                "summary": "管理员更新用户状态",
                 "parameters": [
                     {
                         "type": "integer",
@@ -4005,6 +4005,277 @@ const docTemplate = `{
                 }
             }
         },
+        "/conversation-projects": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "查询当前用户的会话项目分组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "会话项目列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "状态筛选: active|archived|all",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectListResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建当前用户的会话项目分组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "创建会话项目",
+                "parameters": [
+                    {
+                        "description": "项目参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.CreateConversationProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectResponseDoc"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversation-projects/reorder": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新当前用户项目分组展示顺序",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "调整会话项目顺序",
+                "parameters": [
+                    {
+                        "description": "排序参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ReorderConversationProjectsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectListResponseDoc"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversation-projects/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除当前用户项目分组。默认仅解除其下会话归属；delete_conversations=true 时同时软删除项目内会话。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "删除会话项目",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "项目 public_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否同时删除项目内会话",
+                        "name": "delete_conversations",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationDeleteResponseDoc"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新当前用户的会话项目分组",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "更新会话项目",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "项目 public_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "项目参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.UpdateConversationProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectResponseDoc"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            }
+        },
         "/conversation-runs/{run_id}/cancel": {
             "post": {
                 "security": [
@@ -4139,6 +4410,12 @@ const docTemplate = `{
                         "description": "分享筛选: all|shared|unshared",
                         "name": "share",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "项目筛选: all|unassigned|项目 public_id",
+                        "name": "project",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4193,6 +4470,63 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/project": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "批量设置当前用户会话的项目归属",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "批量设置会话项目归属",
+                "parameters": [
+                    {
+                        "description": "项目归属参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.BatchSetConversationProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.BatchSetConversationProjectResponseDoc"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
                         }
@@ -4605,6 +4939,70 @@ const docTemplate = `{
                         "description": "NDJSON stream",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ErrorDoc"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/{id}/project": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "设置当前用户单个会话的项目归属",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "设置会话项目归属",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话 public_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "项目归属参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.SetConversationProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_conversation.ConversationUpdateResponseDoc"
                         }
                     },
                     "400": {
@@ -8502,6 +8900,10 @@ const docTemplate = `{
                         "inactive"
                     ]
                 },
+                "systemPrompt": {
+                    "type": "string",
+                    "maxLength": 20000
+                },
                 "vendor": {
                     "type": "string",
                     "maxLength": 64
@@ -8647,6 +9049,12 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 64
                 },
+                "protocols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "status": {
                     "type": "string",
                     "enum": [
@@ -8673,11 +9081,23 @@ const docTemplate = `{
                 "createdRoute": {
                     "type": "boolean"
                 },
+                "createdRoutes": {
+                    "type": "integer"
+                },
                 "error": {
                     "type": "string"
                 },
+                "existingRoutes": {
+                    "type": "integer"
+                },
                 "platformModelName": {
                     "type": "string"
+                },
+                "protocols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "status": {
                     "type": "string"
@@ -8809,6 +9229,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "systemPrompt": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -9117,6 +9540,10 @@ const docTemplate = `{
                         "active",
                         "inactive"
                     ]
+                },
+                "systemPrompt": {
+                    "type": "string",
+                    "maxLength": 20000
                 },
                 "vendor": {
                     "type": "string",
@@ -9499,6 +9926,12 @@ const docTemplate = `{
                 "suggestedProtocol": {
                     "type": "string"
                 },
+                "suggestedProtocols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "upstreamModelName": {
                     "type": "string"
                 },
@@ -9626,6 +10059,44 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_conversation.BatchSetConversationProjectRequest": {
+            "type": "object",
+            "required": [
+                "conversationPublicIDs"
+            ],
+            "properties": {
+                "conversationPublicIDs": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "projectID": {
+                    "type": "string",
+                    "maxLength": 32
+                }
+            }
+        },
+        "internal_transport_http_conversation.BatchSetConversationProjectResponse": {
+            "type": "object",
+            "properties": {
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_transport_http_conversation.BatchSetConversationProjectResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_transport_http_conversation.BatchSetConversationProjectResponse"
+                },
+                "errorMsg": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_transport_http_conversation.ContextArtifactResponse": {
             "type": "object",
             "properties": {
@@ -9733,6 +10204,63 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_conversation.ConversationProjectListResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectResponse"
+                    }
+                },
+                "errorMsg": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http_conversation.ConversationProjectResponse": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "publicID": {
+                    "type": "string"
+                },
+                "sortOrder": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http_conversation.ConversationProjectResponseDoc": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/internal_transport_http_conversation.ConversationProjectResponse"
+                },
+                "errorMsg": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_transport_http_conversation.ConversationResponse": {
             "type": "object",
             "properties": {
@@ -9761,6 +10289,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "model": {
+                    "type": "string"
+                },
+                "projectID": {
+                    "type": "string"
+                },
+                "projectName": {
                     "type": "string"
                 },
                 "provider": {
@@ -9874,12 +10408,40 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_conversation.CreateConversationProjectRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 80
+                }
+            }
+        },
         "internal_transport_http_conversation.CreateConversationRequest": {
             "type": "object",
             "properties": {
                 "model": {
                     "type": "string",
                     "maxLength": 128
+                },
+                "projectID": {
+                    "type": "string",
+                    "maxLength": 32
                 },
                 "title": {
                     "type": "string",
@@ -10574,6 +11136,21 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_conversation.ReorderConversationProjectsRequest": {
+            "type": "object",
+            "required": [
+                "projectIDs"
+            ],
+            "properties": {
+                "projectIDs": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "internal_transport_http_conversation.RevokeConversationSharesRequest": {
             "type": "object",
             "properties": {
@@ -10801,6 +11378,15 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_conversation.SetConversationProjectRequest": {
+            "type": "object",
+            "properties": {
+                "projectID": {
+                    "type": "string",
+                    "maxLength": 32
+                }
+            }
+        },
         "internal_transport_http_conversation.SetConversationStarRequest": {
             "type": "object",
             "properties": {
@@ -10844,6 +11430,34 @@ const docTemplate = `{
                 },
                 "userID": {
                     "type": "integer"
+                }
+            }
+        },
+        "internal_transport_http_conversation.UpdateConversationProjectRequest": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "archived"
+                    ]
                 }
             }
         },
@@ -11057,7 +11671,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.1.0",
+	Version:          "0.1.1",
 	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},

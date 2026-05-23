@@ -15,10 +15,32 @@ import (
 // channel 包内部的语义错误（ErrUpstreamNotFound 等）优先在调用点直接返回，
 // 此函数处理未在调用点明确转换的 gorm 错误。
 func translateError(err error) error {
+	if err == nil {
+		return nil
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return repository.ErrNotFound
 	}
+	if isUniqueConstraintError(err) {
+		return repository.ErrDuplicate
+	}
 	return err
+}
+
+type sqlStateError interface {
+	SQLState() string
+}
+
+func isUniqueConstraintError(err error) bool {
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+	var stateErr sqlStateError
+	if errors.As(err, &stateErr) && stateErr.SQLState() == "23505" {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key") || strings.Contains(msg, "unique constraint")
 }
 
 // Repo 封装上游域数据访问。
@@ -150,11 +172,12 @@ func (r *Repo) ListUpstreams(ctx context.Context, input repository.ListChannelUp
 		).
 		Joins(
 			`LEFT JOIN (
-				SELECT upstream_id,
-					COUNT(*) AS models_count,
-					COUNT(*) FILTER (WHERE status = 'active') AS active_models_count
-				FROM llm_upstream_models
-				GROUP BY upstream_id
+				SELECT um.upstream_id,
+					COUNT(r.id) AS models_count,
+					COUNT(r.id) FILTER (WHERE r.status = 'active' AND um.status = 'active') AS active_models_count
+				FROM llm_upstream_models um
+				LEFT JOIN llm_model_routes r ON r.upstream_model_id = um.id
+				GROUP BY um.upstream_id
 			) AS stats ON stats.upstream_id = u.id`,
 		)
 	listQuery = applyUpstreamListFilters(listQuery, input)
@@ -246,6 +269,9 @@ func (r *Repo) UpdateModel(ctx context.Context, modelID uint, input repository.U
 	}
 	if input.CapabilitiesJSON != nil {
 		updates["capabilities_json"] = *input.CapabilitiesJSON
+	}
+	if input.SystemPrompt != nil {
+		updates["system_prompt"] = *input.SystemPrompt
 	}
 	if input.Status != nil {
 		updates["status"] = *input.Status
@@ -371,6 +397,18 @@ func (r *Repo) GetActiveModelByName(ctx context.Context, platformModelName strin
 	return &result, nil
 }
 
+// GetModelListRowByID 按 ID 获取带来源统计的平台模型列表行。
+func (r *Repo) GetModelListRowByID(ctx context.Context, modelID uint) (*ModelListRow, error) {
+	var item ModelListRow
+	if err := r.modelListQuery(ctx).Where("m.id = ?", modelID).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrModelNotFound
+		}
+		return nil, translateError(err)
+	}
+	return &item, nil
+}
+
 // ListModels 分页查询平台模型。
 func (r *Repo) ListModels(ctx context.Context, input repository.ListChannelModelsInput) ([]ModelListRow, int64, error) {
 	items := make([]ModelListRow, 0)
@@ -381,10 +419,23 @@ func (r *Repo) ListModels(ctx context.Context, input repository.ListChannelModel
 		return nil, 0, translateError(err)
 	}
 
-	listQuery := r.db.WithContext(ctx).
+	listQuery := r.modelListQuery(ctx)
+	listQuery = applyModelListFilters(listQuery, input)
+	if err := listQuery.
+		Order(modelListOrder(input.Sort)).
+		Offset(input.Offset).
+		Limit(input.Limit).
+		Scan(&items).Error; err != nil {
+		return nil, 0, translateError(err)
+	}
+	return items, total, nil
+}
+
+func (r *Repo) modelListQuery(ctx context.Context) *gorm.DB {
+	return r.db.WithContext(ctx).
 		Table("llm_platform_models AS m").
 		Select(
-			"m.id, m.name AS platform_model_name, m.vendor, m.kinds_json, m.icon, m.capabilities_json, m.status, m.description, m.sort_order, m.created_at, m.updated_at, " +
+			"m.id, m.name AS platform_model_name, m.vendor, m.kinds_json, m.icon, m.capabilities_json, m.system_prompt, m.status, m.description, m.sort_order, m.created_at, m.updated_at, " +
 				"COALESCE(stats.source_count, 0) AS source_count, COALESCE(stats.active_source_count, 0) AS active_source_count, COALESCE(stats.protocols_json, '[]') AS protocols_json",
 		).
 		Joins(
@@ -399,15 +450,6 @@ func (r *Repo) ListModels(ctx context.Context, input repository.ListChannelModel
 				GROUP BY r.platform_model_id
 			) AS stats ON stats.platform_model_id = m.id`,
 		)
-	listQuery = applyModelListFilters(listQuery, input)
-	if err := listQuery.
-		Order(modelListOrder(input.Sort)).
-		Offset(input.Offset).
-		Limit(input.Limit).
-		Scan(&items).Error; err != nil {
-		return nil, 0, translateError(err)
-	}
-	return items, total, nil
 }
 
 func applyModelListFilters(query *gorm.DB, input repository.ListChannelModelsInput) *gorm.DB {
@@ -664,6 +706,95 @@ func (r *Repo) ListUpstreamModels(ctx context.Context, upstreamID uint, input re
 	return items, total, nil
 }
 
+// ListUpstreamModelsByNames 按远端模型名集合查询已有上游模型和绑定快照。
+func (r *Repo) ListUpstreamModelsByNames(ctx context.Context, upstreamID uint, upstreamModelNames []string) ([]UpstreamModelListRow, error) {
+	names := make([]string, 0, len(upstreamModelNames))
+	seen := make(map[string]struct{}, len(upstreamModelNames))
+	for _, raw := range upstreamModelNames {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	if len(names) == 0 {
+		return []UpstreamModelListRow{}, nil
+	}
+	items := make([]UpstreamModelListRow, 0)
+	if err := r.db.WithContext(ctx).
+		Table("llm_upstream_models AS um").
+		Select(
+			"um.*, r.id AS route_id, r.platform_model_id, pm.name AS platform_model_name, pm.vendor AS model_vendor, pm.kinds_json AS model_kinds_json, pm.icon AS model_icon, "+
+				"r.protocol, r.status AS route_status, r.priority, r.weight, r.source AS route_source, "+
+				"r.cb_failure_threshold, r.cb_duration_min, r.cb_window_min, r.headers_json",
+		).
+		Joins("LEFT JOIN llm_model_routes r ON r.upstream_model_id = um.id").
+		Joins("LEFT JOIN llm_platform_models pm ON pm.id = r.platform_model_id").
+		Where("um.upstream_id = ? AND um.upstream_model_name IN ?", upstreamID, names).
+		Order("um.upstream_model_name ASC, r.id ASC NULLS LAST").
+		Scan(&items).Error; err != nil {
+		return nil, translateError(err)
+	}
+	return items, nil
+}
+
+// GetUpstreamModelRouteByID 按路由 ID 精确查询上游模型绑定行。
+func (r *Repo) GetUpstreamModelRouteByID(ctx context.Context, upstreamID uint, routeID uint) (*UpstreamModelListRow, error) {
+	var item UpstreamModelListRow
+	if err := r.db.WithContext(ctx).
+		Table("llm_upstream_models AS um").
+		Select(
+			"um.*, r.id AS route_id, r.platform_model_id, pm.name AS platform_model_name, pm.vendor AS model_vendor, pm.kinds_json AS model_kinds_json, pm.icon AS model_icon, "+
+				"r.protocol, r.status AS route_status, r.priority, r.weight, r.source AS route_source, "+
+				"r.cb_failure_threshold, r.cb_duration_min, r.cb_window_min, r.headers_json",
+		).
+		Joins("JOIN llm_model_routes r ON r.upstream_model_id = um.id").
+		Joins("JOIN llm_platform_models pm ON pm.id = r.platform_model_id").
+		Where("um.upstream_id = ? AND r.id = ?", upstreamID, routeID).
+		Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUpstreamModelNotFound
+		}
+		return nil, translateError(err)
+	}
+	return &item, nil
+}
+
+// GetUpstreamModelRouteByNames 按平台模型、上游模型和协议精确查询绑定行。
+func (r *Repo) GetUpstreamModelRouteByNames(
+	ctx context.Context,
+	upstreamID uint,
+	platformModelName string,
+	upstreamModelName string,
+	protocol string,
+) (*UpstreamModelListRow, error) {
+	var item UpstreamModelListRow
+	query := r.db.WithContext(ctx).
+		Table("llm_upstream_models AS um").
+		Select(
+			"um.*, r.id AS route_id, r.platform_model_id, pm.name AS platform_model_name, pm.vendor AS model_vendor, pm.kinds_json AS model_kinds_json, pm.icon AS model_icon, "+
+				"r.protocol, r.status AS route_status, r.priority, r.weight, r.source AS route_source, "+
+				"r.cb_failure_threshold, r.cb_duration_min, r.cb_window_min, r.headers_json",
+		).
+		Joins("JOIN llm_model_routes r ON r.upstream_model_id = um.id").
+		Joins("JOIN llm_platform_models pm ON pm.id = r.platform_model_id").
+		Where("um.upstream_id = ? AND pm.name = ? AND um.upstream_model_name = ?", upstreamID, strings.TrimSpace(platformModelName), strings.TrimSpace(upstreamModelName))
+	if normalizedProtocol := strings.TrimSpace(protocol); normalizedProtocol != "" {
+		query = query.Where("r.protocol = ?", normalizedProtocol)
+	}
+	if err := query.Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUpstreamModelNotFound
+		}
+		return nil, translateError(err)
+	}
+	return &item, nil
+}
+
 func applyUpstreamModelListFilters(query *gorm.DB, input repository.ListChannelUpstreamModelsInput) *gorm.DB {
 	if keyword := strings.TrimSpace(input.Query); keyword != "" {
 		like := "%" + keyword + "%"
@@ -676,10 +807,10 @@ func applyUpstreamModelListFilters(query *gorm.DB, input repository.ListChannelU
 		)
 	}
 	switch strings.TrimSpace(input.RouteStatus) {
+	case "bound":
+		query = query.Where("r.id IS NOT NULL")
 	case "active", "inactive":
 		query = query.Where("r.id IS NOT NULL AND r.status = ?", input.RouteStatus)
-	case "unbound":
-		query = query.Where("r.id IS NULL")
 	}
 	if status := strings.TrimSpace(input.UpstreamStatus); status == "active" || status == "inactive" {
 		query = query.Where("um.status = ?", status)
@@ -717,7 +848,12 @@ func (r *Repo) UpsertPlatformModelRoute(ctx context.Context, item *domainchannel
 	entity := toPlatformModelRouteModel(item)
 	var existing model.LLMPlatformModelRoute
 	query := r.db.WithContext(ctx).
-		Where("platform_model_id = ? AND upstream_model_id = ?", entity.PlatformModelID, entity.UpstreamModelID).
+		Where(
+			"platform_model_id = ? AND upstream_model_id = ? AND protocol = ?",
+			entity.PlatformModelID,
+			entity.UpstreamModelID,
+			entity.Protocol,
+		).
 		Limit(1).
 		Find(&existing)
 	if query.Error != nil {
@@ -749,6 +885,30 @@ func (r *Repo) UpsertPlatformModelRoute(ctx context.Context, item *domainchannel
 	}
 	*item = toPlatformModelRouteDomain(entity)
 	return nil
+}
+
+// ListPlatformModelRoutesByPair 查询同一平台模型和同一上游真实模型之间的全部协议绑定。
+func (r *Repo) ListPlatformModelRoutesByPair(
+	ctx context.Context,
+	upstreamID uint,
+	platformModelID uint,
+	upstreamModelID uint,
+) ([]domainchannel.PlatformModelRoute, error) {
+	items := make([]model.LLMPlatformModelRoute, 0)
+	if err := r.db.WithContext(ctx).
+		Table("llm_model_routes AS r").
+		Select("r.*").
+		Joins("JOIN llm_upstream_models um ON um.id = r.upstream_model_id").
+		Where("um.upstream_id = ? AND r.platform_model_id = ? AND r.upstream_model_id = ?", upstreamID, platformModelID, upstreamModelID).
+		Order("r.id ASC").
+		Scan(&items).Error; err != nil {
+		return nil, translateError(err)
+	}
+	results := make([]domainchannel.PlatformModelRoute, 0, len(items))
+	for _, item := range items {
+		results = append(results, toPlatformModelRouteDomain(item))
+	}
+	return results, nil
 }
 
 func (r *Repo) GetPlatformModelRouteByID(ctx context.Context, routeID uint, upstreamID uint) (*domainchannel.PlatformModelRoute, error) {
@@ -881,6 +1041,29 @@ func (r *Repo) ListModelUpstreamSources(ctx context.Context, platformModelName s
 	return items, total, nil
 }
 
+// GetModelUpstreamSourceByRouteID 按平台模型名和路由 ID 精确查询模型来源。
+func (r *Repo) GetModelUpstreamSourceByRouteID(ctx context.Context, platformModelName string, routeID uint) (*ModelSourceRow, error) {
+	var item ModelSourceRow
+	if err := r.db.WithContext(ctx).
+		Table("llm_model_routes AS r").
+		Select(
+			"r.*, um.upstream_id, u.name AS upstream_name, u.base_url AS base_url, "+
+				"um.binding_code, um.upstream_model_name, um.vendor AS upstream_model_vendor, um.icon AS upstream_model_icon, "+
+				"um.kinds_json AS upstream_model_kinds_json, um.suggested_protocol, um.status AS upstream_model_status",
+		).
+		Joins("JOIN llm_platform_models pm ON pm.id = r.platform_model_id").
+		Joins("JOIN llm_upstream_models um ON um.id = r.upstream_model_id").
+		Joins("JOIN llm_upstreams u ON u.id = um.upstream_id").
+		Where("pm.name = ? AND r.id = ?", strings.TrimSpace(platformModelName), routeID).
+		Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUpstreamModelNotFound
+		}
+		return nil, translateError(err)
+	}
+	return &item, nil
+}
+
 // routeScanRow 是 ListActiveRoutesByModel 查询的原始扫描结构体。
 // 仅限 infra 层内部使用，扫描后映射到 UpstreamRouteRow。
 type routeScanRow struct {
@@ -894,6 +1077,7 @@ type routeScanRow struct {
 	ModelIcon                  string
 	ModelKindsJSON             string
 	ModelCapabilitiesJSON      string
+	ModelSystemPrompt          string
 	Protocol                   string
 	BaseURL                    string
 	APIKeysEnc                 string
@@ -923,7 +1107,7 @@ func (r *Repo) ListActiveRoutesByModel(ctx context.Context, platformModelName st
 		Table("llm_model_routes AS r").
 		Select(
 			"r.id AS route_id, um.id AS upstream_model_id, u.id AS upstream_id, u.name AS upstream_name, "+
-				"pm.id AS platform_model_id, pm.name AS platform_model_name, pm.vendor AS model_vendor, pm.icon AS model_icon, pm.kinds_json AS model_kinds_json, pm.capabilities_json AS model_capabilities_json, "+
+				"pm.id AS platform_model_id, pm.name AS platform_model_name, pm.vendor AS model_vendor, pm.icon AS model_icon, pm.kinds_json AS model_kinds_json, pm.capabilities_json AS model_capabilities_json, pm.system_prompt AS model_system_prompt, "+
 				"r.protocol, u.base_url, u.api_keys_enc, "+
 				"u.connect_timeout_ms, u.read_timeout_ms, u.stream_idle_timeout_ms, "+
 				"u.headers_json, r.headers_json AS route_headers_json, "+
@@ -959,6 +1143,7 @@ func (r *Repo) ListActiveRoutesByModel(ctx context.Context, platformModelName st
 			ModelIcon:                  s.ModelIcon,
 			ModelKindsJSON:             s.ModelKindsJSON,
 			ModelCapabilitiesJSON:      s.ModelCapabilitiesJSON,
+			ModelSystemPrompt:          s.ModelSystemPrompt,
 			Protocol:                   s.Protocol,
 			BaseURL:                    s.BaseURL,
 			APIKeysEnc:                 s.APIKeysEnc,
@@ -1169,6 +1354,7 @@ func toPlatformModelDomain(item model.LLMPlatformModel) domainchannel.PlatformMo
 		KindsJSON:         item.KindsJSON,
 		Icon:              item.Icon,
 		CapabilitiesJSON:  item.CapabilitiesJSON,
+		SystemPrompt:      item.SystemPrompt,
 		Status:            item.Status,
 		Description:       item.Description,
 		SortOrder:         item.SortOrder,
@@ -1187,6 +1373,7 @@ func toPlatformModelModel(item *domainchannel.PlatformModel) model.LLMPlatformMo
 		KindsJSON:        item.KindsJSON,
 		Icon:             item.Icon,
 		CapabilitiesJSON: item.CapabilitiesJSON,
+		SystemPrompt:     item.SystemPrompt,
 		Status:           item.Status,
 		Description:      item.Description,
 		SortOrder:        item.SortOrder,

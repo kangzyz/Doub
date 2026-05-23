@@ -33,6 +33,7 @@ const (
 	protocolOpenAIVideoGenerations = "openai_video_generations"
 	protocolGoogleImageGeneration  = llm.AdapterGoogleImageGeneration
 	protocolXAIImage               = llm.AdapterXAIImage
+	protocolXAIImageEdits          = llm.AdapterXAIImageEdits
 )
 
 var protocolDefaultKindOrder = []string{
@@ -121,15 +122,17 @@ func systemFallbackProtocols(compatible string) map[string]string {
 		}
 	case compatibleGoogle:
 		return map[string]string{
-			modelKindChat:     llm.AdapterGoogleGenerateContent,
-			modelKindAudio:    llm.AdapterGoogleGenerateContent,
-			modelKindImageGen: protocolGoogleImageGeneration,
+			modelKindChat:      llm.AdapterGoogleGenerateContent,
+			modelKindAudio:     llm.AdapterGoogleGenerateContent,
+			modelKindImageGen:  protocolGoogleImageGeneration,
+			modelKindImageEdit: protocolGoogleImageGeneration,
 		}
 	case compatibleXAI:
 		return map[string]string{
-			modelKindChat:     llm.AdapterXAIResponses,
-			modelKindAudio:    llm.AdapterXAIResponses,
-			modelKindImageGen: protocolXAIImage,
+			modelKindChat:      llm.AdapterXAIResponses,
+			modelKindAudio:     llm.AdapterXAIResponses,
+			modelKindImageGen:  protocolXAIImage,
+			modelKindImageEdit: protocolXAIImageEdits,
 		}
 	case compatibleOpenRouter:
 		return map[string]string{
@@ -162,7 +165,8 @@ func isKnownProtocol(raw string) bool {
 		protocolOpenAIImageEdits,
 		protocolOpenAIVideoGenerations,
 		protocolGoogleImageGeneration,
-		protocolXAIImage:
+		protocolXAIImage,
+		protocolXAIImageEdits:
 		return true
 	default:
 		return false
@@ -175,7 +179,7 @@ func resolveRouteProtocol(explicit string, upCompatible string, defaultsJSON str
 		if !isKnownProtocol(protocol) {
 			return "", ErrInvalidAdapter
 		}
-		if kind != "" && !isProtocolAllowedForKind(kind, protocol) {
+		if !isProtocolAllowedForKinds(kindsJSON, protocol) {
 			return "", ErrInvalidAdapter
 		}
 		return protocol, nil
@@ -191,6 +195,116 @@ func resolveRouteProtocol(explicit string, upCompatible string, defaultsJSON str
 		return protocol, nil
 	}
 	return "", ErrProtocolRequired
+}
+
+// resolveRouteProtocols 解析批量导入时的协议列表，图片生成/编辑模型会按协议能力生成一到两条绑定。
+func resolveRouteProtocols(explicit []string, upCompatible string, defaultsJSON string, kindsJSON string) ([]string, error) {
+	protocols := make([]string, 0, len(explicit))
+	seen := make(map[string]struct{}, len(explicit))
+	for _, raw := range explicit {
+		value := strings.TrimSpace(strings.ToLower(raw))
+		if value == "" {
+			continue
+		}
+		protocol, err := resolveRouteProtocol(value, upCompatible, defaultsJSON, kindsJSON)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := seen[protocol]; ok {
+			continue
+		}
+		seen[protocol] = struct{}{}
+		protocols = append(protocols, protocol)
+	}
+	if len(protocols) > 0 {
+		if !isSupportedRouteProtocolCombination(protocols) {
+			return nil, ErrInvalidRouteProtocolCombination
+		}
+		return protocols, nil
+	}
+
+	kinds := parseKinds(kindsJSON)
+	if hasModelKind(kinds, modelKindImageGen) && hasModelKind(kinds, modelKindImageEdit) {
+		generationProtocol := defaultRouteProtocolForKind(upCompatible, defaultsJSON, modelKindImageGen)
+		editProtocol := defaultRouteProtocolForKind(upCompatible, defaultsJSON, modelKindImageEdit)
+		if generationProtocol != "" && editProtocol != "" {
+			protocols = uniqueRouteProtocols(generationProtocol, editProtocol)
+			if isSupportedRouteProtocolCombination(protocols) {
+				return protocols, nil
+			}
+		}
+	}
+
+	protocol, err := resolveRouteProtocol("", upCompatible, defaultsJSON, kindsJSON)
+	if err != nil {
+		return nil, err
+	}
+	return []string{protocol}, nil
+}
+
+// uniqueRouteProtocols 保留协议声明顺序，同时避免 Google 图片这类同协议双能力模型创建重复绑定。
+func uniqueRouteProtocols(values ...string) []string {
+	protocols := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, raw := range values {
+		protocol := strings.TrimSpace(strings.ToLower(raw))
+		if protocol == "" {
+			continue
+		}
+		if _, ok := seen[protocol]; ok {
+			continue
+		}
+		seen[protocol] = struct{}{}
+		protocols = append(protocols, protocol)
+	}
+	return protocols
+}
+
+// defaultRouteProtocolForKind 优先使用上游配置的类型默认协议，其次回退到兼容类型内置协议。
+func defaultRouteProtocolForKind(upCompatible string, defaultsJSON string, kind string) string {
+	if protocol := protocolDefaultForKind(defaultsJSON, kind); protocol != "" {
+		return protocol
+	}
+	return systemFallbackProtocols(upCompatible)[kind]
+}
+
+func isProtocolAllowedForKinds(kindsJSON string, protocol string) bool {
+	kinds := parseKinds(kindsJSON)
+	if len(kinds) == 0 {
+		return true
+	}
+	for _, kind := range kinds {
+		if isProtocolAllowedForKind(kind, protocol) {
+			return true
+		}
+	}
+	return false
+}
+
+// isSupportedRouteProtocolCombination 限制同一绑定 pair 只能单协议，或图片生成/编辑双协议。
+func isSupportedRouteProtocolCombination(protocols []string) bool {
+	seen := make(map[string]struct{}, len(protocols))
+	for _, raw := range protocols {
+		protocol := strings.TrimSpace(strings.ToLower(raw))
+		if protocol == "" {
+			continue
+		}
+		seen[protocol] = struct{}{}
+	}
+	if len(seen) <= 1 {
+		return true
+	}
+	if len(seen) != 2 {
+		return false
+	}
+	_, hasGeneration := seen[protocolOpenAIImageGenerations]
+	_, hasEdit := seen[protocolOpenAIImageEdits]
+	if hasGeneration && hasEdit {
+		return true
+	}
+	_, hasGeneration = seen[protocolXAIImage]
+	_, hasEdit = seen[protocolXAIImageEdits]
+	return hasGeneration && hasEdit
 }
 
 func protocolDefaultForKind(defaultsJSON string, kind string) string {
@@ -236,7 +350,9 @@ func isProtocolAllowedForKind(kind string, protocol string) bool {
 		}
 	case modelKindImageEdit:
 		switch protocol {
-		case protocolOpenAIImageEdits:
+		case protocolOpenAIImageEdits,
+			protocolGoogleImageGeneration,
+			protocolXAIImageEdits:
 			return true
 		default:
 			return false
@@ -276,7 +392,7 @@ func IsRouteAllowedForTask(taskType string, kindsJSON string, protocol string) b
 		case TaskTypeImageGeneration:
 			return isProtocolAllowedForKind(modelKindImageGen, protocol)
 		case TaskTypeImageEdit:
-			return protocol == protocolOpenAIImageEdits
+			return isProtocolAllowedForKind(modelKindImageEdit, protocol)
 		default:
 			return isProtocolAllowedForKind(modelKindChat, protocol) || isProtocolAllowedForKind(modelKindAudio, protocol)
 		}
@@ -285,7 +401,7 @@ func IsRouteAllowedForTask(taskType string, kindsJSON string, protocol string) b
 	case TaskTypeImageGeneration:
 		return hasModelKind(kinds, modelKindImageGen) && isProtocolAllowedForKind(modelKindImageGen, protocol)
 	case TaskTypeImageEdit:
-		return hasModelKind(kinds, modelKindImageEdit) && protocol == protocolOpenAIImageEdits
+		return hasModelKind(kinds, modelKindImageEdit) && isProtocolAllowedForKind(modelKindImageEdit, protocol)
 	default:
 		for _, kind := range kinds {
 			if (kind == modelKindChat || kind == modelKindAudio) && isProtocolAllowedForKind(kind, protocol) {
@@ -321,9 +437,10 @@ func primaryKindFromKinds(kindsJSON string) string {
 func inferKindsJSON(platformModelName string) string {
 	code := strings.ToLower(strings.TrimSpace(platformModelName))
 	switch {
-	case strings.HasPrefix(code, "gpt-image-"), code == "chatgpt-image-latest", code == "dall-e-2":
+	case strings.HasPrefix(code, "gpt-image-"), code == "chatgpt-image-latest", code == "dall-e-2",
+		isGeminiImageGenerationModel(code), isXAIImageGenerationModel(code):
 		return `["image_gen","image_edit"]`
-	case code == "dall-e-3", strings.HasPrefix(code, "imagen-"), isGeminiImageGenerationModel(code), isXAIImageGenerationModel(code):
+	case code == "dall-e-3", strings.HasPrefix(code, "imagen-"):
 		return `["image_gen"]`
 	case code == "sora", code == "veo-2", strings.HasPrefix(code, "kling"):
 		return `["video_gen"]`

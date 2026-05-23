@@ -100,6 +100,7 @@ type ChannelUpstreamRouteRow struct {
 	ModelIcon                  string
 	ModelKindsJSON             string
 	ModelCapabilitiesJSON      string
+	ModelSystemPrompt          string
 	Protocol                   string
 	BaseURL                    string
 	APIKeysEnc                 string
@@ -212,6 +213,7 @@ type UpdateChannelModelInput struct {
 	KindsJSON         *string
 	Icon              *string
 	CapabilitiesJSON  *string
+	SystemPrompt      *string
 	Status            *string
 	Description       *string
 }
@@ -312,6 +314,7 @@ func (input UpdateChannelModelInput) IsZero() bool {
 		input.KindsJSON == nil &&
 		input.Icon == nil &&
 		input.CapabilitiesJSON == nil &&
+		input.SystemPrompt == nil &&
 		input.Status == nil &&
 		input.Description == nil
 }
@@ -326,6 +329,7 @@ type ChannelRepository interface {
 	UpdateModel(ctx context.Context, modelID uint, input UpdateChannelModelInput) error
 	ReorderModels(ctx context.Context, orderedModelIDs []uint) error
 	GetModelByID(ctx context.Context, modelID uint) (*domainchannel.PlatformModel, error)
+	GetModelListRowByID(ctx context.Context, modelID uint) (*ChannelModelListRow, error)
 	GetModelByName(ctx context.Context, platformModelName string) (*domainchannel.PlatformModel, error)
 	GetActiveModelByName(ctx context.Context, platformModelName string) (*domainchannel.PlatformModel, error)
 	ListModels(ctx context.Context, input ListChannelModelsInput) ([]ChannelModelListRow, int64, error)
@@ -336,7 +340,12 @@ type ChannelRepository interface {
 	DeleteUpstreamModel(ctx context.Context, sourceID uint, upstreamID uint) error
 	MarkMissingSyncedUpstreamModelsInactive(ctx context.Context, upstreamID uint, activeNames []string) (int64, error)
 	ListUpstreamModels(ctx context.Context, upstreamID uint, input ListChannelUpstreamModelsInput) ([]ChannelUpstreamModelListRow, int64, error)
+	ListUpstreamModelsByNames(ctx context.Context, upstreamID uint, upstreamModelNames []string) ([]ChannelUpstreamModelListRow, error)
+	GetUpstreamModelRouteByID(ctx context.Context, upstreamID uint, routeID uint) (*ChannelUpstreamModelListRow, error)
+	GetUpstreamModelRouteByNames(ctx context.Context, upstreamID uint, platformModelName string, upstreamModelName string, protocol string) (*ChannelUpstreamModelListRow, error)
 	UpsertPlatformModelRoute(ctx context.Context, item *domainchannel.PlatformModelRoute) error
+	GetModelUpstreamSourceByRouteID(ctx context.Context, platformModelName string, routeID uint) (*ChannelModelSourceRow, error)
+	ListPlatformModelRoutesByPair(ctx context.Context, upstreamID uint, platformModelID uint, upstreamModelID uint) ([]domainchannel.PlatformModelRoute, error)
 	GetPlatformModelRouteByID(ctx context.Context, routeID uint, upstreamID uint) (*domainchannel.PlatformModelRoute, error)
 	UpdatePlatformModelRouteByID(ctx context.Context, routeID uint, upstreamID uint, input UpdateChannelPlatformRouteInput) error
 	DeletePlatformModelRoute(ctx context.Context, routeID uint, upstreamID uint) error

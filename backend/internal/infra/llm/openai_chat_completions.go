@@ -440,7 +440,7 @@ func parseOpenAICompatibleUsageForAdapter(adapter string, parsed map[string]inte
 
 func openAICompatibleOutputIncludesReasoning(adapter string) bool {
 	switch NormalizeAdapter(adapter) {
-	case AdapterXAIResponses, AdapterXAIImage:
+	case AdapterXAIResponses, AdapterXAIImage, AdapterXAIImageEdits:
 		return false
 	default:
 		return true

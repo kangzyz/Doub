@@ -366,6 +366,7 @@ export function AdminModelsPage() {
           onToggleStatus={(item, status) => void models.handleToggleStatus(item, status)}
           onDelete={models.setDeleteTarget}
           onSourceStatusChange={models.handleSourceStatusChange}
+          onSourceDeleteChange={models.handleSourceDeleteChange}
         />
 
         <TablePagination
@@ -419,6 +420,7 @@ export function AdminModelsPage() {
           model={models.sourcesModel}
           onClose={() => models.setSourcesModel(null)}
           onRefreshModel={() => void models.loadModels(models.page, models.pageSize)}
+          onSourceStatusChange={models.handleSourceStatusChange}
         />
       ) : null}
 

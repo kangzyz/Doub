@@ -13,6 +13,10 @@ var (
 	ErrConversationShareSchemaOutdated = errors.New("conversation share schema outdated")
 	// ErrInvalidConversationTitle 会话标题不合法。
 	ErrInvalidConversationTitle = errors.New("invalid conversation title")
+	// ErrConversationProjectNotFound 会话项目不存在或无权限。
+	ErrConversationProjectNotFound = errors.New("conversation project not found")
+	// ErrInvalidConversationProject 会话项目请求不合法。
+	ErrInvalidConversationProject = errors.New("invalid conversation project")
 	// ErrInvalidFileReference 文件引用无效。
 	ErrInvalidFileReference = errors.New("invalid file reference")
 	// ErrInvalidFileName 文件名不合法。
@@ -55,8 +59,18 @@ var (
 	ErrMessageGenerationCanceled = errors.New("message generation canceled")
 	// ErrInvalidMediaGenerationTask 媒体生成任务类型或输入不合法。
 	ErrInvalidMediaGenerationTask = errors.New("invalid media generation task")
+	// ErrMediaImagePromptRequired 图片任务提示词不能为空。
+	ErrMediaImagePromptRequired = errors.New("image prompt is required")
+	// ErrMediaImageGenerationRejectsInputs 图片生成任务不能携带输入图。
+	ErrMediaImageGenerationRejectsInputs = errors.New("image generation does not accept input images")
+	// ErrMediaImageEditInputRequired 图片编辑任务必须携带至少一张输入图。
+	ErrMediaImageEditInputRequired = errors.New("image edit requires at least one input image")
+	// ErrMediaImageEditTooManyInputs 图片编辑输入图数量超限。
+	ErrMediaImageEditTooManyInputs = errors.New("too many image edit input images")
+	// ErrMediaImageEditInputInvalid 图片编辑输入图不合法。
+	ErrMediaImageEditInputInvalid = errors.New("image edit input image is invalid")
+	// ErrMediaRouteProtocolMismatch 图片任务命中的路由协议与任务类型不匹配。
+	ErrMediaRouteProtocolMismatch = errors.New("media route protocol does not match task")
 	// ErrDuplicateMessageGenerationRun 表示客户端重复提交同一个生成 run。
 	ErrDuplicateMessageGenerationRun = errors.New("duplicate message generation run")
-	// ErrMediaImageEditNotImplemented 图片编辑协议尚未实现。
-	ErrMediaImageEditNotImplemented = errors.New("image edit protocol not implemented")
 )

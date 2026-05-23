@@ -59,6 +59,7 @@ func defaultSettings() []domainsettings.SystemSetting {
 		{Namespace: "chat", Key: "conversation_task_model", Value: "follow", ValueType: "string", Description: "会话标题/标签生成任务使用的聊天模型，follow 表示跟随当前会话模型；图片模型不会用于标题/标签生成"},
 		{Namespace: "chat", Key: "conversation_title_prompt", Value: "", ValueType: "string", Description: "会话标题生成提示词，支持 {{MESSAGES}} 占位符；空串使用内置默认值"},
 		{Namespace: "chat", Key: "conversation_labels_prompt", Value: "", ValueType: "string", Description: "会话标签生成提示词，支持 {{MESSAGES}} 占位符；空串使用内置默认值"},
+		{Namespace: "chat", Key: "default_system_prompt", Value: "", ValueType: "string", Description: "全局默认系统提示词，仅对聊天任务生效；空串表示不注入"},
 		{Namespace: "chat", Key: "model_option_policy_mode", Value: "allowlist", ValueType: "string", Description: "模型 options 透传策略：allowlist=仅白名单，denylist=黑名单拦截，disabled=禁止透传"},
 		{Namespace: "chat", Key: "model_option_allowed_paths", Value: config.DefaultModelOptionAllowedPathsJSON(), ValueType: "json", Description: "模型 options 白名单路径 JSON，default 对所有协议生效"},
 		{Namespace: "chat", Key: "model_option_denied_paths", Value: config.DefaultModelOptionDeniedPathsJSON(), ValueType: "json", Description: "模型 options 黑名单路径 JSON，default 对所有协议生效"},
@@ -71,11 +72,12 @@ func defaultSettings() []domainsettings.SystemSetting {
 
 		// 文件处理配置
 		{Namespace: "file", Key: "image_max_dimension", Value: "1024", ValueType: "int", Description: "图片发送前缩放最大边长(px)，0=不缩放"},
-		{Namespace: "file", Key: "file_full_context_max_bytes", Value: "51200", ValueType: "int", Description: "文本文件全文注入最大字节数(50KB)"},
-		{Namespace: "file", Key: "full_context_max_tokens", Value: "12000", ValueType: "int", Description: "全文注入最大token预算"},
+		{Namespace: "file", Key: "full_context_limit_enabled", Value: "true", ValueType: "bool", Description: "是否启用全文注入大小、Token、PDF页数限制"},
+		{Namespace: "file", Key: "file_full_context_max_bytes", Value: "51200", ValueType: "int", Description: "文本文件全文注入最大字节数(50KB)，留空或0表示不限制"},
+		{Namespace: "file", Key: "full_context_max_tokens", Value: "12000", ValueType: "int", Description: "全文注入最大token预算，留空或0表示不限制"},
 		{Namespace: "file", Key: "image_max_bytes", Value: "", ValueType: "int", Description: "图片单文件大小上限(字节)，留空则回退默认附件大小上限"},
 		{Namespace: "file", Key: "doc_max_bytes", Value: "", ValueType: "int", Description: "文档单文件大小上限(字节)，留空则回退默认附件大小上限"},
-		{Namespace: "file", Key: "full_context_pdf_max_pages", Value: "20", ValueType: "int", Description: "PDF Full Context最大页数，超出走RAG"},
+		{Namespace: "file", Key: "full_context_pdf_max_pages", Value: "20", ValueType: "int", Description: "PDF Full Context最大页数，留空或0表示不限制"},
 		{Namespace: "file", Key: "allowed_mime_types", Value: defaultAllowedMIMETypes, ValueType: "string", Description: "白名单MIME类型(逗号分隔)"},
 		{Namespace: "extract", Key: "engine", Value: "builtin", ValueType: "string", Description: "提取主引擎枚举(builtin/tika/docling/mineru)"},
 		{Namespace: "extract", Key: "ocr_engine", Value: "rapidocr", ValueType: "string", Description: "OCR 引擎枚举(rapidocr/tesseract/paddle/tencent/aliyun/llm)"},

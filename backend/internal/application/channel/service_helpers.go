@@ -75,6 +75,7 @@ func toModelView(item repository.ChannelModelListRow) ModelView {
 		KindsJSON:         item.KindsJSON,
 		Icon:              item.Icon,
 		CapabilitiesJSON:  item.CapabilitiesJSON,
+		SystemPrompt:      item.SystemPrompt,
 		Status:            item.Status,
 		Description:       item.Description,
 		SortOrder:         item.SortOrder,
@@ -596,10 +597,14 @@ func normalizePlatformModelName(raw string) (string, error) {
 	if value == "" {
 		return "", ErrInvalidPlatformModelName
 	}
-	if strings.ContainsFunc(value, unicode.IsSpace) {
+	if strings.ContainsFunc(value, hasUnsafeModelNameRune) {
 		return "", ErrInvalidPlatformModelName
 	}
 	return value, nil
+}
+
+func hasUnsafeModelNameRune(r rune) bool {
+	return unicode.IsControl(r) || (unicode.IsSpace(r) && r != ' ')
 }
 
 func generateBindingCode() string {

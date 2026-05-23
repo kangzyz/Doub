@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ExternalLink, Globe, Mail, Newspaper } from "lucide-react";
 
 import packageMeta from "@/package.json";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { IdentityProviderIcon } from "@/shared/components/identity-provider-icon";
 import { AppLogo } from "@/shared/components/app-logo";
 import {
@@ -30,6 +32,9 @@ type AboutSettingsContentProps = {
   description: string;
   consoleLabel: string;
   labels: AboutLabels;
+  versionBadgeContent?: ReactNode;
+  versionBadgeTooltip?: ReactNode;
+  versionActions?: ReactNode;
 };
 
 type AboutLinkItem = {
@@ -82,6 +87,9 @@ export function AboutSettingsContent({
   description,
   consoleLabel,
   labels,
+  versionBadgeContent,
+  versionBadgeTooltip,
+  versionActions,
 }: AboutSettingsContentProps) {
   const links: AboutLinkItem[] = [
     {
@@ -130,9 +138,21 @@ export function AboutSettingsContent({
             <div className="flex h-14 w-40 shrink-0 items-center sm:w-48">
               <AppLogo width={180} height={56} className="h-auto w-36 sm:w-44" />
             </div>
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">{consoleLabel}</span>
-              <Badge variant="secondary">v{packageMeta.version}</Badge>
+              {versionBadgeTooltip ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="secondary" className="cursor-default">
+                      {versionBadgeContent ?? `v${packageMeta.version}`}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>{versionBadgeTooltip}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Badge variant="secondary">{versionBadgeContent ?? `v${packageMeta.version}`}</Badge>
+              )}
+              {versionActions ? <span className="ml-1.5 flex min-w-0 items-center gap-2">{versionActions}</span> : null}
             </div>
           </div>
 

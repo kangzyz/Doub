@@ -47,7 +47,10 @@ func TestProtocolDefaultsForXAIUsesXAIResponsesForConversationKinds(t *testing.T
 	if defaults[modelKindImageGen] != "xai_image" {
 		t.Fatalf("expected xAI image default, got %q in %s", defaults[modelKindImageGen], raw)
 	}
-	for _, kind := range []string{modelKindImageEdit, modelKindVideoGen} {
+	if defaults[modelKindImageEdit] != "xai_image_edits" {
+		t.Fatalf("expected xAI image edit default, got %q in %s", defaults[modelKindImageEdit], raw)
+	}
+	for _, kind := range []string{modelKindVideoGen} {
 		if _, ok := defaults[kind]; ok {
 			t.Fatalf("unexpected xAI default protocol for %s in %s", kind, raw)
 		}
@@ -93,6 +96,9 @@ func TestProtocolDefaultsForGoogleUsesGoogleImageGeneration(t *testing.T) {
 	}
 	if defaults[modelKindImageGen] != "google_image_generation" {
 		t.Fatalf("expected Google image generation default, got %q in %s", defaults[modelKindImageGen], raw)
+	}
+	if defaults[modelKindImageEdit] != "google_image_generation" {
+		t.Fatalf("expected Google image edit default, got %q in %s", defaults[modelKindImageEdit], raw)
 	}
 }
 
@@ -289,8 +295,8 @@ func TestInferKindsJSONRecognizesGeminiImageModels(t *testing.T) {
 		"gemini-3.1-flash-image-preview",
 		"gemini-3-pro-image-preview",
 	} {
-		if got := inferKindsJSON(modelName); got != `["image_gen"]` {
-			t.Fatalf("expected %s to infer image generation kind, got %s", modelName, got)
+		if got := inferKindsJSON(modelName); got != `["image_gen","image_edit"]` {
+			t.Fatalf("expected %s to infer image generation and edit kinds, got %s", modelName, got)
 		}
 	}
 }
@@ -302,8 +308,8 @@ func TestInferKindsJSONRecognizesXAIImageModels(t *testing.T) {
 		"grok-imagine-image-pro",
 		"grok-imagine-image-preview",
 	} {
-		if got := inferKindsJSON(modelName); got != `["image_gen"]` {
-			t.Fatalf("expected %s to infer image generation kind, got %s", modelName, got)
+		if got := inferKindsJSON(modelName); got != `["image_gen","image_edit"]` {
+			t.Fatalf("expected %s to infer image generation and edit kinds, got %s", modelName, got)
 		}
 	}
 }
@@ -340,6 +346,116 @@ func TestResolveRouteProtocolRejectsExplicitProtocolKindMismatch(t *testing.T) {
 	_, err := resolveRouteProtocol("openai_responses", compatibleOpenAI, "", `["image_gen"]`)
 	if !errors.Is(err, ErrInvalidAdapter) {
 		t.Fatalf("expected ErrInvalidAdapter, got %v", err)
+	}
+}
+
+func TestResolveRouteProtocolAcceptsExplicitProtocolForAnyDeclaredKind(t *testing.T) {
+	resolved, err := resolveRouteProtocol("openai_image_edits", compatibleOpenAI, "", `["image_gen","image_edit"]`)
+	if err != nil {
+		t.Fatalf("expected explicit image edit protocol to be accepted for dual-kind image model: %v", err)
+	}
+	if resolved != "openai_image_edits" {
+		t.Fatalf("expected openai_image_edits, got %q", resolved)
+	}
+}
+
+func TestSupportedRouteProtocolCombinationOnlyAllowsSameProviderImagePair(t *testing.T) {
+	tests := []struct {
+		name      string
+		protocols []string
+		want      bool
+	}{
+		{name: "single chat", protocols: []string{"openai_responses"}, want: true},
+		{name: "single image generation", protocols: []string{"openai_image_generations"}, want: true},
+		{name: "openai image generation and edit", protocols: []string{"openai_image_generations", "openai_image_edits"}, want: true},
+		{name: "xai image generation and edit", protocols: []string{"xai_image", "xai_image_edits"}, want: true},
+		{name: "duplicate protocol", protocols: []string{"openai_responses", "openai_responses"}, want: true},
+		{name: "two chat protocols", protocols: []string{"openai_responses", "openai_chat_completions"}, want: false},
+		{name: "image generation with chat", protocols: []string{"openai_image_generations", "openai_responses"}, want: false},
+		{name: "mixed provider image pair", protocols: []string{"openai_image_generations", "xai_image_edits"}, want: false},
+		{name: "three protocols", protocols: []string{"openai_image_generations", "openai_image_edits", "openai_responses"}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isSupportedRouteProtocolCombination(tt.protocols); got != tt.want {
+				t.Fatalf("expected %v, got %v", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestResolveRouteProtocolsExpandsOpenAIDualImageKinds(t *testing.T) {
+	protocols, err := resolveRouteProtocols(nil, compatibleOpenAI, "", `["image_gen","image_edit"]`)
+	if err != nil {
+		t.Fatalf("resolve route protocols: %v", err)
+	}
+	expected := []string{"openai_image_generations", "openai_image_edits"}
+	if len(protocols) != len(expected) {
+		t.Fatalf("expected %d protocols, got %#v", len(expected), protocols)
+	}
+	for i, expectedProtocol := range expected {
+		if protocols[i] != expectedProtocol {
+			t.Fatalf("expected protocol %d to be %q, got %#v", i, expectedProtocol, protocols)
+		}
+	}
+}
+
+func TestResolveRouteProtocolsKeepsSingleGoogleProtocolForDualImageKinds(t *testing.T) {
+	protocols, err := resolveRouteProtocols(nil, compatibleGoogle, "", `["image_gen","image_edit"]`)
+	if err != nil {
+		t.Fatalf("resolve route protocols: %v", err)
+	}
+	if len(protocols) != 1 || protocols[0] != "google_image_generation" {
+		t.Fatalf("expected single Google image protocol, got %#v", protocols)
+	}
+}
+
+func TestResolveRouteProtocolsExpandsXAIDualImageKinds(t *testing.T) {
+	protocols, err := resolveRouteProtocols(nil, compatibleXAI, "", `["image_gen","image_edit"]`)
+	if err != nil {
+		t.Fatalf("resolve route protocols: %v", err)
+	}
+	expected := []string{"xai_image", "xai_image_edits"}
+	if len(protocols) != len(expected) {
+		t.Fatalf("expected %d protocols, got %#v", len(expected), protocols)
+	}
+	for i, expectedProtocol := range expected {
+		if protocols[i] != expectedProtocol {
+			t.Fatalf("expected protocol %d to be %q, got %#v", i, expectedProtocol, protocols)
+		}
+	}
+}
+
+func TestResolveRouteProtocolsKeepsSingleProtocolForGenerationOnlyModels(t *testing.T) {
+	tests := []struct {
+		name       string
+		compatible string
+		kindsJSON  string
+		expected   string
+	}{
+		{name: "openai generation", compatible: compatibleOpenAI, kindsJSON: `["image_gen"]`, expected: "openai_image_generations"},
+		{name: "google generation", compatible: compatibleGoogle, kindsJSON: `["image_gen"]`, expected: "google_image_generation"},
+		{name: "xai generation", compatible: compatibleXAI, kindsJSON: `["image_gen"]`, expected: "xai_image"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			protocols, err := resolveRouteProtocols(nil, tt.compatible, "", tt.kindsJSON)
+			if err != nil {
+				t.Fatalf("resolve route protocols: %v", err)
+			}
+			if len(protocols) != 1 || protocols[0] != tt.expected {
+				t.Fatalf("expected [%s], got %#v", tt.expected, protocols)
+			}
+		})
+	}
+}
+
+func TestResolveRouteProtocolsRejectsUnsupportedExplicitMultiProtocol(t *testing.T) {
+	_, err := resolveRouteProtocols([]string{"openai_responses", "openai_chat_completions"}, compatibleOpenAI, "", `["chat"]`)
+	if !errors.Is(err, ErrInvalidRouteProtocolCombination) {
+		t.Fatalf("expected ErrInvalidRouteProtocolCombination, got %v", err)
 	}
 }
 
@@ -382,6 +498,15 @@ func TestIsRouteAllowedForTaskSeparatesChatAndImageProtocols(t *testing.T) {
 	}
 	if !IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "openai_image_edits") {
 		t.Fatalf("expected image edit task to allow image edit protocol")
+	}
+	if !IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "google_image_generation") {
+		t.Fatalf("expected image edit task to allow Google image protocol")
+	}
+	if !IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "xai_image_edits") {
+		t.Fatalf("expected image edit task to allow xAI image edits protocol")
+	}
+	if IsRouteAllowedForTask(TaskTypeImageEdit, `["image_edit"]`, "xai_image") {
+		t.Fatalf("expected image edit task to reject xAI image generation protocol")
 	}
 }
 
@@ -436,15 +561,44 @@ func TestFilterPricedModelViewsUsesPlatformModelNameKey(t *testing.T) {
 
 }
 
-func TestNormalizePlatformModelNameRejectsWhitespace(t *testing.T) {
-	if _, err := normalizePlatformModelName("claude sonnet"); err == nil {
-		t.Fatal("expected whitespace in platform model name to be rejected")
+func TestNormalizePlatformModelNameAllowsDisplaySpaces(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "plain", raw: "claude-sonnet", want: "claude-sonnet"},
+		{name: "display spaces", raw: "GPT Image 1", want: "GPT Image 1"},
+		{name: "trim outer spaces", raw: "  GPT Image 1  ", want: "GPT Image 1"},
 	}
-	name, err := normalizePlatformModelName("claude-sonnet")
-	if err != nil {
-		t.Fatalf("normalize platform model name: %v", err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizePlatformModelName(tt.raw)
+			if err != nil {
+				t.Fatalf("normalize platform model name: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
 	}
-	if name != "claude-sonnet" {
-		t.Fatalf("expected normalized platform model name, got %q", name)
+}
+
+func TestNormalizePlatformModelNameRejectsUnsafeWhitespace(t *testing.T) {
+	tests := []string{
+		"",
+		"   ",
+		"claude\tsonnet",
+		"claude\nsonnet",
+		"claude\u00a0sonnet",
+	}
+
+	for _, raw := range tests {
+		t.Run(raw, func(t *testing.T) {
+			if _, err := normalizePlatformModelName(raw); err == nil {
+				t.Fatal("expected unsafe platform model name to be rejected")
+			}
+		})
 	}
 }

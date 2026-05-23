@@ -40,6 +40,7 @@ type UpstreamRemoteModelView struct {
 	SuggestedPlatformModelName string
 	SuggestedKindsJSON         string
 	SuggestedProtocol          string
+	SuggestedProtocols         []string
 	BindingCode                string
 	BoundPlatformModels        []string
 	UpstreamModelStatus        string
@@ -85,6 +86,9 @@ type ImportUpstreamModelResultView struct {
 	BindingCode       string
 	Status            string
 	CreatedRoute      bool
+	CreatedRoutes     int
+	ExistingRoutes    int
+	Protocols         []string
 	CreatedPlatform   bool
 	Error             string
 }
@@ -123,6 +127,7 @@ type ModelView struct {
 	KindsJSON         string
 	Icon              string
 	CapabilitiesJSON  string
+	SystemPrompt      string
 	Status            string
 	Description       string
 	SortOrder         int

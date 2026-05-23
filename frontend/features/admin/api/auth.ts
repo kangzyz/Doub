@@ -18,9 +18,10 @@ export type IdentityProviderPayload = {
   userinfoURL?: string;
   jwksURL?: string;
   scopes?: string;
-  defaultRole?: "user" | "superadmin";
+  defaultRole?: "user" | "admin" | "superadmin";
   subjectField?: string;
   emailField?: string;
+  emailVerifiedField?: string;
   nameField?: string;
   avatarField?: string;
 };

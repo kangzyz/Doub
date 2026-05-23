@@ -10,10 +10,12 @@ var validModelOptionProtocolKeys = map[string]struct{}{
 	"default":                  {},
 	"openai_chat_completions":  {},
 	"openai_image_generations": {},
+	"openai_image_edits":       {},
 	"openai_responses":         {},
 	"anthropic_messages":       {},
 	"xai_responses":            {},
 	"xai_image":                {},
+	"xai_image_edits":          {},
 	"gemini_generate_content":  {},
 	"google_image_generation":  {},
 }

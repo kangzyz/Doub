@@ -146,6 +146,7 @@ type IdentityProviderResponse struct {
 	DefaultRole         string    `json:"defaultRole"`
 	SubjectField        string    `json:"subjectField"`
 	EmailField          string    `json:"emailField"`
+	EmailVerifiedField  string    `json:"emailVerifiedField"`
 	NameField           string    `json:"nameField"`
 	AvatarField         string    `json:"avatarField"`
 	CreatedAt           time.Time `json:"createdAt"`
@@ -211,9 +212,10 @@ type UpsertIdentityProviderRequest struct {
 	UserInfoURL         string `json:"userinfoURL" binding:"omitempty,max=512"`
 	JWKSURL             string `json:"jwksURL" binding:"omitempty,max=512"`
 	Scopes              string `json:"scopes" binding:"omitempty,max=255"`
-	DefaultRole         string `json:"defaultRole" binding:"omitempty,oneof=user superadmin"`
+	DefaultRole         string `json:"defaultRole" binding:"omitempty,oneof=user admin superadmin"`
 	SubjectField        string `json:"subjectField" binding:"omitempty,max=64"`
 	EmailField          string `json:"emailField" binding:"omitempty,max=64"`
+	EmailVerifiedField  string `json:"emailVerifiedField" binding:"omitempty,max=64"`
 	NameField           string `json:"nameField" binding:"omitempty,max=64"`
 	AvatarField         string `json:"avatarField" binding:"omitempty,max=64"`
 }
@@ -602,6 +604,7 @@ func toIdentityProviderResponse(item appauth.IdentityProviderView) IdentityProvi
 		DefaultRole:         item.DefaultRole,
 		SubjectField:        item.SubjectField,
 		EmailField:          item.EmailField,
+		EmailVerifiedField:  item.EmailVerifiedField,
 		NameField:           item.NameField,
 		AvatarField:         item.AvatarField,
 		CreatedAt:           item.CreatedAt,
@@ -609,8 +612,9 @@ func toIdentityProviderResponse(item appauth.IdentityProviderView) IdentityProvi
 	}
 }
 
-func toUpsertIdentityProviderInput(req UpsertIdentityProviderRequest) appauth.UpsertIdentityProviderInput {
+func toUpsertIdentityProviderInput(req UpsertIdentityProviderRequest, actorRole string) appauth.UpsertIdentityProviderInput {
 	return appauth.UpsertIdentityProviderInput{
+		ActorRole:           actorRole,
 		Type:                req.Type,
 		Name:                req.Name,
 		Slug:                req.Slug,
@@ -629,6 +633,7 @@ func toUpsertIdentityProviderInput(req UpsertIdentityProviderRequest) appauth.Up
 		DefaultRole:         req.DefaultRole,
 		SubjectField:        req.SubjectField,
 		EmailField:          req.EmailField,
+		EmailVerifiedField:  req.EmailVerifiedField,
 		NameField:           req.NameField,
 		AvatarField:         req.AvatarField,
 	}
