@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(97.86% 0.0027 106.45);
+  --foreground: oklch(0.3438 0.0269 95.7226);
+  --pure: oklch(1 0 0);
+  --pure-foreground: oklch(0 0 0);
+  --card: oklch(0.9818 0.0054 95.0986);
+  --card-foreground: oklch(0.1908 0.002 106.5859);
+  --muted: oklch(0.9341 0.0153 90.239);
+  --muted-foreground: oklch(0.5059 0.0075 97.4233);
+  --accent: oklch(94.84% 0.0032 81.39);
+  --accent-foreground: oklch(0.2671 0.0196 98.939);
+  --primary: oklch(0.6171 0.1375 39.0427);
+  --primary-foreground: oklch(1 0 0);
+  --border: oklch(87.79% 0.003 106.46);
+  --ring: oklch(0.6171 0.1375 39.0427);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: oklch(23.89% 0.0019 106.54);
+  --foreground: oklch(0.8074 0.0142 93.0137);
+  --pure: oklch(0.3085 0.0035 106.6);
+  --pure-foreground: oklch(1 0 0);
+  --card: oklch(0.2679 0.0036 106.6427);
+  --card-foreground: oklch(0.9818 0.0054 95.0986);
+  --muted: oklch(0.2213 0.0038 106.707);
+  --muted-foreground: oklch(0.7713 0.0169 99.0657);
+  --accent: oklch(18.32% 0 89.88);
+  --accent-foreground: oklch(0.9663 0.008 98.8792);
+  --primary: oklch(0.6724 0.1308 38.7559);
+  --primary-foreground: oklch(1 0 0);
+  --border: oklch(34.84% 0.0025 63.22);
+  --ring: oklch(0.6724 0.1308 38.7559);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-pure: var(--pure);
+  --color-pure-foreground: var(--pure-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Courier New", monospace;
+  --font-serif:
+    var(--font-instrument-serif), "Iowan Old Style", "Palatino Linotype",
+    Palatino, "Times New Roman", Georgia, serif;
+  --font-pixel-square: var(--font-geist-pixel-square);
+  --font-pixel-grid: var(--font-geist-pixel-grid);
+  --font-pixel-circle: var(--font-geist-pixel-circle);
+  --font-pixel-triangle: var(--font-geist-pixel-triangle);
+  --font-pixel-line: var(--font-geist-pixel-line);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  html,
+  body {
+    min-height: 100%;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 28%, transparent);
+    color: var(--foreground);
+  }
+}
+
+/* Decorative grain overlay (very subtle) */
+.bg-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 3px 3px;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+.dark .bg-grain::before {
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+/* Soft radial hero glow using primary color */
+.hero-glow {
+  background:
+    radial-gradient(
+      60% 50% at 20% 30%,
+      color-mix(in oklab, var(--primary) 35%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      50% 50% at 80% 70%,
+      color-mix(in oklab, var(--primary) 20%, transparent),
+      transparent 70%
+    );
+  filter: blur(40px);
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
