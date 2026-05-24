@@ -184,6 +184,7 @@ export function AppChatArea() {
     showLatency,
     showTokenUsage,
     modelOptionPolicy,
+    mcpMaxSelectedTools,
     selectedPlatformModelName,
     setSelectedPlatformModelName,
   } = useChatModelOptions({
@@ -211,6 +212,15 @@ export function AppChatArea() {
   const [toolsLoading, setToolsLoading] = React.useState(true);
   const [selectedToolIDs, setSelectedToolIDs] = React.useState<number[]>([]);
   const initializedOptionsModelRef = React.useRef("");
+
+  React.useEffect(() => {
+    setSelectedToolIDs((current) => {
+      if (current.length <= mcpMaxSelectedTools) {
+        return current;
+      }
+      return current.slice(0, mcpMaxSelectedTools);
+    });
+  }, [mcpMaxSelectedTools]);
 
   React.useEffect(() => {
     const platformModelName = selectedModel?.platformModelName.trim() || "";
@@ -640,6 +650,7 @@ export function AppChatArea() {
     selectedPlatformModelName,
     availableTools,
     selectedToolIDs,
+    maxSelectedTools: mcpMaxSelectedTools,
     toolsLoading,
     options: effectiveOptions,
     defaultOptions: selectedModelDefaultOptions,
