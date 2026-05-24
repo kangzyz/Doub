@@ -1,3 +1,5 @@
+import type { UserStorageQuotaDTO } from "@/shared/api/file.types";
+
 export type ConversationDTO = {
   userID: number;
   publicID: string;
@@ -276,6 +278,8 @@ export type SetConversationArchiveRequest = {
 
 export type DeleteConversationData = {
   deleted: boolean;
+  deletedFileCount?: number;
+  quota?: UserStorageQuotaDTO;
 };
 
 export type CreateConversationShareRequest = {

@@ -4153,7 +4153,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "删除当前用户项目分组。默认仅解除其下会话归属；delete_conversations=true 时同时软删除项目内会话。",
+                "description": "删除当前用户项目分组。默认仅解除其下会话归属；delete_conversations=true 时同时软删除项目内会话；delete_files=true 时同步删除不再被其他会话引用的文件。",
                 "consumes": [
                     "application/json"
                 ],
@@ -4176,6 +4176,12 @@
                         "type": "boolean",
                         "description": "是否同时删除项目内会话",
                         "name": "delete_conversations",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否同步删除不再被其他会话引用的会话文件",
+                        "name": "delete_files",
                         "in": "query"
                     }
                 ],
@@ -4668,6 +4674,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否同步删除不再被其他会话引用的会话文件",
+                        "name": "delete_files",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -10161,6 +10173,12 @@
             "properties": {
                 "deleted": {
                     "type": "boolean"
+                },
+                "deletedFileCount": {
+                    "type": "integer"
+                },
+                "quota": {
+                    "$ref": "#/definitions/internal_transport_http_conversation.StorageQuotaResponse"
                 }
             }
         },

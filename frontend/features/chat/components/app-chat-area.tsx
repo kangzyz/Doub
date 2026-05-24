@@ -22,6 +22,17 @@ import {
   ConversationShareDialog,
   sharePatchFromDTO,
 } from "@/features/chat/components/sections/conversation-share-dialog";
+import { DeleteFilesOption } from "@/features/recent/components/delete-files-option";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   cloneConversationOptions,
   isConversationOptionsObject,
@@ -83,6 +94,7 @@ function removeCachedModelOptions(platformModelName: string): void {
 
 export function AppChatArea() {
   const t = useTranslations("chat");
+  const tRecent = useTranslations("recent");
   const router = useRouter();
   const searchParams = useSearchParams();
   const routeConversationID = searchParams.get("conversation_id")?.trim() || null;
@@ -149,6 +161,9 @@ export function AppChatArea() {
   const { greetingTitle } = useChatViewerProfile();
   const [manualConversationTitle, setManualConversationTitle] = React.useState("");
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteFiles, setDeleteFiles] = React.useState(false);
+  const deleteFilesID = React.useId();
   const activeConversation = React.useMemo(() => {
     if (!conversationID) {
       return null;
@@ -451,15 +466,24 @@ export function AppChatArea() {
     [actionConversationID, canOperateConversation, renameByPublicID],
   );
 
-  const onDeleteActiveConversation = React.useCallback(async () => {
+  const onRequestDeleteActiveConversation = React.useCallback(() => {
     if (!canOperateConversation) {
       return;
     }
-    const ok = await deleteByPublicID(actionConversationID);
+    setDeleteDialogOpen(true);
+  }, [canOperateConversation]);
+
+  const onConfirmDeleteActiveConversation = React.useCallback(async () => {
+    if (!canOperateConversation) {
+      return;
+    }
+    const ok = await deleteByPublicID(actionConversationID, { deleteFiles });
     if (ok) {
+      setDeleteDialogOpen(false);
+      setDeleteFiles(false);
       router.push("/chat");
     }
-  }, [actionConversationID, canOperateConversation, deleteByPublicID, router]);
+  }, [actionConversationID, canOperateConversation, deleteByPublicID, deleteFiles, router]);
 
   const onSetActiveConversationProject = React.useCallback(
     async (projectID?: string) => {
@@ -694,7 +718,7 @@ export function AppChatArea() {
                   }}
                   onShare={onShareActiveConversation}
                   shareActive={activeConversationShared}
-                  onDelete={onDeleteActiveConversation}
+                  onDelete={onRequestDeleteActiveConversation}
                   markdownRender={markdownRender}
                   showModelInfo={showModelInfo}
                   showLatency={showLatency}
@@ -726,16 +750,50 @@ export function AppChatArea() {
       )}
 
       {canOperateConversation ? (
-        <ConversationShareDialog
-          open={shareDialogOpen}
-          onOpenChange={setShareDialogOpen}
-          conversationPublicID={actionConversationID}
-          conversationTitle={activeConversationTitle}
-          defaultMessagePublicIDs={shareDefaultMessagePublicIDs}
-          onShareChange={(share) => {
-            touchByPublicID(actionConversationID, sharePatchFromDTO(share));
-          }}
-        />
+        <>
+          <ConversationShareDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            conversationPublicID={actionConversationID}
+            conversationTitle={activeConversationTitle}
+            defaultMessagePublicIDs={shareDefaultMessagePublicIDs}
+            onShareChange={(share) => {
+              touchByPublicID(actionConversationID, sharePatchFromDTO(share));
+            }}
+          />
+
+          <AlertDialog
+            open={deleteDialogOpen}
+            onOpenChange={(open) => {
+              setDeleteDialogOpen(open);
+              if (!open) {
+                setDeleteFiles(false);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{tRecent("dialogs.deleteTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {tRecent("dialogs.deleteDescription", {
+                    label: tRecent("deleteConversationLabel", { title: activeConversationTitle }),
+                  })}
+                </AlertDialogDescription>
+                <DeleteFilesOption
+                  id={deleteFilesID}
+                  checked={deleteFiles}
+                  onCheckedChange={setDeleteFiles}
+                />
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{tRecent("dialogs.cancel")}</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={() => void onConfirmDeleteActiveConversation()}>
+                  {tRecent("dialogs.delete")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       ) : null}
     </div>
   );
