@@ -41,9 +41,14 @@ type Service struct {
 	repo                 repository.AuthRepository
 	geoResolver          *geoip.Client
 	providerHTTPClient   *http.Client
+	turnstileHTTPClient  httpDoer
 	logger               *zap.Logger
 	storeProvider        appstorage.Provider
 	auditWriter          auditWriter
+}
+
+type httpDoer interface {
+	Do(*http.Request) (*http.Response, error)
 }
 
 type auditWriter interface {
@@ -64,17 +69,22 @@ func NewServiceWithRuntime(cfg *config.Runtime, repo repository.AuthRepository, 
 		env = snapshot.Env
 		ssrfProtectionEnabled = snapshot.SSRFProtectionEnabled
 	}
-	transport := security.NewOutboundHTTPTransport(env, ssrfProtectionEnabled, 10*time.Second)
+	providerHTTPClient := newAuthOutboundHTTPClient(env, ssrfProtectionEnabled)
+	turnstileHTTPClient := newAuthOutboundHTTPClient(env, ssrfProtectionEnabled)
 	return &Service{
-		cfg:         cfg,
-		repo:        repo,
-		geoResolver: geoResolver,
-		providerHTTPClient: &http.Client{
-			Timeout:   providerHTTPTimeout,
-			Transport: platformtracing.NewHTTPTransport(transport),
-		},
-		storeProvider: appstorage.NewRuntimeProvider(cfg, nil),
+		cfg:                 cfg,
+		repo:                repo,
+		geoResolver:         geoResolver,
+		providerHTTPClient:  providerHTTPClient,
+		turnstileHTTPClient: turnstileHTTPClient,
+		storeProvider:       appstorage.NewRuntimeProvider(cfg, nil),
 	}
+}
+
+func newAuthOutboundHTTPClient(env string, ssrfProtectionEnabled bool) *http.Client {
+	client := security.NewOutboundHTTPClient(env, ssrfProtectionEnabled, providerHTTPTimeout)
+	client.Transport = platformtracing.NewHTTPTransport(client.Transport)
+	return client
 }
 
 // SetLogger 注入结构化日志记录器。
