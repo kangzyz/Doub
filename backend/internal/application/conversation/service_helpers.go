@@ -422,6 +422,52 @@ func isStreamUnsupportedError(err *llm.UpstreamError) bool {
 	return false
 }
 
+func mediaImageEditPartialFallbackOutput(
+	taskType MediaImageTaskType,
+	options map[string]interface{},
+	err error,
+	image *llm.GeneratedImage,
+	usage llm.Usage,
+	responseID string,
+) (*llm.GenerateOutput, bool) {
+	if taskType != MediaImageTaskEdit || image == nil {
+		return nil, false
+	}
+	if !mediaImageSinglePartialRequested(options) || !isStreamIdleTimeoutError(err) {
+		return nil, false
+	}
+	imageCopy := *image
+	if strings.TrimSpace(imageCopy.B64JSON) == "" {
+		return nil, false
+	}
+	return &llm.GenerateOutput{
+		ResponseID:      strings.TrimSpace(responseID),
+		Usage:           usage,
+		ToolCalls:       make([]llm.ToolCall, 0),
+		ServerToolCalls: make([]llm.ToolCall, 0),
+		GeneratedImages: []llm.GeneratedImage{imageCopy},
+	}, true
+}
+
+func mediaImageSinglePartialRequested(options map[string]interface{}) bool {
+	value, ok := modelParamIntFromOption(options["partial_images"])
+	if !ok {
+		return true
+	}
+	return value == 1
+}
+
+func isStreamIdleTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var upstreamErr *llm.UpstreamError
+	if errors.As(err, &upstreamErr) && strings.Contains(strings.ToLower(upstreamErr.Message), "stream idle timeout") {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "stream idle timeout")
+}
+
 func emitFallbackText(text string, onDelta func(string) error) error {
 	if onDelta == nil {
 		return nil

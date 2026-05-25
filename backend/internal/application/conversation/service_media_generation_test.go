@@ -210,6 +210,121 @@ func TestStreamMediaImageEditPersistsGeneratedImageAndSourceAttachment(t *testin
 	}
 }
 
+func TestStreamMediaImageEditCompletesWithSinglePartialOnIdleTimeout(t *testing.T) {
+	sourcePNG := mediaImageTestPNG()
+	partialPNG := mediaImageTestPNG()
+	partialB64 := base64.StdEncoding.EncodeToString(partialPNG)
+	store := newMediaImageMemoryStore()
+	store.objects["inputs/source.png"] = append([]byte(nil), sourcePNG...)
+	store.contentTypes["inputs/source.png"] = "image/png"
+
+	var requestValues map[string][]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/images/edits" {
+			t.Fatalf("unexpected upstream path: %s", r.URL.Path)
+		}
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Fatalf("parse edit multipart: %v", err)
+		}
+		requestValues = r.MultipartForm.Value
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("event: image_edit.partial_image\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"image_edit.partial_image\",\"partial_image_index\":0,\"b64_json\":\"" + partialB64 + "\"}\n\n"))
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("expected response writer to flush")
+		}
+		flusher.Flush()
+		time.Sleep(200 * time.Millisecond)
+	}))
+	defer server.Close()
+
+	repo := &mediaImageTestRepo{
+		conversation: model.Conversation{
+			ID:           42,
+			UserID:       7,
+			Model:        "gpt-image-1",
+			Provider:     "openai",
+			MessageCount: 1,
+		},
+		files: map[string]model.FileObject{
+			"file_source": {
+				ID:           1,
+				FileID:       "file_source",
+				UserID:       7,
+				FileName:     "source.png",
+				MimeType:     "image/png",
+				DetectedMIME: "image/png",
+				FileCategory: fileCategoryImage,
+				SizeBytes:    int64(len(sourcePNG)),
+				StoragePath:  "inputs/source.png",
+				Status:       "active",
+			},
+		},
+		nextMessageID: 10,
+		nextFileObjID: 20,
+	}
+	routeResolver := &mediaImageRouteResolver{
+		route: &channel.ResolvedRoute{
+			PlatformModelName:   "gpt-image-1",
+			Protocol:            llm.AdapterOpenAIImageEdits,
+			BaseURL:             server.URL,
+			UpstreamModel:       "gpt-image-1",
+			UpstreamName:        "test-upstream",
+			StreamIdleTimeoutMS: 50,
+		},
+	}
+	runtime := config.NewRuntime(mediaImageTestConfig())
+	uploadSvc := appupload.NewServiceWithRuntime(runtime, repo, nil, appupload.Hooks{}, appupload.ErrorSet{
+		InvalidFileReference: ErrInvalidFileReference,
+		FileTooLarge:         ErrFileTooLarge,
+		MIMEBlocked:          ErrMIMEBlocked,
+		DangerousMIMEType:    ErrDangerousMIMEType,
+	}, "test")
+	service := NewServiceWithRuntime(runtime, repo, nil, routeResolver, nil, llm.NewClient(), nil, nil, uploadSvc, nil, nil, nil, nil, nil, nil)
+	service.SetObjectStoreProvider(mediaImageMemoryStoreProvider{store: store})
+
+	var sawDelta bool
+	result, err := service.StreamMediaImage(context.Background(), MediaImageInput{
+		UserID:            7,
+		ConversationID:    42,
+		TaskType:          MediaImageTaskEdit,
+		Prompt:            "make it brighter",
+		PlatformModelName: "gpt-image-1",
+		FileIDs:           []string{"file_source"},
+		Options:           map[string]interface{}{"partial_images": 1},
+		ClientRunID:       "run_edit_partial_timeout",
+		OnEvent: func(eventType string, payload map[string]interface{}) error {
+			if value, ok := payload["b64_json"].(string); eventType == "media_image_delta" && ok && strings.TrimSpace(value) == partialB64 {
+				sawDelta = true
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("stream image edit should complete from partial fallback: %v", err)
+	}
+	if requestValues["stream"][0] != "true" || requestValues["partial_images"][0] != "1" {
+		t.Fatalf("expected single partial stream request, got %#v", requestValues)
+	}
+	if !sawDelta {
+		t.Fatal("expected partial image delta before fallback completion")
+	}
+	if routeResolver.failures != 0 || routeResolver.successes != 1 {
+		t.Fatalf("expected fallback to mark route success only, successes=%d failures=%d", routeResolver.successes, routeResolver.failures)
+	}
+	if result.AssistantMessage.Status != "success" || !strings.Contains(result.AssistantMessage.Content, "/api/v1/files/") {
+		t.Fatalf("expected successful file-backed assistant image, got %#v", result.AssistantMessage)
+	}
+	if len(repo.attachments) != 2 {
+		t.Fatalf("expected source and generated attachments, got %#v", repo.attachments)
+	}
+	generatedAttachment := repo.attachments[1]
+	if got := store.objects[generatedAttachment.StoragePath]; !bytes.Equal(got, partialPNG) {
+		t.Fatalf("expected generated attachment to store partial image bytes")
+	}
+}
+
 func mediaImageTestConfig() config.Config {
 	return config.Config{
 		MaxUploadFileBytes:       1024 * 1024,
@@ -247,6 +362,8 @@ func readMediaImageMultipartFile(t *testing.T, fileHeader *multipart.FileHeader)
 type mediaImageRouteResolver struct {
 	route     *channel.ResolvedRoute
 	lastInput channel.ResolveRouteInput
+	failures  int
+	successes int
 }
 
 func (r *mediaImageRouteResolver) ResolveRoute(ctx context.Context, input channel.ResolveRouteInput) (*channel.ResolvedRoute, error) {
@@ -255,9 +372,11 @@ func (r *mediaImageRouteResolver) ResolveRoute(ctx context.Context, input channe
 }
 
 func (r *mediaImageRouteResolver) MarkRouteFailure(ctx context.Context, route *channel.ResolvedRoute, cause error) {
+	r.failures++
 }
 
 func (r *mediaImageRouteResolver) MarkRouteSuccess(ctx context.Context, route *channel.ResolvedRoute) {
+	r.successes++
 }
 
 type mediaImageTestRepo struct {

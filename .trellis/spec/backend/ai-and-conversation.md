@@ -87,6 +87,13 @@ source and generated image attachments.
 - Supported edit options include `quality`, `size`, `n`, `user`; GPT-image
   models may also receive `background`, `moderation`, `output_format`,
   `output_compression`, and `input_fidelity`.
+- For upstream OpenAI-compatible image edit streaming with `partial_images`
+  omitted or set to `1`, a received `image_edit.partial_image` is accepted as
+  the final image if the stream later fails with a
+  `stream idle timeout` before a completed/final event. The application service
+  must save the latest partial image and emit the normal `completed` response.
+  This fallback is edit-only and must not apply when `partial_images` is greater
+  than `1`.
 - The user message stores source image attachment snapshots and attachment
   rows. The assistant message stores generated image files and markdown using
   `/api/v1/files/<file_id>/content`.
@@ -110,6 +117,10 @@ source and generated image attachments.
   `ErrModelRouteNotConfigured`; route resolver should filter it before the
   conversation service builds `llm.RouteConfig`
 - Empty upstream image result -> `ErrUpstreamEmptyResponse`
+- Stream idle timeout after a single edit partial image with
+  `partial_images=1` or omitted -> success using the latest partial image
+- Stream idle timeout without any partial image, or with `partial_images>1` ->
+  `ErrUpstreamRequestFailed`
 
 ### 5. Good/Base/Bad Cases
 
@@ -118,10 +129,15 @@ source and generated image attachments.
   edited image, and emits `completed`.
 - Base: multiple source images preserve input order after deduplication and are
   sent as repeated `image[]` parts.
+- Base: an edit stream can emit one `image_edit.partial_image`, then stall
+  before a final event; when only one partial was requested, the latest partial
+  is stored as the assistant image and the client receives `completed`.
 - Base: a dual-kind `["image_gen","image_edit"]` image model with a stored
   `openai_image_generations` route derives `openai_image_edits` for edit tasks.
 - Bad: a text or SVG upload must not be sent upstream; fail before creating the
   LLM request.
+- Bad: do not convert multi-partial streams (`partial_images>1`) into a final
+  image on idle timeout; there is no single agreed final preview in that mode.
 
 ### 6. Tests Required
 
@@ -132,6 +148,10 @@ source and generated image attachments.
 - Conversation tests should cover source file validation, source attachment
   persistence, route task type `image_edit`, and generated assistant image
   persistence when adding fakes for storage and LLM.
+- Conversation tests should cover the single-partial idle-timeout fallback:
+  upstream sends `image_edit.partial_image`, stalls past `StreamIdleTimeoutMS`,
+  service marks route success, stores the partial bytes as the generated
+  attachment, and returns a successful assistant image.
 - Channel routing tests should cover derived effective protocol for dual-kind
   image models and keep chat tasks from accepting image protocols.
 
@@ -170,4 +190,22 @@ if !ok {
 	return ErrModelRouteNotConfigured
 }
 route.Protocol = protocol
+```
+
+#### Wrong
+
+```go
+// Do not turn every partial image timeout into success.
+if lastPartialImage != nil {
+	return completeWith(lastPartialImage)
+}
+```
+
+#### Correct
+
+```go
+// Only the single-partial edit stream fallback is product-accepted as final.
+if taskType == MediaImageTaskEdit && partialImages == 1 && isStreamIdleTimeout(err) {
+	return completeWith(lastPartialImage)
+}
 ```

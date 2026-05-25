@@ -301,8 +301,14 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		generateInput.ImageEditMask = maskPart
 	}
 	var output *llm.GenerateOutput
+	var streamUsage llm.Usage
+	var lastPartialImage *llm.GeneratedImage
+	var lastPartialResponseID string
 	if llm.SupportsImageGenerationStream(routeConfig.Protocol, routeConfig.UpstreamModel) {
 		output, err = s.llmClient.GenerateStream(ctx, routeConfig, generateInput, func(event llm.GenerateStreamEvent) error {
+			if event.Usage != (llm.Usage{}) {
+				streamUsage = event.Usage
+			}
 			if event.Usage != (llm.Usage{}) && input.OnEvent != nil {
 				if streamErr := input.OnEvent("usage", map[string]interface{}{
 					"input_tokens":       event.Usage.InputTokens,
@@ -315,12 +321,23 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 				}
 			}
 			if event.GeneratedImage != nil && event.GeneratedImagePartial {
+				image := *event.GeneratedImage
+				lastPartialImage = &image
+				if responseID := strings.TrimSpace(event.ResponseID); responseID != "" {
+					lastPartialResponseID = responseID
+				}
 				return emitMediaImageDelta(input.OnEvent, event)
 			}
 			return nil
 		})
 	} else {
 		output, err = s.llmClient.Generate(ctx, routeConfig, generateInput)
+	}
+	if err != nil {
+		if fallbackOutput, ok := mediaImageEditPartialFallbackOutput(input.TaskType, filteredOptions, err, lastPartialImage, streamUsage, lastPartialResponseID); ok {
+			output = fallbackOutput
+			err = nil
+		}
 	}
 	if err != nil {
 		s.routeResolver.MarkRouteFailure(ctx, route, err)
