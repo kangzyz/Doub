@@ -20,7 +20,7 @@ import {
 const data = {
   user: {
     name: "DOUB Chat",
-    email: "doub.vexown.com",
+    email: "kang.vexown.com",
     avatar: "",
   },
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ExternalLink, Globe, Mail, Newspaper } from "lucide-react";
+import { ExternalLink, Globe, Mail } from "lucide-react";
 
 import packageMeta from "@/package.json";
 import { Badge } from "@/components/ui/badge";
@@ -86,8 +86,8 @@ export function AboutSettingsContent({
   const links: AboutLinkItem[] = [
     {
       label: labels.website,
-      value: "doub.vexown.com",
-      href: "https://doub.vexown.com",
+      value: "kang.vexown.com",
+      href: "https://kang.vexown.com",
       icon: Globe,
     },
     {
@@ -107,12 +107,6 @@ export function AboutSettingsContent({
       value: "DOUB-Chat",
       href: "https://github.com/kangzyz/Doub",
       providerIcon: { name: "GitHub", slug: "github" },
-    },
-    {
-      label: labels.blog,
-      value: "blog.cheny.me",
-      href: "https://blog.cheny.me/",
-      icon: Newspaper,
     },
     {
       label: labels.contact,

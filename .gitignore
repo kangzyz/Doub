@@ -162,6 +162,19 @@ storage/*
 backend/docs/rules/*
 frontend/public/vendor/lobehub-icons/
 
+# Local deployment notes may contain credentials/secrets
+/LOCAL_DEPLOYMENT.md
+
+# Ignore native Android prototype; keep android-webview/ tracked separately
+/android/
+/.trellis/tasks/05-22-native-android-client/
+
+# Android build artifacts and published APK binaries
+*.apk
+/android-webview/build-output/
+/frontend/app/downloads/*.apk
+/frontend/public/downloads/*.apk
+
 .DS_Store
 .idea
 .ace-tool/
