@@ -17,6 +17,7 @@ import { type AssistantReaction } from "@/features/chat/components/message/messa
 import type { ChatAreaMessage, MessageAttachment } from "@/features/chat/types/messages";
 import { ChatMessageUser } from "@/features/chat/components/message/message-user";
 import { StreamdownRender } from "@/features/chat/components/markdown/streamdown-render";
+import type { OpenCodeArtifactInput } from "@/features/chat/model/chat-artifacts";
 import { CenteredEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ type ChatAreaProps = {
   onEditUserMessage: (message: ChatAreaMessage, content: string) => Promise<boolean> | boolean;
   onSendSuggestion: (prompt: string) => Promise<void> | void;
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
+  onOpenCodeArtifact?: (message: ChatAreaMessage, artifact: OpenCodeArtifactInput) => void;
   onCycleMessageBranch: (parentPublicID: string | null, direction: "previous" | "next") => void;
   onToggleStar?: () => void | Promise<void>;
   onRename?: (title: string) => void | Promise<void>;
@@ -85,6 +87,7 @@ type ChatAreaProps = {
   showModelInfo?: boolean;
   showLatency?: boolean;
   showTokenUsage?: boolean;
+  splitRightInset?: boolean;
 };
 
 function useStableEvent<Args extends unknown[], Return>(callback: (...args: Args) => Return) {
@@ -107,6 +110,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   onEditImageAttachment,
   onCycleMessageBranch,
   onReactAssistantMessage,
+  onOpenCodeArtifact,
   markdownRender,
   showModelInfo,
   showLatency,
@@ -123,6 +127,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
   onCycleMessageBranch: (parentPublicID: string | null, direction: "previous" | "next") => void;
   onReactAssistantMessage: (publicID: string, reaction: AssistantReaction) => void;
+  onOpenCodeArtifact?: (message: ChatAreaMessage, artifact: OpenCodeArtifactInput) => void;
   markdownRender: boolean;
   showModelInfo: boolean;
   showLatency: boolean;
@@ -132,6 +137,15 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   const t = useTranslations("chat.messages");
   const isUser = item.role === "user";
   const isAssistant = item.role === "assistant";
+  const artifactActions = React.useMemo(
+    () =>
+      isAssistant && onOpenCodeArtifact
+        ? {
+            onOpenCodeArtifact: (artifact: OpenCodeArtifactInput) => onOpenCodeArtifact(item, artifact),
+          }
+        : undefined,
+    [isAssistant, item, onOpenCodeArtifact],
+  );
 
   const onCopy = React.useCallback(async () => {
     try {
@@ -167,6 +181,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
         onReactAssistantMessage={onReactAssistantMessage}
         onCopy={() => void onCopy()}
         onEditImageAttachment={onEditImageAttachment}
+        artifactActions={artifactActions}
         markdownRender={markdownRender}
         showModelInfo={showModelInfo}
         showLatency={showLatency}
@@ -198,6 +213,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   previous.showTokenUsage === next.showTokenUsage &&
   previous.showFollowUps === next.showFollowUps &&
   previous.onEditImageAttachment === next.onEditImageAttachment &&
+  previous.onOpenCodeArtifact === next.onOpenCodeArtifact &&
   areChatAreaMessagesRenderEqual(previous.item, next.item)
 ));
 
@@ -217,6 +233,7 @@ export function ChatArea({
   onEditUserMessage,
   onSendSuggestion,
   onEditImageAttachment,
+  onOpenCodeArtifact,
   onCycleMessageBranch,
   onToggleStar,
   onRename,
@@ -228,6 +245,7 @@ export function ChatArea({
   showModelInfo = true,
   showLatency = true,
   showTokenUsage = true,
+  splitRightInset = false,
 }: ChatAreaProps) {
   const t = useTranslations("chat");
   const { getReaction, onReactAssistantMessage } = useMessageFeedback(messages);
@@ -254,7 +272,7 @@ export function ChatArea({
 
   return (
     <>
-      <div className="px-3 py-2.5 md:px-0">
+      <div className={cn("px-3 py-2.5 md:pl-0", splitRightInset ? "md:pr-4" : "md:pr-0")}>
         <div className="flex w-full items-center justify-between gap-3">
           <ChatLabel
             title={title}
@@ -286,7 +304,7 @@ export function ChatArea({
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <div
           ref={messageViewportRef}
           className="h-full min-h-0 overflow-y-auto px-3 pb-8 pt-2 [overflow-anchor:none] md:px-6"
@@ -319,6 +337,7 @@ export function ChatArea({
                   onEditImageAttachment={editImageAttachmentHandler}
                   onCycleMessageBranch={stableOnCycleMessageBranch}
                   onReactAssistantMessage={stableOnReactAssistantMessage}
+                  onOpenCodeArtifact={onOpenCodeArtifact}
                   markdownRender={markdownRender}
                   showModelInfo={showModelInfo}
                   showLatency={showLatency}
