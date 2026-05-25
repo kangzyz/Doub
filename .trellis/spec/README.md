@@ -1,8 +1,8 @@
 # DOUB Chat Development Specs
 
 These specs describe the repository as it exists now: a Next.js frontend in
-`frontend/`, a Go API service in `backend/`, and optional runtime services
-under `docker/`.
+`frontend/`, a Go API service in `backend/`, a Capacitor Android WebView shell
+in `android-webview/`, and optional runtime services under `docker/`.
 
 Read the spec layer that matches the files you will change:
 
@@ -10,6 +10,7 @@ Read the spec layer that matches the files you will change:
 | --- | --- |
 | [backend](./backend/index.md) | Go API, Gin routes, application services, repositories, persistence, auth, billing, LLM routing, file/RAG, observability |
 | [frontend](./frontend/index.md) | Next.js App Router pages, feature components, hooks, API wrappers, auth session UI, i18n, styling |
+| [android-webview](./android-webview/index.md) | Capacitor Android shell, native WebView configuration, Android manifest/security, APK download handling |
 | [shared](./shared/index.md) | Cross-stack contracts, dependency policy, TypeScript style, generated artifacts |
 | [guides](./guides/index.md) | Pre-implementation checks and cross-layer reasoning |
 
@@ -21,6 +22,9 @@ Core project contracts:
   `repository` interfaces -> `infra` implementations.
 - Frontend route files in `frontend/app/` stay thin and delegate real work to
   `frontend/features/*`.
+- The Android shell in `android-webview/` loads the production web app at
+  `https://doub.vexown.com`; keep this URL synchronized across Capacitor config
+  and the generated fallback `dist/index.html`.
 - API responses use the `errorMsg` + `data` envelope defined in
   `backend/internal/shared/response/response.go` and
   `frontend/shared/api/common.types.ts`.
