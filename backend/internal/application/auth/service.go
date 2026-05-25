@@ -41,14 +41,9 @@ type Service struct {
 	repo                 repository.AuthRepository
 	geoResolver          *geoip.Client
 	providerHTTPClient   *http.Client
-	turnstileHTTPClient  httpDoer
 	logger               *zap.Logger
 	storeProvider        appstorage.Provider
 	auditWriter          auditWriter
-}
-
-type httpDoer interface {
-	Do(*http.Request) (*http.Response, error)
 }
 
 type auditWriter interface {
@@ -70,14 +65,12 @@ func NewServiceWithRuntime(cfg *config.Runtime, repo repository.AuthRepository, 
 		ssrfProtectionEnabled = snapshot.SSRFProtectionEnabled
 	}
 	providerHTTPClient := newAuthOutboundHTTPClient(env, ssrfProtectionEnabled)
-	turnstileHTTPClient := newAuthOutboundHTTPClient(env, ssrfProtectionEnabled)
 	return &Service{
-		cfg:                 cfg,
-		repo:                repo,
-		geoResolver:         geoResolver,
-		providerHTTPClient:  providerHTTPClient,
-		turnstileHTTPClient: turnstileHTTPClient,
-		storeProvider:       appstorage.NewRuntimeProvider(cfg, nil),
+		cfg:                cfg,
+		repo:               repo,
+		geoResolver:        geoResolver,
+		providerHTTPClient: providerHTTPClient,
+		storeProvider:      appstorage.NewRuntimeProvider(cfg, nil),
 	}
 }
 
