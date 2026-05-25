@@ -58,8 +58,8 @@ func TestResolveMessageSystemPromptInjectionSkipsHTMLVisualPromptWhenDisabled(t 
 	}
 
 	got := resolveMessageSystemPromptInjection(config.Config{}, route, false)
-	if strings.Contains(got.Content, "Response format instructions") {
-		t.Fatalf("expected no HTML visual prompt when disabled, got %q", got.Content)
+	if got.Content != "" {
+		t.Fatalf("expected no system prompt content, got %q", got.Content)
 	}
 }
 

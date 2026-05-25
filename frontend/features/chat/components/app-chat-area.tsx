@@ -331,6 +331,7 @@ export function AppChatArea() {
   });
   const generating = sending || Boolean(resumingRunID);
   const showLiveAssistant = showPendingAssistant || Boolean(resumingRunID);
+  const latestMessageKey = visibleMessages.at(-1)?.key ?? "";
   const onStopActiveMessage = React.useCallback(() => {
     if (sending) {
       onStopMessage();
@@ -342,6 +343,7 @@ export function AppChatArea() {
   const {
     messageViewportRef,
     messageContentRef,
+    messageEndRef,
     onScroll,
     onScrollToLatest,
     showScrollToLatestButton,
@@ -350,6 +352,7 @@ export function AppChatArea() {
     loading,
     isConversationMode,
     visibleMessageCount,
+    latestMessageKey,
     showPendingAssistant: showLiveAssistant,
     streamingText,
     streamingTraceText,
@@ -669,6 +672,7 @@ export function AppChatArea() {
                   busy={generating}
                   messageViewportRef={messageViewportRef}
                   messageContentRef={messageContentRef}
+                  messageEndRef={messageEndRef}
                   onScroll={onScroll}
                   onScrollToLatest={onScrollToLatest}
                   showScrollToLatestButton={showScrollToLatestButton}

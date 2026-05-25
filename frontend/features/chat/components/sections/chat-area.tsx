@@ -67,6 +67,7 @@ type ChatAreaProps = {
   busy: boolean;
   messageViewportRef: React.RefObject<HTMLDivElement | null>;
   messageContentRef: React.RefObject<HTMLDivElement | null>;
+  messageEndRef: React.RefObject<HTMLDivElement | null>;
   onScroll: () => void;
   onScrollToLatest: () => void;
   showScrollToLatestButton: boolean;
@@ -225,6 +226,7 @@ export function ChatArea({
   busy,
   messageViewportRef,
   messageContentRef,
+  messageEndRef,
   onScroll,
   onScrollToLatest,
   showScrollToLatestButton,
@@ -372,6 +374,7 @@ export function ChatArea({
                 </motion.div>
               );
             })}
+            <div ref={messageEndRef} aria-hidden="true" className="h-px" />
           </div>
         </div>
 
