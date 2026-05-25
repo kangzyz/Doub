@@ -18,6 +18,29 @@
     "details": "Product information",
     "product": "Product",
     "version": "Version",
+    "checkUpdate": "Check updates",
+    "checkingUpdate": "Checking",
+    "updateAvailableIndicator": "Update available",
+    "updateTooltip": {
+      "currentTitle": "Current version",
+      "currentVersion": "Current version {current}",
+      "title": "Update available",
+      "latestVersion": "Latest version {latest}",
+      "description": "Check updates to review the update dialog."
+    },
+    "updateDialog": {
+      "currentTitle": "You are already on the latest version",
+      "currentDescription": "Current version {current} is the latest published release.",
+      "availableTitle": "New version available",
+      "availableDescription": "Current version is {current}. Latest version is {latest}. Review the release notes before updating.",
+      "failedTitle": "Update check failed",
+      "failedDescription": "Could not get the latest version information. Check the network connection and try again.",
+      "currentVersion": "Current version",
+      "latestVersion": "Latest version",
+      "openRelease": "Changelog",
+      "retry": "Retry",
+      "close": "Close"
+    },
     "console": "Console",
     "adminConsole": "Admin console",
     "official": "Official",
@@ -33,7 +56,7 @@
   "accessDeniedDescription": "You are not allowed to access this page",
   "title": "Users",
   "pageTitle": "Account management",
-  "create": "Create user",
+  "create": "Create",
   "edit": "Edit user",
   "delete": "Delete user",
   "fallbackUser": "User",
@@ -181,7 +204,7 @@
     "reset2fa": "Reset 2FA",
     "revokeSessions": "Revoke sessions",
     "creating": "Creating",
-    "createUser": "Create user"
+    "createUser": "Create"
   },
   "validation": {
     "nonFreeRequiresExpiry": "Non-Free subscriptions require an expiration time.",

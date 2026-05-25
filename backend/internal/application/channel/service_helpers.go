@@ -75,6 +75,7 @@ func toModelView(item repository.ChannelModelListRow) ModelView {
 		KindsJSON:         item.KindsJSON,
 		Icon:              item.Icon,
 		CapabilitiesJSON:  item.CapabilitiesJSON,
+		SystemPrompt:      item.SystemPrompt,
 		Status:            item.Status,
 		Description:       item.Description,
 		SortOrder:         item.SortOrder,
@@ -368,7 +369,7 @@ func detectModelVendor(candidates ...string) string {
 			switch {
 			case strings.HasPrefix(value, "claude"), strings.Contains(value, "anthropic/"):
 				return "anthropic"
-			case strings.HasPrefix(value, "gemini"), strings.HasPrefix(value, "gemma"), strings.HasPrefix(value, "imagen"),
+			case strings.HasPrefix(value, "nano-banana"), strings.HasPrefix(value, "gemini"), strings.HasPrefix(value, "gemma"), strings.HasPrefix(value, "imagen"),
 				strings.HasPrefix(value, "veo"), strings.Contains(value, "google/"):
 				return "google"
 			case strings.HasPrefix(value, "llama"), strings.Contains(value, "meta/"):
@@ -492,6 +493,8 @@ func detectModelIcon(candidates ...string) string {
 			switch {
 			case strings.HasPrefix(value, "claude"):
 				return "claude"
+			case strings.HasPrefix(value, "nano-banana"), isGeminiImageGenerationModel(value):
+				return "nanobanana"
 			case strings.HasPrefix(value, "gemma"):
 				return "gemma"
 			case strings.HasPrefix(value, "gemini"), strings.HasPrefix(value, "imagen"), strings.HasPrefix(value, "veo"):
@@ -594,10 +597,14 @@ func normalizePlatformModelName(raw string) (string, error) {
 	if value == "" {
 		return "", ErrInvalidPlatformModelName
 	}
-	if strings.ContainsFunc(value, unicode.IsSpace) {
+	if strings.ContainsFunc(value, hasUnsafeModelNameRune) {
 		return "", ErrInvalidPlatformModelName
 	}
 	return value, nil
+}
+
+func hasUnsafeModelNameRune(r rune) bool {
+	return unicode.IsControl(r) || (unicode.IsSpace(r) && r != ' ')
 }
 
 func generateBindingCode() string {

@@ -59,12 +59,12 @@ func TestStreamMediaImageEditRejectsMissingFiles(t *testing.T) {
 		TaskType: MediaImageTaskEdit,
 		Prompt:   "make it brighter",
 	})
-	if !errors.Is(err, ErrInvalidMediaGenerationTask) {
-		t.Fatalf("expected invalid media task for missing edit files, got %v", err)
+	if !errors.Is(err, ErrMediaImageEditInputRequired) {
+		t.Fatalf("expected missing edit input error, got %v", err)
 	}
 }
 
-func TestLoadMediaImageEditSourceFilesRejectsNonImageFile(t *testing.T) {
+func TestResolveMediaImageEditInputsRejectsNonImageFile(t *testing.T) {
 	repo := &mediaImageTestRepo{
 		files: map[string]model.FileObject{
 			"file_note": {
@@ -85,9 +85,9 @@ func TestLoadMediaImageEditSourceFilesRejectsNonImageFile(t *testing.T) {
 		repo:          repo,
 		storeProvider: mediaImageMemoryStoreProvider{store: newMediaImageMemoryStore()},
 	}
-	_, err := service.loadMediaImageEditSourceFiles(context.Background(), 7, []string{"file_note"})
-	if !errors.Is(err, ErrInvalidFileReference) {
-		t.Fatalf("expected invalid file reference for non-image edit source, got %v", err)
+	_, _, err := service.resolveMediaImageEditInputs(context.Background(), MediaImageInput{UserID: 7, TaskType: MediaImageTaskEdit, FileIDs: []string{"file_note"}})
+	if !errors.Is(err, ErrMediaImageEditInputInvalid) {
+		t.Fatalf("expected invalid image edit input for non-image source, got %v", err)
 	}
 }
 
@@ -301,6 +301,47 @@ func (r *mediaImageTestRepo) CreateMessage(ctx context.Context, item *model.Mess
 	return nil
 }
 
+func (r *mediaImageTestRepo) CreateMessagePairWithUserAttachments(ctx context.Context, userMessage *model.Message, assistantMessage *model.Message, userAttachments []model.Attachment) error {
+	if err := r.CreateMessage(ctx, userMessage); err != nil {
+		return err
+	}
+	for index := range userAttachments {
+		userAttachments[index].ConversationID = userMessage.ConversationID
+		userAttachments[index].MessageID = userMessage.ID
+		userAttachments[index].UserID = userMessage.UserID
+	}
+	r.attachments = append(r.attachments, userAttachments...)
+	parentID := userMessage.ID
+	assistantMessage.ParentMessageID = &parentID
+	if err := r.CreateMessage(ctx, assistantMessage); err != nil {
+		return err
+	}
+	return r.IncrementMessageCount(ctx, userMessage.ConversationID, 2)
+}
+
+func (r *mediaImageTestRepo) CompleteAssistantMessageWithAttachments(ctx context.Context, userMessageID uint, userUsage repository.MessageUsageUpdate, assistantMessageID uint, assistantCompletion repository.AssistantMessageCompletionUpdate, assistantAttachments []model.Attachment) error {
+	for index := range r.messages {
+		if r.messages[index].ID == userMessageID {
+			r.messages[index].InputTokens = userUsage.InputTokens
+			r.messages[index].CacheReadTokens = userUsage.CacheReadTokens
+			r.messages[index].CacheWriteTokens = userUsage.CacheWriteTokens
+			r.messages[index].TokenUsage = userUsage.InputTokens + userUsage.CacheReadTokens + userUsage.CacheWriteTokens
+		}
+		if r.messages[index].ID == assistantMessageID {
+			r.messages[index].Content = assistantCompletion.Content
+			r.messages[index].OutputTokens = assistantCompletion.OutputTokens
+			r.messages[index].ReasoningTokens = assistantCompletion.ReasoningTokens
+			r.messages[index].LatencyMS = assistantCompletion.LatencyMS
+			r.messages[index].Status = assistantCompletion.Status
+			r.messages[index].TokenUsage = assistantCompletion.OutputTokens + assistantCompletion.ReasoningTokens
+		}
+	}
+	for index := range assistantAttachments {
+		assistantAttachments[index].MessageID = assistantMessageID
+	}
+	r.attachments = append(r.attachments, assistantAttachments...)
+	return nil
+}
 func (r *mediaImageTestRepo) IncrementMessageCount(ctx context.Context, conversationID uint, delta int) error {
 	r.conversation.MessageCount += delta
 	return nil
@@ -360,6 +401,17 @@ func (r *mediaImageTestRepo) GetActiveFileObjectsByIDs(ctx context.Context, user
 	return items, nil
 }
 
+func (r *mediaImageTestRepo) GetActiveFileObjectByID(ctx context.Context, userID uint, fileID string) (*model.FileObject, error) {
+	item, ok := r.files[fileID]
+	if !ok || item.UserID != userID || item.Status != "active" {
+		return nil, repository.ErrNotFound
+	}
+	copy := item
+	return &copy, nil
+}
+func (r *mediaImageTestRepo) TouchFileObjectLastAccessedAt(ctx context.Context, userID uint, fileID string, accessedAt time.Time) error {
+	return nil
+}
 func (r *mediaImageTestRepo) GetUserByID(ctx context.Context, userID uint) (*domainuser.User, error) {
 	return &domainuser.User{ID: userID, PublicID: "user_test", Status: domainuser.StatusActive}, nil
 }

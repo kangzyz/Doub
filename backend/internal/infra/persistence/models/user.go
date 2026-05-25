@@ -3,8 +3,10 @@ package model
 import "time"
 
 const (
-	// RoleSuperAdmin 是唯一超级管理员角色。
+	// RoleSuperAdmin 是超级管理员角色。
 	RoleSuperAdmin = "superadmin"
+	// RoleAdmin 是后台管理员角色。
+	RoleAdmin = "admin"
 	// RoleUser 是普通用户角色。
 	RoleUser = "user"
 )
@@ -31,7 +33,7 @@ type User struct {
 	AvatarURL             string     `gorm:"size:2048;not null;default:'';comment:头像地址"`
 	Email                 string     `gorm:"size:128;not null;default:'';index:idx_identity_users_email;comment:邮箱"`
 	Phone                 string     `gorm:"size:32;not null;default:'';index:idx_identity_users_phone;comment:手机号"`
-	Role                  string     `gorm:"size:32;not null;default:'user';index:idx_identity_users_role;comment:角色(superadmin/user)"`
+	Role                  string     `gorm:"size:32;not null;default:'user';index:idx_identity_users_role;comment:角色(superadmin/admin/user)"`
 	Status                string     `gorm:"size:32;not null;default:'active';index:idx_identity_users_status;comment:账户状态"`
 	Timezone              string     `gorm:"size:64;not null;default:'Etc/UTC';comment:时区"`
 	Locale                string     `gorm:"size:16;not null;default:'en-US';comment:语言区域"`
@@ -190,6 +192,7 @@ type AuthIdentityProvider struct {
 	DefaultRole           string `gorm:"size:32;not null;default:'user';comment:自动创建用户默认角色"`
 	SubjectField          string `gorm:"size:64;not null;default:'sub';comment:用户唯一ID字段"`
 	EmailField            string `gorm:"size:64;not null;default:'email';comment:邮箱字段"`
+	EmailVerifiedField    string `gorm:"size:64;not null;default:'email_verified';comment:邮箱验证状态字段"`
 	NameField             string `gorm:"size:64;not null;default:'name';comment:昵称字段"`
 	AvatarField           string `gorm:"size:64;not null;default:'picture';comment:头像字段"`
 	SortOrder             int    `gorm:"not null;default:100;index:idx_identity_providers_sort_order;comment:展示顺序"`

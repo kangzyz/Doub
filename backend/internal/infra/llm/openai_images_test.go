@@ -1,10 +1,9 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,106 +102,87 @@ func TestBuildOpenAIImageGenerationRequestBodyDallEParams(t *testing.T) {
 	}
 }
 
-func TestOpenAIImageEditMultipartRequest(t *testing.T) {
-	imageOne := []byte("image-one")
-	imageTwo := []byte("image-two")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/images/edits" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-		if contentType := r.Header.Get("Content-Type"); contentType == "" {
-			t.Fatalf("expected multipart content type")
-		}
-		if err := r.ParseMultipartForm(1 << 20); err != nil {
-			t.Fatalf("parse multipart form: %v", err)
-		}
-		form := r.MultipartForm.Value
-		if got := form["model"]; len(got) != 1 || got[0] != "gpt-image-1" {
-			t.Fatalf("unexpected model field: %#v", got)
-		}
-		if got := form["prompt"]; len(got) != 1 || got[0] != "Make the product image warmer" {
-			t.Fatalf("unexpected prompt field: %#v", got)
-		}
-		expectedFields := map[string]string{
-			"size":               "1024x1024",
-			"quality":            "high",
-			"n":                  "2",
-			"background":         "transparent",
-			"moderation":         "low",
-			"output_format":      "webp",
-			"output_compression": "80",
-			"input_fidelity":     "high",
-		}
-		for key, want := range expectedFields {
-			if got := form[key]; len(got) != 1 || got[0] != want {
-				t.Fatalf("unexpected %s field: got %#v want %q", key, got, want)
-			}
-		}
-		files := r.MultipartForm.File["image[]"]
-		if len(files) != 2 {
-			t.Fatalf("expected two image[] parts, got %d", len(files))
-		}
-		if files[0].Filename != "source.png" || files[1].Filename != "reference.webp" {
-			t.Fatalf("unexpected filenames: %q %q", files[0].Filename, files[1].Filename)
-		}
-		if got := readMultipartTestFile(t, files[0]); string(got) != string(imageOne) {
-			t.Fatalf("unexpected first image bytes: %q", string(got))
-		}
-		if got := readMultipartTestFile(t, files[1]); string(got) != string(imageTwo) {
-			t.Fatalf("unexpected second image bytes: %q", string(got))
-		}
-		_, _ = w.Write([]byte(`{
-			"id": "img_edit_1",
-			"data": [{"b64_json": "ZWRpdGVk"}],
-			"usage": {"input_tokens": 12, "output_tokens": 40}
-		}`))
-	}))
-	defer server.Close()
-
-	client := NewClient()
-	output, err := client.Generate(context.Background(), RouteConfig{
-		Protocol:      AdapterOpenAIImageEdits,
-		BaseURL:       server.URL,
-		UpstreamModel: "gpt-image-1",
-	}, GenerateInput{
+func TestBuildOpenAIImageEditMultipartRequest(t *testing.T) {
+	body, contentType, debugBody, err := buildOpenAIImageEditMultipartRequest("gpt-image-1", GenerateInput{
 		Messages: []Message{{
 			Role: "user",
 			Parts: []ContentPart{
-				{Kind: ContentPartText, Text: "Make the product image warmer"},
-				{Kind: ContentPartImage, MimeType: "image/png", FileName: "source.png", Data: imageOne},
-				{Kind: ContentPartImage, MimeType: "image/webp", FileName: "reference.webp", Data: imageTwo},
+				{Kind: ContentPartText, Text: "Replace the background"},
+				{Kind: ContentPartImage, MimeType: "image/png", FileName: "source.png", Data: []byte("source")},
 			},
 		}},
+		ImageEditMask: &ContentPart{Kind: ContentPartImage, MimeType: "image/png", FileName: "mask.png", Data: []byte("mask")},
 		Options: map[string]interface{}{
 			"size":               "1024x1024",
 			"quality":            "high",
-			"n":                  2,
-			"background":         "transparent",
-			"moderation":         "low",
 			"output_format":      "webp",
 			"output_compression": 80,
 			"input_fidelity":     "high",
+			"moderation":         "low",
+			"partial_images":     2,
+			"stream":             true,
+			"prompt":             "override",
 		},
-	})
+	}, false)
 	if err != nil {
-		t.Fatalf("generate image edit: %v", err)
+		t.Fatalf("build image edit multipart request: %v", err)
 	}
-	if output.ResponseID != "img_edit_1" {
-		t.Fatalf("expected response id, got %q", output.ResponseID)
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body))
+	req.Header.Set("Content-Type", contentType)
+	if err = req.ParseMultipartForm(10 << 20); err != nil {
+		t.Fatalf("parse multipart body: %v", err)
 	}
-	if len(output.GeneratedImages) != 1 || output.GeneratedImages[0].B64JSON != "ZWRpdGVk" {
-		t.Fatalf("expected edited image output, got %#v", output.GeneratedImages)
+	form := req.MultipartForm
+	if form.Value["model"][0] != "gpt-image-1" || form.Value["prompt"][0] != "Replace the background" {
+		t.Fatalf("unexpected edit form fields: %#v", form.Value)
 	}
-	if output.GeneratedImages[0].MIMEType != "image/webp" {
-		t.Fatalf("expected output MIME from output_format, got %q", output.GeneratedImages[0].MIMEType)
+	if form.Value["output_format"][0] != "webp" || form.Value["input_fidelity"][0] != "high" || form.Value["moderation"][0] != "low" {
+		t.Fatalf("expected edit params, got %#v", form.Value)
 	}
-	if output.Usage.InputTokens != 12 || output.Usage.OutputTokens != 40 {
-		t.Fatalf("expected parsed edit usage, got %#v", output.Usage)
+	if _, ok := form.Value["stream"]; ok {
+		t.Fatalf("stream must not be passed by non-streaming edit adapter: %#v", form.Value)
+	}
+	if _, ok := form.Value["partial_images"]; ok {
+		t.Fatalf("partial_images must not be passed without upstream image edit streaming: %#v", form.Value)
+	}
+	if len(form.File["image[]"]) != 1 || len(form.File["mask"]) != 1 {
+		t.Fatalf("expected image[] and mask files, got %#v", form.File)
+	}
+	var debug map[string]interface{}
+	if err = json.Unmarshal(debugBody, &debug); err != nil {
+		t.Fatalf("parse debug body: %v", err)
+	}
+	if debug["image_count"] != float64(1) || debug["mask"] != true {
+		t.Fatalf("expected sanitized debug body, got %#v", debug)
+	}
+}
+
+func TestBuildOpenAIImageEditStreamMultipartRequest(t *testing.T) {
+	body, contentType, _, err := buildOpenAIImageEditMultipartRequest("gpt-image-1", GenerateInput{
+		Messages: []Message{{
+			Role: "user",
+			Parts: []ContentPart{
+				{Kind: ContentPartText, Text: "Replace the background"},
+				{Kind: ContentPartImage, MimeType: "image/png", Data: []byte("source")},
+			},
+		}},
+		Options: map[string]interface{}{"partial_images": 2},
+	}, true)
+	if err != nil {
+		t.Fatalf("build image edit stream multipart request: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body))
+	req.Header.Set("Content-Type", contentType)
+	if err = req.ParseMultipartForm(10 << 20); err != nil {
+		t.Fatalf("parse multipart body: %v", err)
+	}
+	if req.MultipartForm.Value["stream"][0] != "true" || req.MultipartForm.Value["partial_images"][0] != "2" {
+		t.Fatalf("expected edit stream fields, got %#v", req.MultipartForm.Value)
 	}
 }
 
 func TestParseOpenAIImageGenerationOutput(t *testing.T) {
-	output, err := parseOpenAIImageGenerationOutput([]byte(`{
+	output, err := parseOpenAIImageOutput([]byte(`{
 		"created": 1713833628,
 		"data": [
 			{"url": "https://example.com/a.png", "revised_prompt": "A revised render"},
@@ -238,22 +218,8 @@ func TestParseOpenAIImageGenerationOutput(t *testing.T) {
 	}
 }
 
-func readMultipartTestFile(t *testing.T, fileHeader *multipart.FileHeader) []byte {
-	t.Helper()
-	file, err := fileHeader.Open()
-	if err != nil {
-		t.Fatalf("open multipart file: %v", err)
-	}
-	defer file.Close() //nolint:errcheck
-	data, err := io.ReadAll(file)
-	if err != nil {
-		t.Fatalf("read multipart file: %v", err)
-	}
-	return data
-}
-
 func TestParseOpenAIImageGenerationOutputDoesNotInventUsage(t *testing.T) {
-	output, err := parseOpenAIImageGenerationOutput([]byte(`{
+	output, err := parseOpenAIImageOutput([]byte(`{
 		"data": [{"b64_json": "aGVsbG8="}]
 	}`), "png")
 	if err != nil {
@@ -367,5 +333,73 @@ func TestOpenAIImageGenerationStreamFallsBackToJSONResponse(t *testing.T) {
 	}
 	if len(usageEvents) != 1 || usageEvents[0].InputTokens != 12 || usageEvents[0].OutputTokens != 40 {
 		t.Fatalf("expected usage event from json fallback, got %#v", usageEvents)
+	}
+}
+
+func TestOpenAIImageEditStream(t *testing.T) {
+	var requestValues map[string][]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/images/edits" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Accept") != "text/event-stream" {
+			t.Fatalf("expected event stream accept header, got %q", r.Header.Get("Accept"))
+		}
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			t.Fatalf("parse multipart request: %v", err)
+		}
+		requestValues = r.MultipartForm.Value
+		if len(r.MultipartForm.File["image[]"]) != 1 {
+			t.Fatalf("expected one edit image, got %#v", r.MultipartForm.File)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("event: image_edit.partial_image\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"image_edit.partial_image\",\"partial_image_index\":1,\"b64_json\":\"cGFydGlhbA==\"}\n\n"))
+		_, _ = w.Write([]byte("event: image_edit.completed\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"image_edit.completed\",\"id\":\"img_edit_1\",\"b64_json\":\"ZmluYWw=\",\"usage\":{\"input_tokens\":22,\"output_tokens\":44}}\n\n"))
+	}))
+	defer server.Close()
+
+	client := NewClient()
+	var partials []GenerateStreamEvent
+	output, err := client.GenerateStream(context.Background(), RouteConfig{
+		Protocol:      AdapterOpenAIImageEdits,
+		BaseURL:       server.URL,
+		UpstreamModel: "gpt-image-1",
+	}, GenerateInput{
+		Messages: []Message{{
+			Role: "user",
+			Parts: []ContentPart{
+				{Kind: ContentPartText, Text: "Replace the background"},
+				{Kind: ContentPartImage, MimeType: "image/png", Data: []byte("source")},
+			},
+		}},
+		Options: map[string]interface{}{
+			"output_format":  "webp",
+			"partial_images": 2,
+		},
+	}, func(event GenerateStreamEvent) error {
+		if event.GeneratedImage != nil {
+			partials = append(partials, event)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("generate image edit stream: %v", err)
+	}
+	if requestValues["stream"][0] != "true" || requestValues["partial_images"][0] != "2" {
+		t.Fatalf("expected stream request values, got %#v", requestValues)
+	}
+	if len(partials) != 1 || partials[0].GeneratedImage == nil || partials[0].GeneratedImage.B64JSON != "cGFydGlhbA==" {
+		t.Fatalf("expected partial edit image event, got %#v", partials)
+	}
+	if len(output.GeneratedImages) != 1 || output.GeneratedImages[0].B64JSON != "ZmluYWw=" {
+		t.Fatalf("expected final edit image, got %#v", output.GeneratedImages)
+	}
+	if output.ResponseID != "img_edit_1" {
+		t.Fatalf("expected edit response id, got %q", output.ResponseID)
+	}
+	if output.Usage.InputTokens != 22 || output.Usage.OutputTokens != 44 {
+		t.Fatalf("expected edit usage, got %#v", output.Usage)
 	}
 }

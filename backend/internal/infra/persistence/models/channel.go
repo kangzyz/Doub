@@ -36,6 +36,7 @@ type LLMPlatformModel struct {
 	Vendor           string `gorm:"size:64;not null;default:'';index:idx_llm_platform_models_vendor;comment:平台展示厂商"`
 	KindsJSON        string `gorm:"type:text;not null;default:'[\"chat\"]';comment:模型类型JSON数组"`
 	CapabilitiesJSON string `gorm:"type:text;not null;default:'{}';comment:平台能力配置JSON"`
+	SystemPrompt     string `gorm:"type:text;not null;default:'';comment:模型级系统提示词"`
 	Icon             string `gorm:"size:64;comment:模型图标标识"`
 	Description      string `gorm:"type:text;comment:模型说明"`
 	Status           string `gorm:"size:32;not null;default:'active';index:idx_llm_platform_models_status;comment:平台模型状态"`
@@ -73,7 +74,7 @@ type LLMPlatformModelRoute struct {
 	ControlPlaneModel
 	PlatformModelID    uint   `gorm:"not null;default:0;index:idx_llm_model_routes_model;uniqueIndex:idx_llm_model_routes_unique;comment:平台模型ID"`
 	UpstreamModelID    uint   `gorm:"not null;default:0;index:idx_llm_model_routes_upstream_model;uniqueIndex:idx_llm_model_routes_unique;comment:上游模型ID"`
-	Protocol           string `gorm:"size:64;not null;index:idx_llm_model_routes_protocol;comment:最终适配器协议"`
+	Protocol           string `gorm:"size:64;not null;index:idx_llm_model_routes_protocol;uniqueIndex:idx_llm_model_routes_unique;comment:最终适配器协议"`
 	Status             string `gorm:"size:32;not null;default:'active';index:idx_llm_model_routes_status;comment:路由状态"`
 	Priority           int    `gorm:"not null;default:1;index:idx_llm_model_routes_priority;comment:路由优先级"`
 	Weight             int    `gorm:"not null;default:1;comment:负载均衡权重"`

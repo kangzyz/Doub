@@ -10,7 +10,8 @@ import type {
   PendingAttachment,
   PendingExchange,
 } from "@/features/chat/types/chat-runtime";
-import { resolveChatSubmitTask } from "@/features/chat/model/chat-task";
+import type { ChatSubmitBlockReason } from "@/features/chat/model/chat-task";
+import { resolveChatSubmitDecision } from "@/features/chat/model/chat-task";
 import {
   resolveDefaultSubmissionParentMessage,
   resolvePersistedPublicID,
@@ -44,6 +45,13 @@ import type {
 } from "@/shared/api/conversation.types";
 
 const CONVERSATION_METADATA_REFRESH_DELAYS = [800, 1200, 1800, 2600, 3500, 5000] as const;
+
+function resolveSubmitBlockDescription(
+  reason: ChatSubmitBlockReason,
+  t: (key: string) => string,
+): string {
+  return t(`mediaInputBlocked.${reason}`);
+}
 
 function resolveImageLoadingAspectRatio(options: ConversationOptions): ImageLoadingAspectRatio {
   const rawSize = typeof options.size === "string" ? options.size.trim() : "";
@@ -289,7 +297,14 @@ export function useChatMessageSubmit({
           description: t("attachmentsTruncatedDescription", { count: maxFilesPerMessage }),
         });
       }
-      const submitTask = resolveChatSubmitTask(selectedModel, effectiveAttachments);
+      const submitDecision = resolveChatSubmitDecision(selectedModel, effectiveAttachments);
+      if (submitDecision.blockedReason) {
+        toast.error(t("mediaInputUnsupported"), {
+          description: resolveSubmitBlockDescription(submitDecision.blockedReason, t),
+        });
+        return false;
+      }
+      const submitTask = submitDecision.task;
       if (!requestPlatformModelName) {
         toast.error(t("noModel"), { description: t("selectModelFirst") });
         return false;

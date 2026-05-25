@@ -16,6 +16,11 @@
       "label": "Task model",
       "description": "Chat model used to generate conversation titles and labels."
     },
+    "defaultSystemPrompt": {
+      "label": "Global default system prompt",
+      "description": "Global behavior instructions for all chat models. Leave empty to inject nothing. Model-level prompts are appended after it.",
+      "placeholder": "Example: keep answers accurate and clear, and follow platform safety requirements."
+    },
     "optionPolicyMode": {
       "label": "Option passthrough policy",
       "description": "Controls whether user request options can be passed to upstream providers. By default, only allowlisted paths are passed."
@@ -27,6 +32,10 @@
     "deniedPaths": {
       "label": "Model option denylist",
       "description": "JSON object. Used only in denylist mode. System-reserved fields are blocked even when they are not listed."
+    },
+    "nativeToolTypes": {
+      "label": "Native tool control",
+      "description": "Independent from the model option allowlist. Controls enabled provider-native tools by protocol. Use an empty array to disable native tools for that protocol."
     },
     "titlePrompt": {
       "label": "Title generation prompt",
@@ -49,6 +58,11 @@
     "hitAllowlist": "Matched allowlist",
     "otherFields": "Other fields",
     "notInDenylist": "Not on the denylist"
+  },
+  "nativeTools": {
+    "enabledCount": "{enabled}/{total} enabled",
+    "enableAll": "All on",
+    "disableAll": "Off"
   },
   "guide": {
     "button": "Guide",

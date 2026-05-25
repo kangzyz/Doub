@@ -96,7 +96,7 @@ observability:
 
 `config.yaml` 是静态基础设施配置入口，环境变量优先级高于 YAML。未显式配置 `enabled` 时，`endpoint` 非空会自动启用 Trace；显式配置 `enabled: true` 时，`endpoint` 必填。运行时业务设置由数据库 settings 覆盖，不把 OpenTelemetry collector、header/token 等部署层配置放入后台管理。
 
-初始化超级管理员凭据内置为 `doub-chat` / `doub-chat-2026` / `System Admin`，仅在数据库中没有超级管理员时创建账号。首次登录会强制修改用户名和密码；后续账号变更不通过 `config.yaml`。
+初始化超级管理员用户名固定为 `admin`，密码会在数据库中不存在超级管理员时随机生成，并只在首次创建账号的后端启动日志中输出一次。首次登录会强制修改用户名和密码；后续账号变更不通过 `config.yaml`。
 
 `APP_ENV` 未配置时默认 `prod`。`dev`/`development` 只用于本地开发；公网生产部署应保持 `APP_ENV=prod` 或 `APP_ENV=production` 并使用生产密钥。
 

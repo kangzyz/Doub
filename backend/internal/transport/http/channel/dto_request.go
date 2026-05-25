@@ -50,6 +50,7 @@ type CreateModelRequest struct {
 	KindsJSON         string `json:"kindsJSON" binding:"omitempty,max=1000"`
 	Icon              string `json:"icon" binding:"max=128"`
 	CapabilitiesJSON  string `json:"capabilitiesJSON" binding:"max=10000"`
+	SystemPrompt      string `json:"systemPrompt" binding:"max=20000"`
 	Status            string `json:"status" binding:"omitempty,oneof=active inactive"`
 	Description       string `json:"description" binding:"max=10000"`
 }
@@ -61,6 +62,7 @@ type UpdateModelRequest struct {
 	KindsJSON         *string `json:"kindsJSON" binding:"omitempty,max=1000"`
 	Icon              *string `json:"icon" binding:"omitempty,max=128"`
 	CapabilitiesJSON  *string `json:"capabilitiesJSON" binding:"omitempty,max=10000"`
+	SystemPrompt      *string `json:"systemPrompt" binding:"omitempty,max=20000"`
 	Status            *string `json:"status" binding:"omitempty,oneof=active inactive"`
 	Description       *string `json:"description" binding:"omitempty,max=10000"`
 }
@@ -104,10 +106,11 @@ type ImportUpstreamModelsRequest struct {
 
 // ImportUpstreamModelItemRequest 单个导入项请求。
 type ImportUpstreamModelItemRequest struct {
-	PlatformModelName string `json:"platformModelName" binding:"required,min=2,max=128"`
-	UpstreamModelName string `json:"upstreamModelName" binding:"required,min=1,max=128"`
-	Protocol          string `json:"protocol" binding:"omitempty,max=64"`
-	KindsJSON         string `json:"kindsJSON" binding:"omitempty,max=1000"`
-	Status            string `json:"status" binding:"omitempty,oneof=active inactive"`
-	Priority          int    `json:"priority"`
+	PlatformModelName string   `json:"platformModelName" binding:"required,min=2,max=128"`
+	UpstreamModelName string   `json:"upstreamModelName" binding:"required,min=1,max=128"`
+	Protocol          string   `json:"protocol" binding:"omitempty,max=64"`
+	Protocols         []string `json:"protocols" binding:"omitempty,dive,max=64"`
+	KindsJSON         string   `json:"kindsJSON" binding:"omitempty,max=1000"`
+	Status            string   `json:"status" binding:"omitempty,oneof=active inactive"`
+	Priority          int      `json:"priority"`
 }

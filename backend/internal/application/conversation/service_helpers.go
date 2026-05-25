@@ -175,6 +175,18 @@ func classifyRunErrorCode(err error) string {
 		return "upstream_empty_response"
 	case errors.Is(err, ErrMessageGenerationCanceled):
 		return "generation_canceled"
+	case errors.Is(err, ErrMediaImagePromptRequired):
+		return "media_image_prompt_required"
+	case errors.Is(err, ErrMediaImageGenerationRejectsInputs):
+		return "media_image_generation_rejects_inputs"
+	case errors.Is(err, ErrMediaImageEditInputRequired):
+		return "media_image_edit_input_required"
+	case errors.Is(err, ErrMediaImageEditTooManyInputs):
+		return "media_image_edit_too_many_inputs"
+	case errors.Is(err, ErrMediaImageEditInputInvalid):
+		return "media_image_edit_input_invalid"
+	case errors.Is(err, ErrMediaRouteProtocolMismatch):
+		return "media_route_protocol_mismatch"
 	case errors.Is(err, ErrUpstreamRequestFailed):
 		return "upstream_request_failed"
 	default:
@@ -218,14 +230,12 @@ func sanitizeUpstreamDebugSnapshot(debug *llm.UpstreamDebugSnapshot) *llm.Upstre
 	}
 	return &llm.UpstreamDebugSnapshot{
 		Request: llm.UpstreamDebugRequest{
-			Method:  debug.Request.Method,
-			Path:    debug.Request.Path,
-			Headers: cloneStringMap(debug.Request.Headers),
-			Body:    sanitizeUpstreamNameJSON(debug.Request.Body),
+			Method: debug.Request.Method,
+			Path:   debug.Request.Path,
+			Body:   sanitizeUpstreamNameJSON(debug.Request.Body),
 		},
 		Response: llm.UpstreamDebugResponse{
 			StatusCode: debug.Response.StatusCode,
-			Headers:    cloneStringMap(debug.Response.Headers),
 			Body:       sanitizeUpstreamNameJSON(debug.Response.Body),
 		},
 	}
@@ -271,17 +281,6 @@ func isUpstreamNameKey(key string, parentKey string) bool {
 		return true
 	}
 	return strings.ToLower(strings.TrimSpace(parentKey)) == "upstream" && (normalized == "name" || normalized == "displayname")
-}
-
-func cloneStringMap(input map[string]string) map[string]string {
-	if input == nil {
-		return nil
-	}
-	output := make(map[string]string, len(input))
-	for key, value := range input {
-		output[key] = value
-	}
-	return output
 }
 
 func upstreamErrorSummary(err *llm.UpstreamError) string {

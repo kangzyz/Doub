@@ -3,8 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { CircleArrowUp } from "lucide-react";
 
+import packageMeta from "@/package.json";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ADMIN_SECTIONS, type AdminSection } from "@/features/admin/model/admin-sections";
+import { AdminUpdateTooltipContent } from "@/features/admin/components/admin-update-tooltip-content";
+import {
+  getCachedLatestReleaseSnapshot,
+  getServerLatestReleaseSnapshot,
+  resolveAvailableRelease,
+  subscribeLatestReleaseChange,
+} from "@/features/admin/model/update-check";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar({
@@ -15,6 +25,13 @@ export function AdminSidebar({
   basePath: string;
 }) {
   const t = useTranslations("adminUsers");
+  const tAbout = useTranslations("adminUsers.aboutPage");
+  const cachedLatestRelease = React.useSyncExternalStore(
+    subscribeLatestReleaseChange,
+    getCachedLatestReleaseSnapshot,
+    getServerLatestReleaseSnapshot,
+  );
+  const updateRelease = resolveAvailableRelease(packageMeta.version, cachedLatestRelease);
   const sectionLabel = React.useCallback(
     (id: AdminSection, fallback: string) => {
       const keyByID: Record<AdminSection, string> = {
@@ -54,13 +71,25 @@ export function AdminSidebar({
                 href={`${basePath}${item.href}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex h-8 shrink-0 items-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors xl:h-9 xl:w-full xl:px-3.5",
+                  "relative flex h-8 shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors xl:h-9 xl:w-full xl:px-3.5",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
-                {sectionLabel(item.id, item.label)}
+                <span className="truncate">{sectionLabel(item.id, item.label)}</span>
+                {item.id === "about" && updateRelease ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="ml-auto inline-flex size-4 shrink-0 items-center justify-center text-rose-500">
+                        <CircleArrowUp className="size-3.5" aria-label={tAbout("updateAvailableIndicator")} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <AdminUpdateTooltipContent updateRelease={updateRelease} />
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
               </Link>
             );
           })}

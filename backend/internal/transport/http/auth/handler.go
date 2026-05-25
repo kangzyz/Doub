@@ -105,6 +105,22 @@ func (h *Handler) LoginOptions(c *gin.Context) {
 	response.Success(c, toLoginOptionsResponse(result))
 }
 
+func (h *Handler) IdentityProviderLogo(c *gin.Context) {
+	asset, err := h.service.GetIdentityProviderLogo(c.Request.Context(), c.Param("slug"))
+	if err != nil {
+		status := http.StatusBadGateway
+		if errors.Is(err, appauth.ErrIdentityProviderLogoUnavailable) {
+			status = http.StatusNotFound
+		}
+		response.ErrorFrom(c, status, err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Header("Content-Security-Policy", "sandbox; default-src 'none'; base-uri 'none'; form-action 'none'; script-src 'none'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob:; style-src 'unsafe-inline'")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Data(http.StatusOK, asset.ContentType, asset.Content)
+}
+
 func (h *Handler) StartEmailRegistration(c *gin.Context) {
 	var req EmailRegistrationStartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -695,8 +711,12 @@ func (h *Handler) CreateIdentityProvider(c *gin.Context) {
 		response.InvalidRequestBody(c, err)
 		return
 	}
-	item, err := h.service.CreateIdentityProvider(c.Request.Context(), toUpsertIdentityProviderInput(req))
+	item, err := h.service.CreateIdentityProvider(c.Request.Context(), toUpsertIdentityProviderInput(req, middleware.MustUserRole(c)))
 	if err != nil {
+		if errors.Is(err, appauth.ErrIdentityProviderSuperAdminDefaultRoleNotAllowed) {
+			response.ErrorFrom(c, http.StatusForbidden, err)
+			return
+		}
 		response.ErrorFrom(c, http.StatusBadRequest, err)
 		return
 	}
@@ -709,8 +729,12 @@ func (h *Handler) UpdateIdentityProvider(c *gin.Context) {
 		response.InvalidRequestBody(c, err)
 		return
 	}
-	item, err := h.service.UpdateIdentityProvider(c.Request.Context(), c.Param("provider_id"), toUpsertIdentityProviderInput(req))
+	item, err := h.service.UpdateIdentityProvider(c.Request.Context(), c.Param("provider_id"), toUpsertIdentityProviderInput(req, middleware.MustUserRole(c)))
 	if err != nil {
+		if errors.Is(err, appauth.ErrIdentityProviderSuperAdminDefaultRoleNotAllowed) {
+			response.ErrorFrom(c, http.StatusForbidden, err)
+			return
+		}
 		response.ErrorFrom(c, http.StatusBadRequest, err)
 		return
 	}

@@ -132,12 +132,16 @@ func (r *RuntimeSettings) applyItem(cfg *config.Config, item domainsettings.Syst
 		cfg.ConversationTitlePrompt = item.Value
 	case "chat:conversation_labels_prompt":
 		cfg.ConversationLabelsPrompt = item.Value
+	case "chat:default_system_prompt":
+		cfg.DefaultSystemPrompt = item.Value
 	case "chat:model_option_policy_mode":
 		cfg.ModelOptionPolicyMode = strings.TrimSpace(item.Value)
 	case "chat:model_option_allowed_paths":
 		cfg.ModelOptionAllowedPaths = item.Value
 	case "chat:model_option_denied_paths":
 		cfg.ModelOptionDeniedPaths = item.Value
+	case "chat:model_option_native_tool_types":
+		cfg.NativeToolAllowedTypes = item.Value
 
 		// 存储配置
 	case "storage:user_storage_quota_bytes":
@@ -150,16 +154,18 @@ func (r *RuntimeSettings) applyItem(cfg *config.Config, item domainsettings.Syst
 		// 文件处理配置
 	case "file:image_max_dimension":
 		cfg.ImageMaxDimension = toInt(item.Value, cfg.ImageMaxDimension)
+	case "file:full_context_limit_enabled":
+		cfg.FileFullContextLimitEnabled = toBool(item.Value, cfg.FileFullContextLimitEnabled)
 	case "file:file_full_context_max_bytes":
-		cfg.FileFullContextMaxBytes = toInt64(item.Value, cfg.FileFullContextMaxBytes)
+		cfg.FileFullContextMaxBytes = toOptionalInt64(item.Value, cfg.FileFullContextMaxBytes)
 	case "file:full_context_max_tokens":
-		cfg.FileFullContextMaxTokens = toInt(item.Value, cfg.FileFullContextMaxTokens)
+		cfg.FileFullContextMaxTokens = toOptionalInt(item.Value, cfg.FileFullContextMaxTokens)
 	case "file:image_max_bytes":
 		cfg.FileImageMaxBytes = toOptionalInt64(item.Value, cfg.FileImageMaxBytes)
 	case "file:doc_max_bytes":
 		cfg.FileDocMaxBytes = toOptionalInt64(item.Value, cfg.FileDocMaxBytes)
 	case "file:full_context_pdf_max_pages":
-		cfg.FileFullContextPDFMaxPages = toInt(item.Value, cfg.FileFullContextPDFMaxPages)
+		cfg.FileFullContextPDFMaxPages = toOptionalInt(item.Value, cfg.FileFullContextPDFMaxPages)
 	case "file:allowed_mime_types":
 		cfg.FileAllowedMIMETypes = item.Value
 	case "extract:engine":
@@ -363,18 +369,33 @@ func (r *RuntimeSettings) normalizeConfig(cfg *config.Config) {
 	if strings.TrimSpace(cfg.ModelOptionDeniedPaths) == "" {
 		cfg.ModelOptionDeniedPaths = config.DefaultModelOptionDeniedPathsJSON()
 	}
+	if strings.TrimSpace(cfg.NativeToolAllowedTypes) == "" {
+		cfg.NativeToolAllowedTypes = config.DefaultNativeToolAllowedTypesJSON()
+	}
+	if !cfg.FileFullContextLimitEnabled {
+		cfg.FileFullContextMaxBytes = 0
+		cfg.FileFullContextMaxTokens = 0
+		cfg.FileFullContextPDFMaxPages = 0
+	}
 }
 
 func toInt(s string, fallback int) int {
-	v, err := strconv.Atoi(s)
+	v, err := strconv.Atoi(strings.TrimSpace(s))
 	if err != nil {
 		return fallback
 	}
 	return v
 }
 
+func toOptionalInt(s string, fallback int) int {
+	if strings.TrimSpace(s) == "" {
+		return 0
+	}
+	return toInt(s, fallback)
+}
+
 func toInt64(s string, fallback int64) int64 {
-	v, err := strconv.ParseInt(s, 10, 64)
+	v, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
 	if err != nil {
 		return fallback
 	}
@@ -397,7 +418,7 @@ func toBool(s string, fallback bool) bool {
 }
 
 func toFloat(s string, fallback float64) float64 {
-	v, err := strconv.ParseFloat(s, 64)
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
 	if err != nil {
 		return fallback
 	}

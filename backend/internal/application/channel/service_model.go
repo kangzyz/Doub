@@ -15,6 +15,8 @@ import (
 // 模型管理
 // ---------------------------------------------------------------------------
 
+const maxSystemPromptChars = 20000
+
 // ListModelsInput 定义模型列表筛选排序条件。
 type ListModelsInput struct {
 	Query    string
@@ -220,6 +222,10 @@ func (s *Service) CreateModel(ctx context.Context, input CreateModelInput) (*Mod
 	if err := validateOptionalJSON(strings.TrimSpace(input.CapabilitiesJSON)); err != nil {
 		return nil, ErrInvalidJSONConfig
 	}
+	systemPrompt := strings.TrimSpace(input.SystemPrompt)
+	if len([]rune(systemPrompt)) > maxSystemPromptChars {
+		return nil, ErrSystemPromptTooLong
+	}
 
 	item := &domainchannel.PlatformModel{
 		PlatformModelName: platformModelName,
@@ -227,6 +233,7 @@ func (s *Service) CreateModel(ctx context.Context, input CreateModelInput) (*Mod
 		KindsJSON:         kindsJSON,
 		Icon:              normalizeModelIcon(input.Icon, input.Vendor, platformModelName),
 		CapabilitiesJSON:  strings.TrimSpace(input.CapabilitiesJSON),
+		SystemPrompt:      systemPrompt,
 		Status:            normalizeStatus(input.Status),
 		Description:       strings.TrimSpace(input.Description),
 	}
@@ -281,6 +288,13 @@ func (s *Service) UpdateModel(ctx context.Context, modelID uint, input UpdateMod
 		}
 		update.CapabilitiesJSON = &normalized
 	}
+	if input.SystemPrompt != nil {
+		systemPrompt := strings.TrimSpace(*input.SystemPrompt)
+		if len([]rune(systemPrompt)) > maxSystemPromptChars {
+			return nil, ErrSystemPromptTooLong
+		}
+		update.SystemPrompt = &systemPrompt
+	}
 	if input.Status != nil {
 		status := normalizeStatus(*input.Status)
 		update.Status = &status
@@ -302,19 +316,22 @@ func (s *Service) UpdateModel(ctx context.Context, modelID uint, input UpdateMod
 	}
 
 	if update.IsZero() {
-		view := toModelView(repository.ChannelModelListRow{PlatformModel: *current})
-		return &view, nil
+		return s.getModelViewByID(ctx, modelID)
 	}
 
 	if err := s.repo.UpdateModel(ctx, modelID, update); err != nil {
 		return nil, err
 	}
 	s.InvalidateModelCatalog()
-	current, err = s.repo.GetModelByID(ctx, modelID)
+	return s.getModelViewByID(ctx, modelID)
+}
+
+func (s *Service) getModelViewByID(ctx context.Context, modelID uint) (*ModelView, error) {
+	item, err := s.repo.GetModelListRowByID(ctx, modelID)
 	if err != nil {
 		return nil, err
 	}
-	view := toModelView(repository.ChannelModelListRow{PlatformModel: *current})
+	view := toModelView(*item)
 	return &view, nil
 }
 
@@ -419,10 +436,20 @@ func (s *Service) UpdateModelUpstreamSource(ctx context.Context, modelID uint, r
 	if err != nil {
 		return nil, err
 	}
+	source, err := s.repo.GetModelUpstreamSourceByRouteID(ctx, modelItem.PlatformModelName, routeID)
+	if err != nil {
+		return nil, err
+	}
 
 	updateInput := repository.UpdateChannelPlatformRouteInput{}
 	if input.Protocol != nil {
-		protocol := strings.TrimSpace(*input.Protocol)
+		protocol, err := normalizeProtocol(*input.Protocol)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.validateRouteProtocolCombination(ctx, source.UpstreamID, modelItem.ID, source.UpstreamModelID, routeID, protocol); err != nil {
+			return nil, err
+		}
 		updateInput.Protocol = &protocol
 	}
 	if input.Status != nil {
@@ -438,47 +465,25 @@ func (s *Service) UpdateModelUpstreamSource(ctx context.Context, modelID uint, r
 		updateInput.Weight = &weight
 	}
 
-	allSources, _, listErr := s.repo.ListModelUpstreamSources(ctx, modelItem.PlatformModelName, 0, 2000)
-	if listErr != nil {
-		return nil, listErr
-	}
-	var targetUpstreamID uint
-	for _, src := range allSources {
-		if src.ID == routeID {
-			targetUpstreamID = src.UpstreamID
-			break
-		}
-	}
-	if targetUpstreamID == 0 {
-		return nil, ErrUpstreamModelNotFound
-	}
-
 	if updateInput.IsZero() {
-		for _, src := range allSources {
-			if src.ID == routeID {
-				view := toModelUpstreamSourceView(src)
-				return &view, nil
-			}
-		}
-		return nil, ErrUpstreamModelNotFound
+		view := toModelUpstreamSourceView(*source)
+		return &view, nil
 	}
 
-	if err := s.repo.UpdatePlatformModelRouteByID(ctx, routeID, targetUpstreamID, updateInput); err != nil {
+	if err := s.repo.UpdatePlatformModelRouteByID(ctx, routeID, source.UpstreamID, updateInput); err != nil {
+		if isDuplicateKeyError(err) {
+			return nil, ErrUpstreamModelConflict
+		}
 		return nil, err
 	}
 	s.InvalidateModelCatalog()
 
-	allSources, _, err = s.repo.ListModelUpstreamSources(ctx, modelItem.PlatformModelName, 0, 500)
+	source, err = s.repo.GetModelUpstreamSourceByRouteID(ctx, modelItem.PlatformModelName, routeID)
 	if err != nil {
 		return nil, err
 	}
-	for _, src := range allSources {
-		if src.ID == routeID {
-			view := toModelUpstreamSourceView(src)
-			return &view, nil
-		}
-	}
-	return nil, ErrUpstreamModelNotFound
+	view := toModelUpstreamSourceView(*source)
+	return &view, nil
 }
 
 // ---------------------------------------------------------------------------

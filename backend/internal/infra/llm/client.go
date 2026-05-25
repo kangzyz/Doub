@@ -135,6 +135,8 @@ type GenerateInput struct {
 	// 非空时：仅在 input 中发送本轮新消息，服务端从存储状态续接历史。
 	// 空串时：退回全量发送模式，适用于所有 adapter。
 	PreviousResponseID string
+	// ImageEditMask 仅供图片编辑 adapter 使用，表示透明区域掩码。
+	ImageEditMask *ContentPart
 }
 
 // ToolDefinition 是模型可调用工具的统一声明。
@@ -595,24 +597,25 @@ type UpstreamError struct {
 
 var errStreamDone = errors.New("llm stream done")
 
-// UpstreamDebugSnapshot captures a redacted upstream exchange for admin/user
-// troubleshooting. It intentionally omits the upstream host and redacts secret
-// headers.
+// UpstreamDebugSnapshot 记录上游请求与响应的调试快照。
+// 对外返回前必须先经过 application 层脱敏，避免泄漏源站、密钥或上游响应头。
 type UpstreamDebugSnapshot struct {
 	Request  UpstreamDebugRequest  `json:"request"`
 	Response UpstreamDebugResponse `json:"response"`
 }
 
+// UpstreamDebugRequest 表示上游请求侧的调试信息。
 type UpstreamDebugRequest struct {
 	Method  string            `json:"method"`
 	Path    string            `json:"path"`
-	Headers map[string]string `json:"headers"`
+	Headers map[string]string `json:"headers,omitempty"`
 	Body    string            `json:"body"`
 }
 
+// UpstreamDebugResponse 表示上游响应侧的调试信息。
 type UpstreamDebugResponse struct {
 	StatusCode int               `json:"statusCode"`
-	Headers    map[string]string `json:"headers"`
+	Headers    map[string]string `json:"headers,omitempty"`
 	Body       string            `json:"body"`
 }
 
@@ -647,8 +650,11 @@ func NewClientWithEnv(env string, ssrfProtectionEnabled bool) *Client {
 		AdapterOpenAIImageGenerations: &openAIImageGenerationsAdapter{client: client},
 		AdapterOpenAIImageEdits:       &openAIImageEditsAdapter{client: client},
 		AdapterXAIResponses:           &xAIResponsesAdapter{client: client},
+		AdapterXAIImage:               &xAIImageAdapter{client: client},
+		AdapterXAIImageEdits:          &xAIImageEditsAdapter{client: client},
 		AdapterAnthropicMessages:      &anthropicMessagesAdapter{client: client},
 		AdapterGoogleGenerateContent:  &geminiGenerateContentAdapter{client: client},
+		AdapterGoogleImageGeneration:  &geminiImageGenerationAdapter{client: client},
 	}
 	return client
 }
@@ -724,7 +730,7 @@ func (c *Client) ListModels(ctx context.Context, route RouteConfig) ([]ModelItem
 	if err == nil {
 		return items, nil
 	}
-	if !shouldFallbackToOpenAICompatibleModels(route.Protocol) {
+	if !shouldFallbackToOpenAICompatibleModels(route) {
 		return nil, err
 	}
 
@@ -737,8 +743,16 @@ func (c *Client) ListModels(ctx context.Context, route RouteConfig) ([]ModelItem
 	return fallbackItems, nil
 }
 
-func shouldFallbackToOpenAICompatibleModels(protocol string) bool {
-	return NormalizeAdapter(protocol) == AdapterAnthropicMessages
+func shouldFallbackToOpenAICompatibleModels(route RouteConfig) bool {
+	if isOpenRouterBaseURL(route.BaseURL) {
+		return false
+	}
+	switch NormalizeAdapter(route.Protocol) {
+	case AdapterAnthropicMessages, AdapterGoogleGenerateContent, AdapterGoogleImageGeneration:
+		return true
+	default:
+		return false
+	}
 }
 
 // idleTimeoutReader 包装 io.Reader，在两次 Read 之间超过 idle timeout 时返回错误。

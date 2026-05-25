@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// 已支持的协议常量。每个协议固定对应一个 HTTP 端点，不再有「两用」模式。
+// 已支持的协议常量。每个协议固定对应一个 HTTP 端点，任务能力由模型类别和路由规则约束。
 const (
 	AdapterOpenAIResponses        = "openai_responses"         // POST /v1/responses
 	AdapterOpenAIChatCompletions  = "openai_chat_completions"  // POST /v1/chat/completions
@@ -15,7 +15,10 @@ const (
 	AdapterOpenAIImageEdits       = "openai_image_edits"       // POST /v1/images/edits
 	AdapterAnthropicMessages      = "anthropic_messages"       // POST /v1/messages
 	AdapterGoogleGenerateContent  = "google_generate_content"  // POST /v1beta/models/{model}:generateContent
+	AdapterGoogleImageGeneration  = "google_image_generation"  // POST /v1beta/models/{model}:generateContent
 	AdapterXAIResponses           = "xai_responses"            // POST /v1/responses（OpenAI 兼容）
+	AdapterXAIImage               = "xai_image"                // POST /v1/images/generations
+	AdapterXAIImageEdits          = "xai_image_edits"          // POST /v1/images/edits
 )
 
 var (
@@ -50,7 +53,10 @@ func IsKnownAdapter(raw string) bool {
 		AdapterOpenAIImageEdits,
 		AdapterAnthropicMessages,
 		AdapterGoogleGenerateContent,
-		AdapterXAIResponses:
+		AdapterGoogleImageGeneration,
+		AdapterXAIResponses,
+		AdapterXAIImage,
+		AdapterXAIImageEdits:
 		return true
 	default:
 		return false
@@ -61,7 +67,7 @@ func IsKnownAdapter(raw string) bool {
 func IsImplementedAdapter(raw string) bool {
 	switch NormalizeAdapter(raw) {
 	case AdapterOpenAIResponses, AdapterOpenAIChatCompletions, AdapterOpenAIImageGenerations, AdapterOpenAIImageEdits, AdapterXAIResponses,
-		AdapterAnthropicMessages, AdapterGoogleGenerateContent:
+		AdapterAnthropicMessages, AdapterGoogleGenerateContent, AdapterGoogleImageGeneration, AdapterXAIImage, AdapterXAIImageEdits:
 		return true
 	default:
 		return false
@@ -71,17 +77,52 @@ func IsImplementedAdapter(raw string) bool {
 // SupportsStreamingAdapter 返回协议是否有真实的上游流式传输。
 func SupportsStreamingAdapter(raw string) bool {
 	switch NormalizeAdapter(raw) {
-	case AdapterOpenAIImageEdits:
-		return false
+	case AdapterOpenAIResponses,
+		AdapterOpenAIChatCompletions,
+		AdapterOpenAIImageGenerations,
+		AdapterOpenAIImageEdits,
+		AdapterAnthropicMessages,
+		AdapterGoogleGenerateContent,
+		AdapterGoogleImageGeneration,
+		AdapterXAIResponses:
+		return true
 	default:
-		return IsImplementedAdapter(raw)
+		return false
 	}
 }
 
-// SupportsImageGenerationStream 返回图片生成协议和模型是否支持真实上游流式。
+// SupportsImageGenerationStream 返回图片媒体协议和模型是否支持真实上游流式。
 func SupportsImageGenerationStream(protocol string, model string) bool {
-	return NormalizeAdapter(protocol) == AdapterOpenAIImageGenerations &&
-		openAIImageGenerationModelSupportsStream(model)
+	switch NormalizeAdapter(protocol) {
+	case AdapterOpenAIImageGenerations:
+		return openAIImageGenerationModelSupportsStream(model)
+	case AdapterGoogleImageGeneration:
+		return true
+	case AdapterOpenAIImageEdits:
+		return openAIImageEditModelSupportsStream(model)
+	default:
+		return false
+	}
+}
+
+// IsImageGenerationAdapter 返回协议是否属于独立图片生成链路。
+func IsImageGenerationAdapter(raw string) bool {
+	switch NormalizeAdapter(raw) {
+	case AdapterOpenAIImageGenerations, AdapterGoogleImageGeneration, AdapterXAIImage:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsImageEditAdapter 返回协议是否属于独立图片编辑链路。
+func IsImageEditAdapter(raw string) bool {
+	switch NormalizeAdapter(raw) {
+	case AdapterOpenAIImageEdits, AdapterGoogleImageGeneration, AdapterXAIImageEdits:
+		return true
+	default:
+		return false
+	}
 }
 
 // DefaultEndpointForAdapter 返回协议对应的固定端点标识。
@@ -89,9 +130,9 @@ func DefaultEndpointForAdapter(adapter string) string {
 	switch NormalizeAdapter(adapter) {
 	case AdapterOpenAIChatCompletions:
 		return EndpointChatCompletions
-	case AdapterOpenAIImageGenerations:
+	case AdapterOpenAIImageGenerations, AdapterGoogleImageGeneration, AdapterXAIImage:
 		return EndpointImageGenerations
-	case AdapterOpenAIImageEdits:
+	case AdapterOpenAIImageEdits, AdapterXAIImageEdits:
 		return EndpointImageEdits
 	default:
 		// openai_responses、xai_responses 及所有未知值均使用 Responses 端点。

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Check, CircleHelp, Info } from "lucide-react";
+import { Check, CircleHelp, Image, ImageOff, ImagePlus, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import { AudioLines } from "@/components/animate-ui/icons/audio-lines";
 import { Cog } from "@/components/animate-ui/icons/cog";
 import { Pause } from "@/components/animate-ui/icons/pause";
 import { Plus } from "@/components/animate-ui/icons/plus";
+import { Send } from "@/components/animate-ui/icons/send";
 import { Link as LinkIcon } from "@/components/animate-ui/icons/link";
 import { Crop } from "@/components/animate-ui/icons/crop";
 import { Unplug } from "@/components/animate-ui/icons/unplug";
@@ -26,7 +27,8 @@ import {
   isReservedConversationOptionKey,
   sanitizeConversationOptions,
 } from "@/features/chat/model/conversation-options";
-import { isMediaSubmitTask, resolveChatSubmitTask } from "@/features/chat/model/chat-task";
+import type { ChatSubmitDecision } from "@/features/chat/model/chat-task";
+import { isMediaSubmitTask, resolveChatSubmitDecision } from "@/features/chat/model/chat-task";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -67,9 +69,9 @@ import { cn } from "@/lib/utils";
 import type { ConversationOptions } from "@/shared/api/conversation.types";
 import type { MCPToolDTO } from "@/shared/api/mcp.types";
 import type { ModelOptionPolicy } from "@/shared/lib/model-option-policy";
-import { isModelOptionPathFiltered } from "@/shared/lib/model-option-policy";
+import { isModelOptionPathFiltered, isNativeToolTypeAllowed } from "@/shared/lib/model-option-policy";
 import type { SendShortcut } from "@/features/settings/types/settings";
-import { isSendShortcutEvent } from "@/shared/lib/platform-shortcuts";
+import { isSendShortcutEvent, shouldUseMultilineEnterForTouchInput } from "@/shared/lib/platform-shortcuts";
 
 const FilePreviewDialog = dynamic(
   () => import("@/features/files/components/preview/file-preview-dialog").then((module) => module.FilePreviewDialog),
@@ -130,6 +132,14 @@ type NativeToolOption = {
   payload?: Record<string, unknown>;
 };
 
+type ComposerModeIndicator = {
+  label: string;
+  intro: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  tone: "default" | "warning";
+};
+
 type ModelOptionFilterStatus = "passed" | "filtered" | "unknown";
 
 const OPTION_LABEL_KEYS = new Set<string>([
@@ -142,6 +152,8 @@ const OPTION_LABEL_KEYS = new Set<string>([
   "frequency_penalty",
   "generationConfig.candidateCount",
   "generationConfig.frequencyPenalty",
+  "generationConfig.imageConfig.aspectRatio",
+  "generationConfig.imageConfig.imageSize",
   "generationConfig.logprobs",
   "generationConfig.maxOutputTokens",
   "generationConfig.mediaResolution",
@@ -157,13 +169,18 @@ const OPTION_LABEL_KEYS = new Set<string>([
   "max_completion_tokens",
   "max_output_tokens",
   "max_tokens",
+  "n",
   "output_config.effort",
   "output_config.format.type",
+  "responseFormat.image.aspectRatio",
+  "responseFormat.image.imageSize",
+  "resolution",
   "presence_penalty",
   "reasoning.summary",
   "reasoning.effort",
   "reasoning_effort",
   "reasoning_summary",
+  "response_format",
   "response_format.type",
   "response_logprobs",
   "seed",
@@ -193,6 +210,12 @@ const OPTION_LABEL_KEYS = new Set<string>([
   "top_p",
   "verbosity",
   "web_search",
+  "aspect_ratio",
+  "aspectRatio",
+  "image_size",
+  "imageSize",
+  "imageConfig.aspectRatio",
+  "imageConfig.imageSize",
 ] as const);
 
 const XAI_NATIVE_TOOL_OPTIONS: NativeToolOption[] = [
@@ -303,6 +326,8 @@ const OPTION_ORDER = [
   "generationConfig.presencePenalty",
   "frequency_penalty",
   "generationConfig.frequencyPenalty",
+  "generationConfig.imageConfig.aspectRatio",
+  "generationConfig.imageConfig.imageSize",
   "response_logprobs",
   "generationConfig.responseLogprobs",
   "logprobs",
@@ -326,7 +351,11 @@ const OPTION_ORDER = [
   "reasoning_summary",
   "output_config.effort",
   "output_config.format.type",
+  "response_format",
   "response_format.type",
+  "responseFormat.image.aspectRatio",
+  "responseFormat.image.imageSize",
+  "resolution",
   "budget_tokens",
   "thinking.budget_tokens",
   "thinking.thinking_budget",
@@ -351,6 +380,12 @@ const OPTION_ORDER = [
   "thinking",
   "think",
   "web_search",
+  "aspect_ratio",
+  "aspectRatio",
+  "image_size",
+  "imageSize",
+  "imageConfig.aspectRatio",
+  "imageConfig.imageSize",
 ];
 
 const NUMBER_OPTION_KEYS = new Set([
@@ -369,6 +404,7 @@ const NUMBER_OPTION_KEYS = new Set([
   "max_completion_tokens",
   "max_output_tokens",
   "max_tokens",
+  "n",
   "presence_penalty",
   "seed",
   "temperature",
@@ -387,14 +423,26 @@ const OPTION_SELECT_VALUES: Record<string, string[]> = {
   speed: ["fast"],
   "generationConfig.mediaResolution": ["MEDIA_RESOLUTION_UNSPECIFIED", "MEDIA_RESOLUTION_LOW", "MEDIA_RESOLUTION_MEDIUM", "MEDIA_RESOLUTION_HIGH"],
   "generationConfig.responseMimeType": ["text/plain", "application/json", "text/x.enum"],
+  "generationConfig.imageConfig.aspectRatio": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  "generationConfig.imageConfig.imageSize": ["1K", "2K", "4K"],
   "generationConfig.thinkingConfig.thinkingLevel": ["low", "medium", "high"],
+  "imageConfig.aspectRatio": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  "imageConfig.imageSize": ["1K", "2K", "4K"],
   "output_config.effort": ["low", "medium", "high"],
   "output_config.format.type": ["json_object", "json_schema", "text"],
   "reasoning.effort": ["low", "medium", "high"],
   "reasoning.summary": ["auto", "concise", "detailed"],
   reasoning_effort: ["minimal", "low", "medium", "high", "xhigh"],
   reasoning_summary: ["auto", "concise", "detailed"],
+  response_format: ["url", "b64_json"],
   "response_format.type": ["json_object", "json_schema", "text"],
+  "responseFormat.image.aspectRatio": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  "responseFormat.image.imageSize": ["1K", "2K", "4K"],
+  resolution: ["1k", "2k"],
+  aspect_ratio: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  aspectRatio: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  image_size: ["1K", "2K", "4K"],
+  imageSize: ["1K", "2K", "4K"],
   "thinking.display": ["summarized", "omitted"],
   "thinking.thinking_level": ["low", "medium", "high"],
   "thinking.thinkingLevel": ["low", "medium", "high"],
@@ -437,6 +485,12 @@ const NESTED_VISUAL_OPTION_PATHS = [
   ["generationConfig", "logprobs"],
   ["generationConfig", "responseMimeType"],
   ["generationConfig", "mediaResolution"],
+  ["generationConfig", "imageConfig", "aspectRatio"],
+  ["generationConfig", "imageConfig", "imageSize"],
+  ["imageConfig", "aspectRatio"],
+  ["imageConfig", "imageSize"],
+  ["responseFormat", "image", "aspectRatio"],
+  ["responseFormat", "image", "imageSize"],
   ["generationConfig", "thinkingConfig", "includeThoughts"],
   ["generationConfig", "thinkingConfig", "thinkingBudget"],
   ["generationConfig", "thinkingConfig", "thinkingLevel"],
@@ -448,16 +502,56 @@ const PROTOCOL_LABELS: Record<string, string> = {
   anthropic_messages: "Messages",
   fal_queue: "Queue",
   google_generate_content: "Generate Content",
-  google_imagen: "Imagen",
+  google_image_generation: "Image Generation",
   openai_chat_completions: "Chat Completions",
-  openai_image_edits: "Image Edits",
-  openai_image_generations: "Image Generations",
+  openai_image_edits: "Images Edits",
+  openai_image_generations: "Images Generations",
   openai_responses: "Responses",
   openai_video_generations: "Video Generations",
   replicate_predictions: "Predictions",
   stability_ai_generate: "Image Generation",
+  xai_image: "Images Generations",
+  xai_image_edits: "Images Edits",
   xai_responses: "xAI Responses",
 };
+
+function resolveComposerModeIndicator(
+  decision: ChatSubmitDecision,
+  t: (key: string) => string,
+): ComposerModeIndicator | null {
+  if (decision.blockedReason === "image_task_rejects_non_image_attachments") {
+    return {
+      label: t("mediaMode.invalidFile"),
+      intro: t("mediaMode.invalidFileIntro"),
+      description: t(`mediaMode.blockedDescriptions.${decision.blockedReason}`),
+      icon: ImageOff,
+      tone: "warning",
+    };
+  }
+  if (decision.task === "image_generation") {
+    return {
+      label: t("mediaMode.imageGeneration"),
+      intro: t("mediaMode.imageGenerationIntro"),
+      description: decision.blockedReason
+        ? t(`mediaMode.blockedDescriptions.${decision.blockedReason}`)
+        : t("mediaMode.imageGenerationDescription"),
+      icon: Image,
+      tone: "default",
+    };
+  }
+  if (decision.task === "image_edit") {
+    return {
+      label: t("mediaMode.imageEdit"),
+      intro: t("mediaMode.imageEditIntro"),
+      description: decision.blockedReason
+        ? t(`mediaMode.blockedDescriptions.${decision.blockedReason}`)
+        : t("mediaMode.imageEditDescription"),
+      icon: ImagePlus,
+      tone: "default",
+    };
+  }
+  return null;
+}
 
 function stringifyOptions(value: ConversationOptions): string {
   if (Object.keys(value).length === 0) {
@@ -760,6 +854,7 @@ function ChatInputComponent({
   onStopMessage,
 }: ChatInputProps) {
   const tCommon = useTranslations("common.actions");
+  const tChat = useTranslations("chat");
   const tComposer = useTranslations("chat.composer");
   const tFileStatus = useTranslations("files.status");
   const tOptionLabels = useTranslations("chat.optionLabels");
@@ -783,6 +878,7 @@ function ChatInputComponent({
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const optionsObjectRef = React.useRef<ConversationOptions>({});
   const composingRef = React.useRef(false);
+  const hasDraftText = draft.trim().length > 0;
   const canSend = (draft.trim().length > 0 || attachments.length > 0) && !sending && !loading && !uploading;
   const inputHeightClassName =
     inputHeight === "compact" ? "max-h-32" : inputHeight === "loose" ? "max-h-64" : "max-h-44";
@@ -807,8 +903,11 @@ function ChatInputComponent({
   );
   const selectedProtocol = selectedModel?.protocols[0]?.trim() ?? "";
   const selectedProtocolLabel = selectedProtocol ? resolveProtocolLabel(selectedProtocol) : "";
-  const submitTask = resolveChatSubmitTask(selectedModel, attachments);
+  const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
+  const submitTask = submitDecision.task;
   const isMediaMode = isMediaSubmitTask(submitTask);
+  const composerModeIndicator = resolveComposerModeIndicator(submitDecision, tComposer);
+  const ComposerModeIcon = composerModeIndicator?.icon;
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
   const selectedToolIDSet = React.useMemo(() => new Set(selectedToolIDs), [selectedToolIDs]);
   const selectedToolCount = selectedToolIDs.length;
@@ -1030,30 +1129,31 @@ function ChatInputComponent({
                 <div className="space-y-1">
                   {nativeToolGroup.options.map((tool) => {
                     const checked = hasProviderTool(optionsObject, tool.type);
-                    const filterStatus = resolveModelOptionFilterStatus(modelOptionPolicy, selectedProtocol, "tools");
-                    const ignored = filterStatus === "filtered";
+                    const allowed = isNativeToolTypeAllowed(modelOptionPolicy, selectedProtocol, tool.type);
+                    const filterStatus: ModelOptionFilterStatus = allowed ? "passed" : "filtered";
                     return (
                       <label
                         key={tool.type}
                         className={cn(
-                          "flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50",
-                          ignored && "text-muted-foreground",
+                          "flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5",
+                          allowed || checked ? "cursor-pointer hover:bg-muted/50" : "cursor-not-allowed text-muted-foreground",
                         )}
                       >
                         <Checkbox
                           checked={checked}
-                          onCheckedChange={(nextChecked) => updateProviderTool(tool, nextChecked === true)}
+                          disabled={!allowed && !checked}
+                          onCheckedChange={(nextChecked) => {
+                            if (!allowed && nextChecked === true) {
+                              return;
+                            }
+                            updateProviderTool(tool, nextChecked === true);
+                          }}
                         />
                         <span className="min-w-0 flex flex-1 items-center gap-2 text-xs">
-                          <span
-                            className={cn(
-                              "shrink-0 text-foreground/80",
-                              ignored && "text-muted-foreground line-through",
-                            )}
-                          >
+                          <span className={cn("shrink-0 text-foreground/80", !allowed && "text-muted-foreground line-through")}>
                             {tNativeToolLabels(tool.labelKey)}
                           </span>
-                          <span className={cn("min-w-0 truncate text-[11px] text-muted-foreground", ignored && "line-through")}>
+                          <span className={cn("min-w-0 truncate text-[11px] text-muted-foreground", !allowed && "line-through")}>
                             {tNativeToolDescriptions(tool.descriptionKey)}
                           </span>
                         </span>
@@ -1322,7 +1422,7 @@ function ChatInputComponent({
           rows={1}
           style={{ fontFamily: "var(--font-chat)", fontWeight: "var(--font-chat-weight)" }}
           className={cn(
-            "rounded-3xl min-h-12 overflow-y-auto px-5 pt-4 text-[15px] placeholder:text-base placeholder:font-medium",
+            "rounded-3xl min-h-12 overflow-y-auto px-5 pt-4 text-[15px] leading-6 placeholder:text-[15px] placeholder:font-[inherit] placeholder:leading-6",
             inputHeightClassName,
             speechInput.active ? "placeholder:font-normal placeholder:text-muted-foreground" : "",
           )}
@@ -1347,7 +1447,9 @@ function ChatInputComponent({
             if (event.nativeEvent.isComposing || composingRef.current || event.key === "Process" || event.keyCode === 229) {
               return;
             }
-            const shouldSend = isSendShortcutEvent(sendShortcut, event);
+            const shouldSend =
+              !(sendShortcut === "enter" && shouldUseMultilineEnterForTouchInput()) &&
+              isSendShortcutEvent(sendShortcut, event);
 
             if (shouldSend) {
               event.preventDefault();
@@ -1559,6 +1661,26 @@ function ChatInputComponent({
           </div>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+            {composerModeIndicator && ComposerModeIcon ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className={cn(
+                      "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium transition-colors",
+                      composerModeIndicator.tone === "warning"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted/60 text-muted-foreground",
+                    )}
+                  >
+                    <ComposerModeIcon className="size-3.5" strokeWidth={1.7} />
+                    <span className="hidden sm:inline">{composerModeIndicator.label}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="max-w-72 text-xs leading-5">
+                  {composerModeIndicator.intro} {composerModeIndicator.description}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
             <ChatModelPicker
               modelOptions={modelOptions}
               selectedPlatformModelName={selectedPlatformModelName}
@@ -1572,12 +1694,12 @@ function ChatInputComponent({
               variant="ghost"
               size="icon-sm"
               className="rounded-md text-muted-foreground hover:text-foreground"
-              disabled={loading || uploading || (!sending && !speechInput.supported)}
-              onClick={sending ? onStopMessage : speechInput.toggle}
+              disabled={loading || uploading || (!sending && !hasDraftText && !speechInput.supported)}
+              onClick={sending ? onStopMessage : hasDraftText ? onSendMessage : speechInput.toggle}
               onMouseEnter={() => setIsVoiceHovered(true)}
               onMouseLeave={() => setIsVoiceHovered(false)}
-              aria-label={sending ? tComposer("pauseGeneration") : speechInput.active ? tComposer("cancelVoiceInput") : tComposer("voiceInput")}
-              title={sending ? tComposer("pauseGeneration") : speechInput.supported ? (speechInput.active ? tComposer("cancelVoiceInput") : tComposer("voiceInput")) : tComposer("voiceUnsupported")}
+              aria-label={sending ? tComposer("pauseGeneration") : hasDraftText ? tChat("send") : speechInput.active ? tComposer("cancelVoiceInput") : tComposer("voiceInput")}
+              title={sending ? tComposer("pauseGeneration") : hasDraftText ? tChat("send") : speechInput.supported ? (speechInput.active ? tComposer("cancelVoiceInput") : tComposer("voiceInput")) : tComposer("voiceUnsupported")}
             >
               {sending ? (
                 <Pause
@@ -1590,6 +1712,12 @@ function ChatInputComponent({
                   size={20}
                   strokeWidth={1.4}
                   animate="default"
+                />
+              ) : hasDraftText ? (
+                <Send
+                  size={20}
+                  strokeWidth={1.4}
+                  animate={isVoiceHovered ? "default" : undefined}
                 />
               ) : (
                 <AudioLines

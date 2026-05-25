@@ -1,8 +1,6 @@
 {
   "newChat": "新对话",
   "untitledConversation": "新会话",
-  "comingSoon": "即将开放",
-  "addToProjectSoon": "Add to project 将在后续版本接入。",
   "modelListLoadFailed": "模型列表加载失败",
   "placeholder": "发送消息给 DOUB Chat",
   "send": "发送",
@@ -78,9 +76,10 @@
     "rename": "重新命名",
     "renameDescription": "请输入新的会话名称",
     "renamePlaceholder": "请输入新的会话名称",
+    "moveToProject": "移至项目",
+    "unassignedProject": "默认",
     "share": "分享",
     "manageShare": "管理分享",
-    "archive": "归档",
     "delete": "删除"
   },
   "markdown": {
@@ -88,6 +87,7 @@
     "footnoteBackref": "返回脚注引用",
     "imageUnavailable": "图片不可用",
     "previewImage": "放大图片",
+    "editImage": "编辑图片",
     "downloadImage": "下载图片",
     "externalLink": {
       "title": "打开外部链接？",
@@ -185,6 +185,14 @@
     "retrievingContent": "正在检索相关内容…",
     "retryLater": "请稍后重试。",
     "imagePreviewAlt": "生成图片预览",
+    "mediaInputUnsupported": "当前输入无法使用所选模型",
+    "mediaInputBlocked": {
+      "image_edit_input_required": "该模型用于图像编辑，请先上传需要编辑的图片。",
+      "image_edit_unsupported": "该模型不支持图像编辑，请移除图片或切换到支持编辑的模型。",
+      "image_generation_rejects_attachments": "图像生成仅接受文字提示词，请移除附件或切换到可处理附件的模型。",
+      "image_task_rejects_non_image_attachments": "图像任务仅支持图片附件，请移除非图片文件。",
+      "model_task_unsupported": "该模型无法处理当前输入，请切换模型后重试。"
+    },
     "mediaStatus": {
       "queued": "图片任务已排队",
       "running": "正在生成图片",
@@ -284,6 +292,23 @@
     "booleanOn": "开启",
     "booleanOff": "关闭",
     "tool": "工具 {id}",
+    "mediaMode": {
+      "imageGeneration": "图像生成",
+      "imageGenerationIntro": "当前为图像生成模式。",
+      "imageGenerationDescription": "将根据文字提示创建新图像；上传图片后会自动切换为图像编辑。",
+      "imageEdit": "图像编辑",
+      "imageEditIntro": "当前为图像编辑模式。",
+      "imageEditDescription": "将基于已上传图片和文字提示进行编辑。",
+      "invalidFile": "监测到无效文件",
+      "invalidFileIntro": "当前文件无法用于图像任务。",
+      "blockedDescriptions": {
+        "image_edit_input_required": "请先上传需要编辑的图片。",
+        "image_edit_unsupported": "当前模型不支持图像编辑，请移除图片或切换模型。",
+        "image_generation_rejects_attachments": "图像生成仅接收文字提示，请移除附件。",
+        "image_task_rejects_non_image_attachments": "图像任务仅支持图片附件，请移除非图片文件。",
+        "model_task_unsupported": "当前模型不支持此输入，请切换模型后重试。"
+      }
+    },
     "nativeTools": {
       "grok": "Grok 原生工具",
       "openai": "OpenAI 原生工具",
@@ -513,6 +538,7 @@
     "max_completion_tokens": "最大输出 Tokens",
     "max_output_tokens": "最大输出 Tokens",
     "max_tokens": "最大响应 Tokens",
+    "n": "生成数量",
     "output_config__effort": "思考力度",
     "output_config__format__type": "输出格式",
     "presence_penalty": "存在惩罚",
@@ -520,6 +546,18 @@
     "reasoning__effort": "推理强度",
     "reasoning_effort": "推理强度",
     "reasoning_summary": "推理摘要",
+    "resolution": "分辨率",
+    "aspect_ratio": "画幅比例",
+    "aspectRatio": "画幅比例",
+    "image_size": "图片尺寸",
+    "imageSize": "图片尺寸",
+    "imageConfig__aspectRatio": "画幅比例",
+    "imageConfig__imageSize": "图片尺寸",
+    "generationConfig__imageConfig__aspectRatio": "画幅比例",
+    "generationConfig__imageConfig__imageSize": "图片尺寸",
+    "responseFormat__image__aspectRatio": "画幅比例",
+    "responseFormat__image__imageSize": "图片尺寸",
+    "response_format": "响应格式",
     "response_format__type": "响应格式",
     "response_logprobs": "返回 Logprobs",
     "seed": "随机种子",

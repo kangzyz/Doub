@@ -16,6 +16,7 @@ import (
 	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 	"github.com/kangzyz/Doub/backend/internal/pkg/traceid"
+	"github.com/kangzyz/Doub/backend/internal/repository"
 	"github.com/kangzyz/Doub/backend/internal/shared/security"
 	"go.uber.org/zap"
 )
@@ -30,7 +31,7 @@ const (
 	MediaImageTaskEdit MediaImageTaskType = "image_edit"
 )
 
-const maxMediaImageEditFiles = 16
+const maxMediaImageEditInputImages = 16
 
 // MediaImageInput 定义媒体图片任务的应用层入参。
 type MediaImageInput struct {
@@ -43,6 +44,7 @@ type MediaImageInput struct {
 	Options               map[string]interface{}
 	ClientRunID           string
 	FileIDs               []string
+	MaskFileID            string
 	ParentMessagePublicID string
 	SourceMessagePublicID string
 	BranchReason          string
@@ -56,16 +58,13 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		return nil, ErrInvalidMediaGenerationTask
 	}
 	if strings.TrimSpace(input.Prompt) == "" {
-		return nil, ErrInvalidMediaGenerationTask
+		return nil, ErrMediaImagePromptRequired
 	}
 	if input.TaskType == MediaImageTaskGeneration && len(input.FileIDs) > 0 {
-		return nil, ErrInvalidMediaGenerationTask
+		return nil, ErrMediaImageGenerationRejectsInputs
 	}
 	if input.TaskType == MediaImageTaskEdit && len(input.FileIDs) == 0 {
-		return nil, ErrInvalidMediaGenerationTask
-	}
-	if input.TaskType == MediaImageTaskEdit && len(input.FileIDs) > maxMediaImageEditFiles {
-		return nil, ErrTooManyMessageFiles
+		return nil, ErrMediaImageEditInputRequired
 	}
 	if s.routeResolver == nil || s.llmClient == nil {
 		return nil, ErrModelRouteNotConfigured
@@ -101,26 +100,15 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 	if platformModelName == "" {
 		return nil, ErrModelRouteNotConfigured
 	}
-	var editSourceFiles []mediaImageEditSourceFile
-	var editSourceAttachments []AttachmentInput
+	taskRouteType := channel.TaskTypeImageGeneration
+	endpoint := llm.EndpointImageGenerations
 	if input.TaskType == MediaImageTaskEdit {
-		editSourceFiles, err = s.loadMediaImageEditSourceFiles(ctx, input.UserID, input.FileIDs)
-		if err != nil {
-			return nil, err
-		}
-		editSourceAttachments = mediaImageEditSourceAttachments(editSourceFiles)
-	}
-	imageTaskType := channel.TaskTypeImageGeneration
-	imageProtocol := llm.AdapterOpenAIImageGenerations
-	imageEndpoint := llm.EndpointImageGenerations
-	if input.TaskType == MediaImageTaskEdit {
-		imageTaskType = channel.TaskTypeImageEdit
-		imageProtocol = llm.AdapterOpenAIImageEdits
-		imageEndpoint = llm.EndpointImageEdits
+		taskRouteType = channel.TaskTypeImageEdit
+		endpoint = llm.EndpointImageEdits
 	}
 	route, err := s.routeResolver.ResolveRoute(ctx, channel.ResolveRouteInput{
 		PlatformModelName: platformModelName,
-		TaskType:          imageTaskType,
+		TaskType:          taskRouteType,
 		UserID:            input.UserID,
 		ConversationID:    input.ConversationID,
 		RequestID:         strings.TrimSpace(input.RequestID),
@@ -128,8 +116,11 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 	if err != nil {
 		return nil, ErrModelRouteNotConfigured
 	}
-	if !strings.EqualFold(route.Protocol, imageProtocol) {
-		return nil, ErrInvalidMediaGenerationTask
+	if input.TaskType == MediaImageTaskGeneration && !llm.IsImageGenerationAdapter(route.Protocol) {
+		return nil, ErrMediaRouteProtocolMismatch
+	}
+	if input.TaskType == MediaImageTaskEdit && !llm.IsImageEditAdapter(route.Protocol) {
+		return nil, ErrMediaRouteProtocolMismatch
 	}
 	// 图片任务会把会话当前模型更新为实际执行的图片模型；标题、标签等内部文本任务会单独回退到聊天模型。
 	if strings.TrimSpace(conversation.Model) != strings.TrimSpace(route.PlatformModelName) {
@@ -146,13 +137,23 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		return nil, err
 	}
 
+	resolvedAttachments, imageEditParts, err := s.resolveMediaImageEditInputs(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+	maskPart, err := s.resolveMediaImageEditMask(ctx, input.UserID, input.MaskFileID)
+	if err != nil {
+		return nil, err
+	}
+	attachmentsJSON := marshalAttachmentSnapshots(resolvedAttachments)
+
 	run := &model.Run{
 		RunID:              runID,
 		RequestID:          strings.TrimSpace(input.RequestID),
 		UserID:             input.UserID,
 		ConversationID:     input.ConversationID,
 		TaskType:           string(input.TaskType),
-		Endpoint:           imageEndpoint,
+		Endpoint:           endpoint,
 		Provider:           strings.TrimSpace(conversation.Provider),
 		ProviderProtocol:   route.Protocol,
 		UpstreamID:         route.UpstreamID,
@@ -195,50 +196,63 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		ParentMessageID: branchState.ParentMessageID,
 		RunID:           runID,
 		Role:            "user",
-		ContentType:     "text",
+		ContentType:     mediaImageUserContentType(input.TaskType),
 		Content:         strings.TrimSpace(input.Prompt),
 		BranchReason:    normalizedBranchReason,
 		SourceMessageID: branchState.SourceMessageID,
 		TokenUsage:      estimateTokens(input.Prompt),
 		InputTokens:     estimateTokens(input.Prompt),
 		Status:          "success",
-		Attachments:     marshalAttachmentSnapshots(editSourceAttachments),
+		Attachments:     attachmentsJSON,
 	}
-	if err = s.repo.CreateMessage(ctx, userMessage); err != nil {
+	userAttachmentRows := make([]model.Attachment, 0, len(resolvedAttachments))
+	if len(resolvedAttachments) > 0 {
+		now := time.Now()
+		for _, item := range resolvedAttachments {
+			userAttachmentRows = append(userAttachmentRows, model.Attachment{
+				ConversationID: input.ConversationID,
+				UserID:         input.UserID,
+				FileID:         strings.TrimSpace(item.FileID),
+				Kind:           normalizeAttachmentKind(item.Kind, item.MimeType),
+				FileName:       strings.TrimSpace(item.FileName),
+				MimeType:       strings.TrimSpace(item.MimeType),
+				FileSize:       item.FileSize,
+				SHA256:         strings.TrimSpace(item.SHA256),
+				StoragePath:    strings.TrimSpace(item.StoragePath),
+				Status:         "active",
+				MetaJSON:       strings.TrimSpace(item.MetaJSON),
+				UploadedAt:     now,
+			})
+		}
+	}
+
+	assistantMessage := &model.Message{
+		ConversationID: input.ConversationID,
+		UserID:         input.UserID,
+		PublicID:       normalizePublicID(uuid.NewString()),
+		RunID:          runID,
+		Role:           "assistant",
+		ContentType:    "image",
+		Content:        "",
+		BranchReason:   normalizedBranchReason,
+		Status:         "pending",
+		Attachments:    "[]",
+	}
+	// 媒体任务同样产生一个完整消息回合，初始本地写入必须原子提交。
+	if err = s.repo.CreateMessagePairWithUserAttachments(ctx, userMessage, assistantMessage, userAttachmentRows); err != nil {
 		retErr = err
 		return nil, err
 	}
 	userMessage.ParentPublicID = branchState.ParentPublicID
 	userMessage.SourcePublicID = branchState.SourcePublicID
-	if len(editSourceAttachments) > 0 {
-		if err = s.repo.CreateAttachments(ctx, mediaImageEditSourceAttachmentRows(input.ConversationID, userMessage.ID, input.UserID, editSourceAttachments, time.Now())); err != nil {
-			retErr = err
-			return nil, err
+	assistantMessage.ParentPublicID = userMessage.PublicID
+	traceRecorder := newMessageTraceRecorder(s, ctx, assistantMessage, input.OnEvent)
+	defer func() {
+		if retErr != nil && traceRecorder != nil {
+			traceRecorder.fail(retErr)
+			traceRecorder.attachToMessage(assistantMessage)
 		}
-	}
-
-	assistantMessage := &model.Message{
-		ConversationID:  input.ConversationID,
-		UserID:          input.UserID,
-		PublicID:        normalizePublicID(uuid.NewString()),
-		ParentMessageID: &userMessage.ID,
-		RunID:           runID,
-		Role:            "assistant",
-		ContentType:     "image",
-		Content:         "",
-		BranchReason:    normalizedBranchReason,
-		Status:          "pending",
-		Attachments:     "[]",
-	}
-	if err = s.repo.CreateMessage(ctx, assistantMessage); err != nil {
-		retErr = err
-		return nil, err
-	}
-	// 媒体任务同样产生用户消息和助手消息，计数语义与普通聊天保持一致。
-	if err = s.repo.IncrementMessageCount(ctx, input.ConversationID, 2); err != nil {
-		retErr = err
-		return nil, err
-	}
+	}()
 	emitMediaEvent(input.OnEvent, "queued", "image task queued")
 
 	cfg := s.cfg.Snapshot()
@@ -251,30 +265,43 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		ConnectTimeoutMS:    route.ConnectTimeoutMS,
 		ReadTimeoutMS:       route.ReadTimeoutMS,
 		StreamIdleTimeoutMS: route.StreamIdleTimeoutMS,
-		Endpoint:            imageEndpoint,
+		Endpoint:            endpoint,
 		UpstreamModel:       route.UpstreamModel,
 		AttributionReferer:  attributionReferer,
 		AttributionTitle:    attributionTitle,
 	}
 	filteredOptions := filterModelOptions(input.Options, route.Protocol, modelOptionPolicyConfig{
-		Mode:             cfg.ModelOptionPolicyMode,
-		AllowedPathsJSON: cfg.ModelOptionAllowedPaths,
-		DeniedPathsJSON:  cfg.ModelOptionDeniedPaths,
+		Mode:                       cfg.ModelOptionPolicyMode,
+		AllowedPathsJSON:           cfg.ModelOptionAllowedPaths,
+		DeniedPathsJSON:            cfg.ModelOptionDeniedPaths,
+		NativeToolAllowedTypesJSON: cfg.NativeToolAllowedTypes,
 	})
 
-	statusMessage := "generating image"
-	if input.TaskType == MediaImageTaskEdit {
-		statusMessage = "editing image"
-	}
-	emitMediaEvent(input.OnEvent, "running", statusMessage)
+	emitMediaEvent(input.OnEvent, "running", mediaImageRunningMessage(input.TaskType))
 	generateInput := llm.GenerateInput{
 		RequestID:      strings.TrimSpace(input.RequestID),
 		ConversationID: input.ConversationID,
-		Messages:       buildMediaImageLLMMessages(input.Prompt, editSourceFiles),
-		Options:        filteredOptions,
+		Messages: []llm.Message{{
+			Role:    "user",
+			Content: strings.TrimSpace(input.Prompt),
+		}},
+		Options: filteredOptions,
+	}
+	if input.TaskType == MediaImageTaskEdit {
+		parts := make([]llm.ContentPart, 0, 1+len(imageEditParts))
+		parts = append(parts, llm.ContentPart{
+			Kind: llm.ContentPartText,
+			Text: strings.TrimSpace(input.Prompt),
+		})
+		parts = append(parts, imageEditParts...)
+		generateInput.Messages = []llm.Message{{
+			Role:  "user",
+			Parts: parts,
+		}}
+		generateInput.ImageEditMask = maskPart
 	}
 	var output *llm.GenerateOutput
-	if input.TaskType == MediaImageTaskGeneration && llm.SupportsImageGenerationStream(routeConfig.Protocol, routeConfig.UpstreamModel) {
+	if llm.SupportsImageGenerationStream(routeConfig.Protocol, routeConfig.UpstreamModel) {
 		output, err = s.llmClient.GenerateStream(ctx, routeConfig, generateInput, func(event llm.GenerateStreamEvent) error {
 			if event.Usage != (llm.Usage{}) && input.OnEvent != nil {
 				if streamErr := input.OnEvent("usage", map[string]interface{}{
@@ -350,32 +377,32 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 			UploadedAt:     now,
 		})
 	}
-	if err = s.repo.CreateAttachments(ctx, attachmentRows); err != nil {
-		retErr = err
-		return nil, err
-	}
-
 	usage := output.Usage
 	userMessage.InputTokens = usage.InputTokens
 	userMessage.CacheReadTokens = usage.CacheReadTokens
 	userMessage.CacheWriteTokens = usage.CacheWriteTokens
 	userMessage.TokenUsage = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens
-	if err = s.repo.UpdateMessageUsage(
-		ctx,
-		userMessage.ID,
-		usage.InputTokens,
-		0,
-		usage.CacheReadTokens,
-		usage.CacheWriteTokens,
-		0,
-	); err != nil {
-		retErr = err
-		return nil, err
-	}
 
 	content := generatedImageMarkdown(uploaded)
 	latencyMS := time.Since(startedAt).Milliseconds()
-	if err = s.repo.UpdateAssistantMessageCompletion(ctx, assistantMessage.ID, content, usage.OutputTokens, usage.ReasoningTokens, latencyMS, "success", "", ""); err != nil {
+	// 上游与文件上传已完成后，数据库侧的附件、用量和完成态仍需保持原子一致。
+	if err = s.repo.CompleteAssistantMessageWithAttachments(ctx,
+		userMessage.ID,
+		repository.MessageUsageUpdate{
+			InputTokens:      usage.InputTokens,
+			CacheReadTokens:  usage.CacheReadTokens,
+			CacheWriteTokens: usage.CacheWriteTokens,
+		},
+		assistantMessage.ID,
+		repository.AssistantMessageCompletionUpdate{
+			Content:         content,
+			OutputTokens:    usage.OutputTokens,
+			ReasoningTokens: usage.ReasoningTokens,
+			LatencyMS:       latencyMS,
+			Status:          "success",
+		},
+		attachmentRows,
+	); err != nil {
 		retErr = err
 		return nil, err
 	}
@@ -409,6 +436,95 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		CacheWrite5mTokens: usage.CacheWrite5mTokens,
 		CacheWrite1hTokens: usage.CacheWrite1hTokens,
 		LatencyMS:          latencyMS,
+	}, nil
+}
+
+func mediaImageUserContentType(taskType MediaImageTaskType) string {
+	if taskType == MediaImageTaskEdit {
+		return "mixed"
+	}
+	return "text"
+}
+
+func mediaImageRunningMessage(taskType MediaImageTaskType) string {
+	if taskType == MediaImageTaskEdit {
+		return "editing image"
+	}
+	return "generating image"
+}
+
+// resolveMediaImageEditInputs 读取图片编辑输入图，确保只有图片文件进入图片编辑协议。
+func (s *Service) resolveMediaImageEditInputs(ctx context.Context, input MediaImageInput) ([]AttachmentInput, []llm.ContentPart, error) {
+	if input.TaskType != MediaImageTaskEdit {
+		return nil, nil, nil
+	}
+	attachments, err := s.resolveAttachments(ctx, input.UserID, input.FileIDs)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(attachments) == 0 || len(attachments) > maxMediaImageEditInputImages {
+		if len(attachments) == 0 {
+			return nil, nil, ErrMediaImageEditInputRequired
+		}
+		return nil, nil, ErrMediaImageEditTooManyInputs
+	}
+	parts := make([]llm.ContentPart, 0, len(attachments))
+	for _, attachment := range attachments {
+		if normalizeAttachmentKind(attachment.Kind, attachment.MimeType) != "image" {
+			return nil, nil, ErrMediaImageEditInputInvalid
+		}
+		part, readErr := s.readMediaImageEditFile(ctx, input.UserID, attachment.FileID)
+		if readErr != nil {
+			return nil, nil, readErr
+		}
+		part.FileName = strings.TrimSpace(attachment.FileName)
+		parts = append(parts, part)
+	}
+	return attachments, parts, nil
+}
+
+func (s *Service) resolveMediaImageEditMask(ctx context.Context, userID uint, fileID string) (*llm.ContentPart, error) {
+	if strings.TrimSpace(fileID) == "" {
+		return nil, nil
+	}
+	part, err := s.readMediaImageEditFile(ctx, userID, fileID)
+	if err != nil {
+		return nil, err
+	}
+	return &part, nil
+}
+
+func (s *Service) readMediaImageEditFile(ctx context.Context, userID uint, fileID string) (llm.ContentPart, error) {
+	content, err := s.OpenFileContent(ctx, userID, strings.TrimSpace(fileID))
+	if err != nil {
+		return llm.ContentPart{}, err
+	}
+	defer content.Reader.Close() //nolint:errcheck
+
+	limit := s.cfg.Snapshot().MaxUploadFileBytes
+	if limit <= 0 {
+		limit = 20 * 1024 * 1024
+	}
+	data, err := io.ReadAll(io.LimitReader(content.Reader, limit+1))
+	if err != nil {
+		return llm.ContentPart{}, err
+	}
+	if int64(len(data)) > limit {
+		return llm.ContentPart{}, ErrFileTooLarge
+	}
+	mimeType := strings.TrimSpace(content.ContentType)
+	if mimeType == "" {
+		mimeType = strings.TrimSpace(content.File.DetectedMIME)
+	}
+	data, mimeType, err = validateGeneratedImageBytes(data, mimeType)
+	if err != nil {
+		return llm.ContentPart{}, ErrMediaImageEditInputInvalid
+	}
+	return llm.ContentPart{
+		Kind:     llm.ContentPartImage,
+		MimeType: mimeType,
+		Data:     data,
+		FileName: strings.TrimSpace(content.File.FileName),
 	}, nil
 }
 
@@ -625,152 +741,4 @@ func attachmentsFromFiles(files []model.FileObject) []AttachmentInput {
 		})
 	}
 	return items
-}
-
-type mediaImageEditSourceFile struct {
-	Attachment AttachmentInput
-	Data       []byte
-	MimeType   string
-}
-
-func (s *Service) loadMediaImageEditSourceFiles(ctx context.Context, userID uint, fileIDs []string) ([]mediaImageEditSourceFile, error) {
-	attachments, err := s.resolveAttachments(ctx, userID, fileIDs)
-	if err != nil {
-		return nil, err
-	}
-	if len(attachments) == 0 {
-		return nil, ErrInvalidMediaGenerationTask
-	}
-	if s.storeProvider == nil {
-		return nil, ErrInvalidFileReference
-	}
-	store, err := s.storeProvider.Open(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cfg := s.cfg.Snapshot()
-	limit := minPositiveInt64(cfg.MaxUploadFileBytes, cfg.FileImageMaxBytes)
-	if limit <= 0 {
-		limit = 20 * 1024 * 1024
-	}
-
-	files := make([]mediaImageEditSourceFile, 0, len(attachments))
-	for _, attachment := range attachments {
-		declaredMIME := normalizeMIMEValue(firstNonEmptyString(attachment.DetectedMIME, attachment.MimeType))
-		if attachment.FileCategory != fileCategoryImage || !strings.HasPrefix(declaredMIME, "image/") {
-			return nil, ErrInvalidFileReference
-		}
-		if strings.TrimSpace(attachment.StoragePath) == "" {
-			return nil, ErrInvalidFileReference
-		}
-		reader, _, openErr := store.Open(ctx, strings.TrimSpace(attachment.StoragePath))
-		if openErr != nil {
-			return nil, ErrInvalidFileReference
-		}
-		data, readErr := io.ReadAll(io.LimitReader(reader, limit+1))
-		closeErr := reader.Close()
-		if readErr != nil {
-			return nil, readErr
-		}
-		if closeErr != nil {
-			return nil, closeErr
-		}
-		if int64(len(data)) > limit {
-			return nil, ErrFileTooLarge
-		}
-		detectedMIME := detectGeneratedImageMIME(data)
-		if !isSupportedMediaImageEditMIME(detectedMIME) {
-			return nil, ErrMIMEBlocked
-		}
-		attachment.Kind = "image"
-		attachment.MimeType = detectedMIME
-		attachment.DetectedMIME = detectedMIME
-		attachment.FileCategory = fileCategoryImage
-		attachment.FileSize = int64(len(data))
-		files = append(files, mediaImageEditSourceFile{
-			Attachment: attachment,
-			Data:       data,
-			MimeType:   detectedMIME,
-		})
-	}
-	return files, nil
-}
-
-func isSupportedMediaImageEditMIME(mimeType string) bool {
-	switch strings.ToLower(strings.TrimSpace(mimeType)) {
-	case "image/png", "image/jpeg", "image/jpg", "image/webp":
-		return true
-	default:
-		return false
-	}
-}
-
-func mediaImageEditSourceAttachments(files []mediaImageEditSourceFile) []AttachmentInput {
-	items := make([]AttachmentInput, 0, len(files))
-	for _, file := range files {
-		item := file.Attachment
-		item.Kind = "image"
-		item.MimeType = file.MimeType
-		item.DetectedMIME = file.MimeType
-		item.FileCategory = fileCategoryImage
-		item.FileSize = int64(len(file.Data))
-		items = append(items, item)
-	}
-	return items
-}
-
-func mediaImageEditSourceAttachmentRows(
-	conversationID uint,
-	messageID uint,
-	userID uint,
-	attachments []AttachmentInput,
-	uploadedAt time.Time,
-) []model.Attachment {
-	rows := make([]model.Attachment, 0, len(attachments))
-	for _, item := range attachments {
-		rows = append(rows, model.Attachment{
-			ConversationID: conversationID,
-			MessageID:      messageID,
-			UserID:         userID,
-			FileID:         strings.TrimSpace(item.FileID),
-			Kind:           normalizeAttachmentKind(item.Kind, item.MimeType),
-			FileName:       strings.TrimSpace(item.FileName),
-			MimeType:       strings.TrimSpace(firstNonEmptyString(item.DetectedMIME, item.MimeType)),
-			FileSize:       item.FileSize,
-			SHA256:         strings.TrimSpace(item.SHA256),
-			StoragePath:    strings.TrimSpace(item.StoragePath),
-			Status:         "active",
-			MetaJSON:       strings.TrimSpace(item.MetaJSON),
-			UploadedAt:     uploadedAt,
-		})
-	}
-	return rows
-}
-
-func buildMediaImageLLMMessages(prompt string, sourceFiles []mediaImageEditSourceFile) []llm.Message {
-	normalizedPrompt := strings.TrimSpace(prompt)
-	if len(sourceFiles) == 0 {
-		return []llm.Message{{
-			Role:    "user",
-			Content: normalizedPrompt,
-		}}
-	}
-	parts := make([]llm.ContentPart, 0, len(sourceFiles)+1)
-	parts = append(parts, llm.ContentPart{
-		Kind: llm.ContentPartText,
-		Text: normalizedPrompt,
-	})
-	for _, file := range sourceFiles {
-		parts = append(parts, llm.ContentPart{
-			Kind:     llm.ContentPartImage,
-			MimeType: file.MimeType,
-			Data:     file.Data,
-			FileName: file.Attachment.FileName,
-		})
-	}
-	return []llm.Message{{
-		Role:    "user",
-		Content: normalizedPrompt,
-		Parts:   parts,
-	}}
 }

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -10,8 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -53,6 +56,7 @@ type IdentityProviderView struct {
 	DefaultRole         string
 	SubjectField        string
 	EmailField          string
+	EmailVerifiedField  string
 	NameField           string
 	AvatarField         string
 	CreatedAt           time.Time
@@ -73,7 +77,13 @@ type UserIdentityView struct {
 	LastLoginAt         *time.Time
 }
 
+type IdentityProviderLogoAsset struct {
+	ContentType string
+	Content     []byte
+}
+
 type UpsertIdentityProviderInput struct {
+	ActorRole           string
 	Type                string
 	Name                string
 	Slug                string
@@ -92,6 +102,7 @@ type UpsertIdentityProviderInput struct {
 	DefaultRole         string
 	SubjectField        string
 	EmailField          string
+	EmailVerifiedField  string
 	NameField           string
 	AvatarField         string
 }
@@ -341,10 +352,13 @@ func (s *Service) CompleteProviderLogin(
 	if subject == "" {
 		return nil, fmt.Errorf("provider subject is missing")
 	}
-	email := claimString(profile, provider.EmailField)
+	email, err := normalizeProviderEmail(claimString(profile, provider.EmailField))
+	if err != nil {
+		return nil, err
+	}
 	displayName := firstNonEmpty(claimString(profile, provider.NameField), email, subject)
 	avatarURL := claimString(profile, provider.AvatarField)
-	emailVerified := claimBool(profile, "email_verified", "verified_email")
+	emailVerified := resolveProviderEmailVerified(profile, *provider)
 
 	userItem, err := s.resolveProviderUser(ctx, *provider, subject, email, displayName, avatarURL, emailVerified, string(profileJSON), verifiedState.Intent)
 	if err != nil {
@@ -451,10 +465,12 @@ func (s *Service) CompleteProviderBind(
 	if subject == "" {
 		return nil, fmt.Errorf("provider subject is missing")
 	}
-	email := claimString(profile, provider.EmailField)
-	normalizedEmail := strings.TrimSpace(email)
+	normalizedEmail, err := normalizeProviderEmail(claimString(profile, provider.EmailField))
+	if err != nil {
+		return nil, err
+	}
 	providerDisplayName := firstNonEmpty(claimString(profile, provider.NameField), normalizedEmail, subject)
-	emailVerified := claimBool(profile, "email_verified", "verified_email")
+	emailVerified := resolveProviderEmailVerified(profile, *provider)
 	now := time.Now()
 
 	existingIdentity, err := s.repo.GetUserIdentityByProviderSubject(ctx, provider.ID, subject)
@@ -563,8 +579,11 @@ func (s *Service) normalizeProviderInput(input UpsertIdentityProviderInput, curr
 	if defaultRole == "" {
 		defaultRole = domainuser.RoleUser
 	}
-	if defaultRole != domainuser.RoleUser && defaultRole != domainuser.RoleSuperAdmin {
-		return nil, fmt.Errorf("default role must be user or superadmin")
+	if defaultRole != domainuser.RoleUser && defaultRole != domainuser.RoleAdmin && defaultRole != domainuser.RoleSuperAdmin {
+		return nil, fmt.Errorf("default role must be user, admin or superadmin")
+	}
+	if defaultRole == domainuser.RoleSuperAdmin && input.ActorRole != domainuser.RoleSuperAdmin {
+		return nil, ErrIdentityProviderSuperAdminDefaultRoleNotAllowed
 	}
 	logoURL := strings.TrimSpace(input.LogoURL)
 	if logoURL != "" {
@@ -594,6 +613,7 @@ func (s *Service) normalizeProviderInput(input UpsertIdentityProviderInput, curr
 		DefaultRole:         defaultRole,
 		SubjectField:        firstNonEmpty(strings.TrimSpace(input.SubjectField), "sub"),
 		EmailField:          firstNonEmpty(strings.TrimSpace(input.EmailField), "email"),
+		EmailVerifiedField:  firstNonEmpty(strings.TrimSpace(input.EmailVerifiedField), "email_verified"),
 		NameField:           firstNonEmpty(strings.TrimSpace(input.NameField), "name"),
 		AvatarField:         firstNonEmpty(strings.TrimSpace(input.AvatarField), "picture"),
 		SortOrder:           100,
@@ -660,6 +680,7 @@ func toProviderView(item domainuser.IdentityProvider, includeSensitive bool) Ide
 		DefaultRole:         item.DefaultRole,
 		SubjectField:        item.SubjectField,
 		EmailField:          item.EmailField,
+		EmailVerifiedField:  item.EmailVerifiedField,
 		NameField:           item.NameField,
 		AvatarField:         item.AvatarField,
 		CreatedAt:           item.CreatedAt,
@@ -689,6 +710,7 @@ func providerUpdateInput(provider *domainuser.IdentityProvider) repository.Updat
 		DefaultRole:         &provider.DefaultRole,
 		SubjectField:        &provider.SubjectField,
 		EmailField:          &provider.EmailField,
+		EmailVerifiedField:  &provider.EmailVerifiedField,
 		NameField:           &provider.NameField,
 		AvatarField:         &provider.AvatarField,
 	}
@@ -701,6 +723,7 @@ const (
 	providerIntentRegister = "register"
 	providerIntentBind     = "bind"
 	providerHTTPTimeout    = 10 * time.Second
+	providerLogoMaxBytes   = 2 << 20
 )
 
 func normalizeProviderSlug(value string) string {
@@ -720,6 +743,124 @@ func normalizeProviderIntent(value string) string {
 	default:
 		return providerIntentLogin
 	}
+}
+
+func (s *Service) GetIdentityProviderLogo(ctx context.Context, slug string) (*IdentityProviderLogoAsset, error) {
+	provider, err := s.repo.GetIdentityProviderBySlug(ctx, normalizeProviderSlug(slug))
+	if err != nil {
+		return nil, ErrIdentityProviderLogoUnavailable
+	}
+	logoURL := strings.TrimSpace(provider.LogoURL)
+	parsed, err := url.Parse(logoURL)
+	if err != nil || parsed == nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return nil, ErrIdentityProviderLogoUnavailable
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+
+	response, err := s.providerHTTPClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, ErrIdentityProviderLogoUnavailable
+	}
+
+	content, err := io.ReadAll(io.LimitReader(response.Body, providerLogoMaxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(content) == 0 || len(content) > providerLogoMaxBytes {
+		return nil, ErrIdentityProviderLogoUnavailable
+	}
+	contentType := resolveIdentityProviderLogoContentType(response.Header.Get("Content-Type"), parsed.Path, content)
+	if contentType == "" {
+		return nil, ErrIdentityProviderLogoUnavailable
+	}
+	return &IdentityProviderLogoAsset{
+		ContentType: contentType,
+		Content:     content,
+	}, nil
+}
+
+func resolveIdentityProviderLogoContentType(headerValue string, requestPath string, content []byte) string {
+	contentType := normalizeIdentityProviderLogoContentType(headerValue)
+	if isAllowedIdentityProviderLogoContentType(contentType) {
+		return contentType
+	}
+	if contentType == "" || contentType == "application/octet-stream" {
+		contentType = normalizeIdentityProviderLogoContentType(http.DetectContentType(content))
+		if isAllowedIdentityProviderLogoContentType(contentType) {
+			return contentType
+		}
+		contentType = providerLogoContentTypeByExtension(requestPath)
+		if contentType == "image/svg+xml" && !looksLikeSVG(content) {
+			return ""
+		}
+		if isAllowedIdentityProviderLogoContentType(contentType) {
+			return contentType
+		}
+	}
+	return ""
+}
+
+func normalizeIdentityProviderLogoContentType(value string) string {
+	contentType, _, err := mime.ParseMediaType(strings.TrimSpace(value))
+	if err != nil {
+		contentType = strings.TrimSpace(value)
+	}
+	return strings.ToLower(contentType)
+}
+
+func isAllowedIdentityProviderLogoContentType(contentType string) bool {
+	switch contentType {
+	case "image/avif",
+		"image/gif",
+		"image/jpeg",
+		"image/png",
+		"image/svg+xml",
+		"image/vnd.microsoft.icon",
+		"image/webp",
+		"image/x-icon":
+		return true
+	default:
+		return false
+	}
+}
+
+func providerLogoContentTypeByExtension(requestPath string) string {
+	switch strings.ToLower(path.Ext(requestPath)) {
+	case ".avif":
+		return "image/avif"
+	case ".gif":
+		return "image/gif"
+	case ".ico":
+		return "image/x-icon"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".svg":
+		return "image/svg+xml"
+	case ".webp":
+		return "image/webp"
+	default:
+		return ""
+	}
+}
+
+func looksLikeSVG(content []byte) bool {
+	trimmed := bytes.TrimSpace(content)
+	if len(trimmed) == 0 {
+		return false
+	}
+	lowered := bytes.ToLower(trimmed)
+	return bytes.HasPrefix(lowered, []byte("<svg")) || (bytes.HasPrefix(lowered, []byte("<?xml")) && bytes.Contains(lowered, []byte("<svg")))
 }
 
 func firstNonEmpty(values ...string) string {
@@ -969,10 +1110,13 @@ func (s *Service) resolveProviderUser(ctx context.Context, provider domainuser.I
 
 	cfg := s.cfg.Snapshot()
 	now := time.Now()
-	normalizedEmail := strings.TrimSpace(email)
+	normalizedEmail, err := normalizeProviderEmail(email)
+	if err != nil {
+		return nil, err
+	}
 	if cfg.AutoLinkVerifiedEmail && emailVerified && normalizedEmail != "" {
 		existingUser, findErr := s.repo.GetByEmail(ctx, normalizedEmail)
-		if findErr == nil && existingUser.EmailVerifiedAt != nil {
+		if findErr == nil {
 			if err = ensureProviderLoginUserActive(existingUser); err != nil {
 				return nil, err
 			}
@@ -980,9 +1124,6 @@ func (s *Service) resolveProviderUser(ctx context.Context, provider domainuser.I
 				return nil, createErr
 			}
 			return existingUser, nil
-		}
-		if findErr == nil {
-			return nil, fmt.Errorf("email already exists; bind the provider before login")
 		}
 		if !errors.Is(findErr, repository.ErrNotFound) {
 			return nil, findErr
@@ -1224,6 +1365,44 @@ func claimString(profile map[string]interface{}, field string) string {
 		return ""
 	}
 	return conv.GetStringFromAny(value)
+}
+
+func normalizeProviderEmail(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", nil
+	}
+	normalized, err := normalizeRegistrationEmail(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("provider email is invalid")
+	}
+	return normalized, nil
+}
+
+func resolveProviderEmailVerified(profile map[string]interface{}, provider domainuser.IdentityProvider) bool {
+	fields := make([]string, 0, 3)
+	if strings.TrimSpace(provider.EmailVerifiedField) != "" {
+		fields = append(fields, provider.EmailVerifiedField)
+	}
+	fields = append(fields, "email_verified", "verified_email")
+	return claimBool(profile, uniqueClaimFields(fields)...)
+}
+
+func uniqueClaimFields(fields []string) []string {
+	seen := make(map[string]struct{}, len(fields))
+	results := make([]string, 0, len(fields))
+	for _, field := range fields {
+		normalized := strings.TrimSpace(field)
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		results = append(results, normalized)
+	}
+	return results
 }
 
 func claimBool(profile map[string]interface{}, fields ...string) bool {

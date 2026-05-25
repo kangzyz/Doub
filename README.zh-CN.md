@@ -34,9 +34,9 @@ DOUB Chat 为团队提供统一的 AI 工作台，用一个清晰的使用入口
 | 模块 | 能力 |
 | --- | --- |
 | 对话体验 | 多分支会话、流式响应、重试、编辑、反馈、公开分享、克隆分享会话、富文本 Markdown、文件卡片、模型元信息、用量明细和执行链路。 |
-| 媒体生成 | 独立的图片生成和图片编辑链路，按任务类型路由到 OpenAI Images 兼容协议，生成结果统一入库为文件，支持预览、下载和独立运行记录。 |
+| 媒体生成 | 独立的图片生成和图片编辑链路，按任务类型路由到 OpenAI、Google 和 xAI 的原生图片协议，生成结果统一入库为文件，支持预览、下载和独立运行记录。 |
 | 模型控制面 | 平台模型目录、上游渠道、真实上游模型、路由绑定、优先级/权重路由、能力 JSON、展示顺序、厂商映射、自动图标和熔断状态。 |
-| 协议适配 | OpenAI Responses 与 Chat Completions、OpenAI Images、Anthropic Messages、Google/Gemini Generate Content、xAI Responses、OpenRouter 默认协议和自定义 OpenAI 兼容路由。 |
+| 协议适配 | OpenAI Responses、Chat Completions、Images Generations 和 Images Edits，Anthropic Messages，Google/Gemini Generate Content 和 Image Generation，xAI Responses、Images Generations 和 Images Edits，OpenRouter 默认协议和自定义 OpenAI 兼容路由。 |
 | 请求治理 | 按协议组装上游请求，支持用户参数白名单/黑名单、系统保护字段、协议支持时的 previous response 续接，以及可回看的上下文快照。 |
 | 文件与 RAG | 文件上传、预览、下载、删除、配额控制、MIME 探测、文本提取、OCR、全文上下文注入、图片上下文、分片、向量嵌入和语义检索。 |
 | 记忆与上下文 | 消息数截断、Token 预算截断、上下文压缩、会话记忆、用户长期记忆、RAG 证据记录和提示词链路查看。 |
@@ -241,7 +241,9 @@ pnpm build
 
 生产模式会拒绝不安全的默认密钥、过短的加密密钥、通配 CORS 和非 HTTPS 公开地址。
 
-初始化超级管理员凭据内置为 `doub-chat` / `doub-chat-2026` / `System Admin`。它只在数据库中不存在超级管理员时用于首次创建账号。首次登录会强制修改用户名和密码；后续账号变更通过账户流程完成，不再通过 `config.yaml` 修改。
+初始化超级管理员用户名固定为 `admin`，密码会在数据库中不存在超级管理员时随机生成，并只在首次创建账号的后端启动日志中输出一次。首次登录会强制修改用户名和密码；后续账号变更通过账户流程完成，不再通过 `config.yaml` 修改。
+
+获取初始化管理员密码时，请查看首次启动后端服务的日志，搜索 `bootstrap superadmin created`；其中的 `username` 和 `password` 分别是初始登录用户名和密码。如果数据库中已经存在超级管理员，服务不会重新生成或再次输出该密码。
 
 ## 安全说明
 

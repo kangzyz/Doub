@@ -120,6 +120,110 @@ func TestFilterModelOptionsOpenAIChatCompletionsAllowsThinkingType(t *testing.T)
 	}
 }
 
+func TestFilterModelOptionsPreservesOfficialNativeToolsOutsidePathPolicy(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"temperature": 0.4,
+		"tools": []interface{}{
+			map[string]interface{}{"type": "web_search_20260209", "foo": "bar"},
+			map[string]interface{}{"type": "custom_tool", "name": "provider_lookup"},
+			map[string]interface{}{"type": "web_search_20260209"},
+			"invalid",
+		},
+	}, llm.AdapterAnthropicMessages, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: `{"default":["temperature"]}`,
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	if filtered["temperature"] != 0.4 {
+		t.Fatalf("expected allowed scalar option to pass, got %#v", filtered)
+	}
+	tools, ok := filtered["tools"].([]map[string]interface{})
+	if !ok || len(tools) != 1 {
+		t.Fatalf("expected one sanitized official native tool, got %#v", filtered["tools"])
+	}
+	if tools[0]["type"] != "web_search_20260209" || tools[0]["name"] != "web_search" {
+		t.Fatalf("expected sanitized web_search tool, got %#v", tools[0])
+	}
+	if _, ok := tools[0]["foo"]; ok {
+		t.Fatalf("expected arbitrary tool fields to be removed, got %#v", tools[0])
+	}
+}
+
+func TestFilterModelOptionsPreservesXAINativeToolsWhenToolsIsExplicitlyDenied(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"tools": []interface{}{
+			map[string]interface{}{"type": "x_search", "extra": true},
+			map[string]interface{}{"type": "not_official"},
+		},
+	}, llm.AdapterXAIResponses, modelOptionPolicyConfig{
+		Mode:                       modelOptionPolicyDenylist,
+		AllowedPathsJSON:           config.DefaultModelOptionAllowedPathsJSON(),
+		DeniedPathsJSON:            `{"default":["tools"]}`,
+		NativeToolAllowedTypesJSON: `{"xai_responses":["x_search"]}`,
+	})
+
+	tools, ok := filtered["tools"].([]map[string]interface{})
+	if !ok || len(tools) != 1 {
+		t.Fatalf("expected official xAI native tool to bypass option denylist, got %#v", filtered)
+	}
+	if tools[0]["type"] != "x_search" {
+		t.Fatalf("expected sanitized x_search tool, got %#v", tools[0])
+	}
+	if _, ok := tools[0]["extra"]; ok {
+		t.Fatalf("expected arbitrary xAI tool fields to be removed, got %#v", tools[0])
+	}
+}
+
+func TestFilterModelOptionsDropsProviderNativeToolsDisabledByPolicy(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"temperature": 0.4,
+		"tools": []interface{}{
+			map[string]interface{}{"type": "web_search_20260209"},
+		},
+	}, llm.AdapterAnthropicMessages, modelOptionPolicyConfig{
+		Mode:                       modelOptionPolicyAllowlist,
+		AllowedPathsJSON:           `{"default":["temperature"]}`,
+		DeniedPathsJSON:            config.DefaultModelOptionDeniedPathsJSON(),
+		NativeToolAllowedTypesJSON: `{"anthropic_messages":[]}`,
+	})
+
+	if filtered["temperature"] != 0.4 {
+		t.Fatalf("expected allowed scalar option to pass, got %#v", filtered)
+	}
+	if _, ok := filtered["tools"]; ok {
+		t.Fatalf("expected disabled native tools to be removed, got %#v", filtered)
+	}
+}
+
+func TestFilterModelOptionsPreservesOpenAIResponsesNativeTools(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"tools": []interface{}{
+			map[string]interface{}{"type": "web_search_preview", "extra": true},
+			map[string]interface{}{"type": "shell"},
+		},
+	}, llm.AdapterOpenAIResponses, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: `{"default":[]}`,
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	tools, ok := filtered["tools"].([]map[string]interface{})
+	if !ok || len(tools) != 2 {
+		t.Fatalf("expected sanitized OpenAI native tools, got %#v", filtered)
+	}
+	if tools[0]["type"] != "web_search_preview" {
+		t.Fatalf("expected web_search_preview to pass, got %#v", tools[0])
+	}
+	if _, ok := tools[0]["extra"]; ok {
+		t.Fatalf("expected arbitrary OpenAI tool fields to be removed, got %#v", tools[0])
+	}
+	environment, ok := tools[1]["environment"].(map[string]interface{})
+	if !ok || environment["type"] != "container_auto" {
+		t.Fatalf("expected shell environment to be normalized, got %#v", tools[1])
+	}
+}
+
 func TestFilterModelOptionsGeminiPolicyKeyMatchesGoogleAdapter(t *testing.T) {
 	filtered := filterModelOptions(map[string]interface{}{
 		"generationConfig": map[string]interface{}{
@@ -172,5 +276,64 @@ func TestFilterModelOptionsOpenAIImageGenerationsAllowsImageParams(t *testing.T)
 	}
 	if filtered["partial_images"] != 2 {
 		t.Fatalf("expected partial_images to pass for upstream image streaming, got %#v", filtered)
+	}
+}
+
+func TestFilterModelOptionsOpenAIImageEditsAllowsEditParams(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"background":         "transparent",
+		"input_fidelity":     "high",
+		"n":                  1,
+		"output_compression": 80,
+		"output_format":      "webp",
+		"partial_images":     2,
+		"quality":            "high",
+		"size":               "1024x1024",
+		"prompt":             "override",
+		"stream":             true,
+	}, llm.AdapterOpenAIImageEdits, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: config.DefaultModelOptionAllowedPathsJSON(),
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	if filtered["background"] != "transparent" || filtered["input_fidelity"] != "high" {
+		t.Fatalf("expected image edit params to pass, got %#v", filtered)
+	}
+	if filtered["partial_images"] != 2 || filtered["output_format"] != "webp" {
+		t.Fatalf("expected image edit output params to pass, got %#v", filtered)
+	}
+	for _, key := range []string{"prompt", "stream"} {
+		if _, ok := filtered[key]; ok {
+			t.Fatalf("expected %s to be hard denied, got %#v", key, filtered)
+		}
+	}
+}
+
+func TestFilterModelOptionsXAIImageAllowsImageParams(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"aspect_ratio":    "16:9",
+		"n":               2,
+		"resolution":      "2K",
+		"response_format": "b64_json",
+		"prompt":          "override",
+		"stream":          true,
+		"quality":         "high",
+	}, llm.AdapterXAIImage, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: config.DefaultModelOptionAllowedPathsJSON(),
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	if filtered["aspect_ratio"] != "16:9" || filtered["resolution"] != "2K" || filtered["response_format"] != "b64_json" {
+		t.Fatalf("expected xAI image params to pass, got %#v", filtered)
+	}
+	if filtered["n"] != 2 {
+		t.Fatalf("expected xAI n param to pass, got %#v", filtered)
+	}
+	for _, key := range []string{"prompt", "stream", "quality"} {
+		if _, ok := filtered[key]; ok {
+			t.Fatalf("expected %s to be removed, got %#v", key, filtered)
+		}
 	}
 }

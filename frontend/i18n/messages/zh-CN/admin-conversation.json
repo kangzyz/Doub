@@ -16,6 +16,11 @@
       "label": "任务执行模型",
       "description": "生成会话标题和标签时使用的聊天模型。"
     },
+    "defaultSystemPrompt": {
+      "label": "全局默认系统提示词",
+      "description": "作为所有聊天模型的全局行为指令；空值表示不注入。模型级提示词会在其后追加。",
+      "placeholder": "例如：保持回答准确、清晰，并遵循平台安全要求。"
+    },
     "optionPolicyMode": {
       "label": "参数透传策略",
       "description": "控制用户请求 options 是否允许透传到上游。默认仅放行白名单路径。"
@@ -27,6 +32,10 @@
     "deniedPaths": {
       "label": "模型参数黑名单",
       "description": "JSON 对象。仅黑名单模式生效；系统危险字段即使不写也会被拦截。"
+    },
+    "nativeToolTypes": {
+      "label": "官方工具控制",
+      "description": "独立于模型参数白名单，按协议控制可使用的官方原生工具；空数组表示禁用对应协议的官方工具。"
     },
     "titlePrompt": {
       "label": "生成标题提示词",
@@ -49,6 +58,11 @@
     "hitAllowlist": "命中白名单",
     "otherFields": "其他字段",
     "notInDenylist": "未列入黑名单"
+  },
+  "nativeTools": {
+    "enabledCount": "{enabled}/{total} 已启用",
+    "enableAll": "全开",
+    "disableAll": "关闭"
   },
   "guide": {
     "button": "教程",
