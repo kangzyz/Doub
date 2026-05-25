@@ -1,0 +1,19 @@
+{
+  "appId": "cloud.helpking.doub",
+  "appName": "DOUB",
+  "webDir": "dist",
+  "server": {
+    "url": "https://doub.vexown.com",
+    "cleartext": false
+  },
+  "android": {
+    "captureInput": false,
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "Keyboard": {
+      "resizeOnFullScreen": true
+    }
+  }
+}
