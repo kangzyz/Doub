@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible defect in DEEIX Chat.
+description: Report a reproducible defect in DOUB Chat.
 title: "[Bug]: "
 labels:
   - bug
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. For security vulnerabilities, do not open a public issue. Email support@deeix.com instead.
+        Thanks for reporting a bug. For security vulnerabilities, do not open a public issue. Email support@vexown.com instead.
   - type: dropdown
     id: area
     attributes:
@@ -33,7 +33,7 @@ body:
     attributes:
       label: Version or commit
       description: Provide the release version, Docker image tag, branch, or commit SHA where the issue occurs.
-      placeholder: "v0.1.0, ghcr.io/deeix-ai/deeix-chat:latest, main@abcdef1"
+      placeholder: "v0.1.0, ghcr.io/kangzyz/doub-chat:latest, main@abcdef1"
     validations:
       required: true
   - type: textarea
