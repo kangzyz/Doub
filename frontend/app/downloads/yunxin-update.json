@@ -1,0 +1,17 @@
+{
+  "versionCode": 403,
+  "versionName": "4.0",
+  "packageName": "cloud.helpking.yunxin",
+  "appName": "DOUB",
+  "apkUrl": "https://hui.helpking.cloud/downloads/DOUB-v4.0-cookiefix-release.apk",
+  "versionedApkUrl": "https://hui.helpking.cloud/downloads/DOUB-v4.0-cookiefix-release.apk",
+  "legacyApkUrl": "https://hui.helpking.cloud/downloads/YunXin-v4.0-cookiefix-release.apk",
+  "releaseNotes": "DOUB 4.0 更新记录\n\n本次更新：\n- 修复安卓套壳版登录状态保持不稳定的问题\n- 显式启用并持久化 WebView Cookie，减少杀后台、重启或系统回收后需要重新登录的情况\n\n上一版本更新：\n- 修复 4.0 版本可能接收不到软件更新推送的问题\n- 更新检测增加备用清单地址，并忽略误返回的 HTML 页面\n- 修复安卓套壳版在设置中开启通知时提示浏览器不支持的问题\n- 新增安卓原生通知权限请求与本地通知桥接\n- 保持 WebView 入口为 https://doub.vexown.com\n- 继续使用项目 frontend/app/favicon.ico 图标\n- 保持原账号体系，原账号可继续登录使用\n- 4.0 大版本数据库结构更换后，原聊天记录仍会重置；如有重要内容请先取消更新并自行备份后再升级",
+  "sha256": "d9b382677ae9927f787c613e622fc40fdf297d848b25a88d38e2a9a711988824",
+  "size": 26267056,
+  "force": false,
+  "requiresFreshInstall": false,
+  "buttonText": "下载并安装 DOUB 4.0",
+  "cancelText": "取消更新，先去备份",
+  "publishedAt": 1779581833
+}
