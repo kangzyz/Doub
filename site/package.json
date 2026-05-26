@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "cf:preview": "wrangler pages dev out --compatibility-date=2026-05-22",
-    "cf:deploy": "next build && wrangler pages deploy out --project-name=doub-site --commit-dirty=true"
+    "cf:deploy": "next build && wrangler pages deploy out --project-name=delicate-salad-adf6 --commit-dirty=true"
   },
   "dependencies": {
     "clsx": "^2.1.1",

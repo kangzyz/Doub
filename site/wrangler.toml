@@ -2,6 +2,6 @@
 # Static export from Next.js (output: "export").
 # Deploy with: pnpm cf:deploy
 
-name = "doub-site"
+name = "delicate-salad-adf6"
 compatibility_date = "2026-05-22"
 pages_build_output_dir = "./out"
