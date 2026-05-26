@@ -94,8 +94,8 @@ export function AboutSettingsContent({
   const links: AboutLinkItem[] = [
     {
       label: labels.website,
-      value: "kang.vexown.com",
-      href: "https://kang.vexown.com",
+      value: "about.doub.chat",
+      href: "https://about.doub.chat",
       icon: Globe,
     },
     {

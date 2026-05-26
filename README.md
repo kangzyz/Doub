@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://kang.vexown.com"><img alt="Website" src="https://img.shields.io/badge/Website-kang.vexown.com-black" /></a>
+  <a href="https://about.doub.chat"><img alt="Website" src="https://img.shields.io/badge/Website-about.doub.chat-black" /></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue" /></a>
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black" />
   <img alt="React" src="https://img.shields.io/badge/React-19-149eca" />

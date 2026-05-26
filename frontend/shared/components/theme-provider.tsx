@@ -22,7 +22,28 @@ const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 
 function resolveSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+function readThemeStorageItem(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeThemeStorageItem(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Theme changes should still apply even when browser storage is unavailable.
+  }
 }
 
 export function normalizeTheme(value: string | null | undefined): Theme {
@@ -35,11 +56,17 @@ export function normalizeThemePreset(value: string | null | undefined): ThemePre
 
 function applyTheme(theme: Theme, systemTheme: "light" | "dark", preset: ThemePreset) {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const backgroundColor = resolvedTheme === "dark" ? "#171717" : "#faf9f4";
+  const color = resolvedTheme === "dark" ? "#dedbd2" : "#5a5347";
   const root = document.documentElement;
   root.classList.remove("light", "dark");
   root.classList.add(resolvedTheme);
   root.dataset.theme = preset;
+  root.style.backgroundColor = backgroundColor;
+  root.style.color = color;
   root.style.colorScheme = resolvedTheme;
+  document.body.style.backgroundColor = backgroundColor;
+  document.body.style.color = color;
 }
 
 export function ThemeProvider({
@@ -55,8 +82,8 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     const initialSystemTheme = resolveSystemTheme();
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    const storedPreset = window.localStorage.getItem(THEME_PRESET_STORAGE_KEY);
+    const storedTheme = readThemeStorageItem(THEME_STORAGE_KEY);
+    const storedPreset = readThemeStorageItem(THEME_PRESET_STORAGE_KEY);
     const initialTheme = normalizeTheme(storedTheme);
     const initialPreset = normalizeThemePreset(storedPreset);
     themeRef.current = initialTheme;
@@ -66,21 +93,25 @@ export function ThemeProvider({
     setSystemTheme(initialSystemTheme);
     applyTheme(initialTheme, initialSystemTheme, initialPreset);
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleSystemThemeChange = () => {
       const nextSystemTheme = resolveSystemTheme();
       setSystemTheme(nextSystemTheme);
       applyTheme(themeRef.current, nextSystemTheme, presetRef.current);
     };
-    mediaQuery.addEventListener("change", handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+    try {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      mediaQuery.addEventListener("change", handleSystemThemeChange);
+      return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+    } catch {
+      return undefined;
+    }
   }, []);
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
       themeRef.current = nextTheme;
       setThemeState(nextTheme);
-      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      writeThemeStorageItem(THEME_STORAGE_KEY, nextTheme);
       applyTheme(nextTheme, systemTheme, presetRef.current);
     },
     [systemTheme],
@@ -90,7 +121,7 @@ export function ThemeProvider({
     (nextPreset: ThemePreset) => {
       presetRef.current = nextPreset;
       setPresetState(nextPreset);
-      window.localStorage.setItem(THEME_PRESET_STORAGE_KEY, nextPreset);
+      writeThemeStorageItem(THEME_PRESET_STORAGE_KEY, nextPreset);
       applyTheme(themeRef.current, systemTheme, nextPreset);
     },
     [systemTheme],

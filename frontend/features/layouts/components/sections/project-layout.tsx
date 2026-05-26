@@ -17,7 +17,7 @@ export function ProjectLayout({
   defaultSidebarOpen?: boolean;
 }) {
   return (
-    <SidebarProvider className="h-svh overflow-hidden" defaultOpen={defaultSidebarOpen}>
+    <SidebarProvider className="h-svh overflow-hidden bg-background text-foreground" defaultOpen={defaultSidebarOpen}>
       <SidebarRecentsProvider>
         <ChatSessionProvider>
           <UserLocaleSync />
@@ -27,7 +27,7 @@ export function ProjectLayout({
           <AppSidebar />
           <SidebarInset>
             <MobileHeader />
-            <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden px-0 pb-2 pt-0 md:p-4 md:pt-0">{children}</div>
+            <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden bg-background px-0 pb-2 pt-0 md:p-4 md:pt-0">{children}</div>
           </SidebarInset>
         </ChatSessionProvider>
       </SidebarRecentsProvider>

@@ -36,6 +36,14 @@ function isThemePreset(value: unknown): value is ThemePreset {
   return value === "default" || value === "azure" || value === "cobalt" || value === "graphite" || value === "lagoon" || value === "ink" || value === "ochre" || value === "sepia";
 }
 
+function readLocalPreferenceItem(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export function parseAppearancePreferences(raw: string | null | undefined): AppearancePreferencePatch {
   if (!raw) {
     return {};
@@ -76,10 +84,10 @@ export function readLocalAppearancePreferences(): AppearancePreferences {
     };
   }
 
-  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  const storedPreset = window.localStorage.getItem(THEME_PRESET_STORAGE_KEY);
-  const storedChatFont = window.localStorage.getItem(CHAT_FONT_STORAGE_KEY);
-  const storedChatFontWeight = window.localStorage.getItem(CHAT_FONT_WEIGHT_STORAGE_KEY);
+  const storedTheme = readLocalPreferenceItem(THEME_STORAGE_KEY);
+  const storedPreset = readLocalPreferenceItem(THEME_PRESET_STORAGE_KEY);
+  const storedChatFont = readLocalPreferenceItem(CHAT_FONT_STORAGE_KEY);
+  const storedChatFontWeight = readLocalPreferenceItem(CHAT_FONT_WEIGHT_STORAGE_KEY);
   return {
     theme: isTheme(storedTheme) ? storedTheme : "system",
     preset: isThemePreset(storedPreset) ? storedPreset : "default",

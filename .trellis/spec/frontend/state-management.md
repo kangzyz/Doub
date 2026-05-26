@@ -20,19 +20,26 @@ state may be optimistic, but it must reconcile with backend responses.
 
 ## Auth State
 
-Access tokens are kept client-side in memory/session snapshot helpers. The
-refresh token is an HttpOnly cookie set by the backend. Use
+Access tokens are normally kept client-side in memory/session snapshot helpers.
+The refresh token is an HttpOnly cookie set by the backend. Use
 `authedRequest`, `authedFetch`, and `resolveAccessToken`; do not store refresh
 tokens in localStorage or expose them to React state.
+
+`shared/auth/session.ts` may persist the short-lived `accessToken` and
+`sessionID` snapshot to localStorage under `doub-chat:session-snapshot:v1` as a
+WebView/browser process-recovery fallback. It must never persist refresh tokens,
+must guard browser storage access with `typeof window !== "undefined"` plus
+`try/catch`, and must remove the key when both fields are empty.
 
 `shared/auth/auth-session-context.tsx` loads and refreshes the current user
 profile and listens for profile update events.
 
 ## Persistent Browser State
 
-Use localStorage only for client preferences that are safe to lose or recreate,
-such as cached model options in `features/chat/components/app-chat-area.tsx`.
-Guard access with `typeof window !== "undefined"` and catch storage failures.
+Use localStorage only for the auth recovery snapshot described above and client
+preferences that are safe to lose or recreate, such as cached model options in
+`features/chat/components/app-chat-area.tsx`. Guard access with
+`typeof window !== "undefined"` and catch storage failures.
 
 ## Optimistic State
 

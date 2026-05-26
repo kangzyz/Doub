@@ -75,12 +75,12 @@ export function AppFiles() {
 
   return (
     <>
-      <div className="flex h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden">
+      <div className="flex h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden bg-background text-foreground">
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={onFilesPicked} />
 
         <aside
           className={cn(
-            "h-full min-h-0 min-w-0 shrink-0 overflow-hidden border-border/45 bg-transparent transition-[width,max-width,flex-basis] duration-200",
+            "h-full min-h-0 min-w-0 shrink-0 overflow-hidden border-border/45 bg-background transition-[width,max-width,flex-basis] duration-200",
             "w-full border-r-0 md:border-r",
             isSidebarCollapsed ? FILES_SIDEBAR_COLLAPSED_WIDTH_CLASS : FILES_SIDEBAR_WIDTH_CLASS,
             mobileView === "detail" ? "hidden md:flex" : "flex",
@@ -136,7 +136,7 @@ export function AppFiles() {
         </aside>
 
         <section className={cn(
-          "min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          "min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background",
           mobileView === "detail" ? "flex" : "hidden md:flex",
         )}>
           <ContentHeader

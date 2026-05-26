@@ -973,11 +973,18 @@
   body {
     max-width: 100%;
     overflow-x: clip;
+    background: var(--background, #171717);
+    color: var(--foreground, #dedbd2);
   }
   html {
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+  }
+  html.dark,
+  html.dark body {
+    background: var(--background, #171717);
+    color: var(--foreground, #dedbd2);
   }
   button,
   a,
@@ -986,9 +993,6 @@
   select,
   [role="button"] {
     touch-action: manipulation;
-  }
-  body {
-    @apply bg-background text-foreground;
   }
 }
 
