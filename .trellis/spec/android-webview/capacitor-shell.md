@@ -25,8 +25,8 @@
     `cloud.helpking.doub`.
   - Java package path: `cloud.helpking.doub.MainActivity`.
 - Hosted entry:
-  - `capacitor.config.json`: `server.url = "https://doub.vexown.com"`.
-  - `scripts/build-web.js`: `targetUrl = "https://doub.vexown.com"`.
+  - `capacitor.config.json`: `server.url = "https://doub.chat"`.
+  - `scripts/build-web.js`: `targetUrl = "https://doub.chat"`.
   - `webDir = "dist"`; `npm run build` writes `dist/index.html` that redirects
     to the same hosted URL.
 - Native lifecycle hooks:
@@ -154,7 +154,7 @@ release WebView security posture.
 ```json
 {
   "server": {
-    "url": "https://doub.vexown.com",
+    "url": "https://doub.chat",
     "cleartext": false
   },
   "android": {
@@ -168,7 +168,7 @@ release WebView security posture.
 Keep the hosted URL HTTPS-only and mirror it in `scripts/build-web.js`:
 
 ```javascript
-const targetUrl = "https://doub.vexown.com";
+const targetUrl = "https://doub.chat";
 ```
 
 #### Wrong
@@ -201,7 +201,7 @@ Always keep native WebView configuration lifecycle-safe and cookie-aware.
 
 ### Hosted Shell Instead Of Bundled Frontend
 
-The Android app currently loads `https://doub.vexown.com` through Capacitor
+The Android app currently loads `https://doub.chat` through Capacitor
 `server.url`. `dist/index.html` is generated only as a fallback redirect for the
 Capacitor `webDir` contract. Do not copy the Next.js frontend build into
 `android-webview/dist` unless the product decision changes from hosted shell to

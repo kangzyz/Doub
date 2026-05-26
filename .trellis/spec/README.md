@@ -22,8 +22,12 @@ Core project contracts:
   `repository` interfaces -> `infra` implementations.
 - Frontend route files in `frontend/app/` stay thin and delegate real work to
   `frontend/features/*`.
+- Production public domains are split by role: `https://doub.chat` is the chat
+  product entry, and `https://about.doub.chat` is the marketing/about site.
+  Marketing CTA links point to `https://doub.chat`; marketing metadata uses
+  `https://about.doub.chat`.
 - The Android shell in `android-webview/` loads the production web app at
-  `https://doub.vexown.com`; keep this URL synchronized across Capacitor config
+  `https://doub.chat`; keep this URL synchronized across Capacitor config
   and the generated fallback `dist/index.html`.
 - API responses use the `errorMsg` + `data` envelope defined in
   `backend/internal/shared/response/response.go` and

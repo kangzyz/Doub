@@ -21,7 +21,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://doub.vexown.com"),
+  metadataBase: new URL("https://about.doub.chat"),
   title: "DOUB Chat | Intelligence, refined.",
   description:
     "Bring every model into a place that lasts. An open-source AI workspace for serious teams — model routing, multimodal chat, files, tools, billing, identity, and operations.",

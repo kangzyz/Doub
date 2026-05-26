@@ -3,7 +3,7 @@
   "appName": "DOUB",
   "webDir": "dist",
   "server": {
-    "url": "https://doub.vexown.com",
+    "url": "https://doub.chat",
     "cleartext": false
   },
   "android": {

@@ -154,7 +154,7 @@ function CtaPair({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <a
-        href="https://doub.vexown.com"
+        href="https://doub.chat"
         rel="noopener noreferrer"
         target="_blank"
         className="group inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:shadow-md hover:shadow-primary/30 active:translate-y-px"

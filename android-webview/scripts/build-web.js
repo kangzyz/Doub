@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const targetUrl = "https://doub.vexown.com";
+const targetUrl = "https://doub.chat";
 const distDir = path.join(__dirname, "..", "dist");
 const indexPath = path.join(distDir, "index.html");
 

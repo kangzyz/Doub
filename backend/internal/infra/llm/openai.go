@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	openRouterDefaultAttributionReferer = "https://doub.vexown.com"
+	openRouterDefaultAttributionReferer = "https://doub.chat"
 	openRouterDefaultAttributionTitle   = "DOUB Chat"
 	openRouterDefaultCategories         = "general-chat"
 )
