@@ -1,7 +1,10 @@
-# Cloudflare Pages project config for DOUB site.
+# Cloudflare Workers static assets config for DOUB site.
 # Static export from Next.js (output: "export").
 # Deploy with: pnpm cf:deploy
 
 name = "delicate-salad-adf6"
 compatibility_date = "2026-05-22"
-pages_build_output_dir = "./out"
+
+[assets]
+directory = "./out"
+not_found_handling = "404-page"
