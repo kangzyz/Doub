@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { ChatLabel } from "@/features/chat/components/sections/chat-label";
 import { useMessageFeedback } from "@/features/chat/hooks/use-message-feedback";
 import {
-  AssistantMessageSkeleton,
   ChatInlineAlertCard,
   ChatMessageBot,
 } from "@/features/chat/components/message/message-bot";
@@ -396,7 +395,12 @@ function ChatUserMessageSkeleton({ widthClassName }: { widthClassName: string })
 function ChatAssistantMessageSkeleton() {
   return (
     <div className="flex w-full flex-col items-start gap-1.5">
-      <AssistantMessageSkeleton />
+      <div className="w-full max-w-[680px] space-y-2.5 pt-1">
+        <Skeleton className="h-4 w-[72%] rounded-full bg-muted/35" />
+        <Skeleton className="h-4 w-[96%] rounded-full bg-muted/35" />
+        <Skeleton className="h-4 w-[88%] rounded-full bg-muted/35" />
+        <Skeleton className="h-4 w-[64%] rounded-full bg-muted/35" />
+      </div>
       <div className="flex max-w-full flex-col items-start gap-1 md:flex-row md:items-center">
         <div className="flex items-center gap-1">
           <Skeleton className="size-6 rounded-md bg-muted/35" />
