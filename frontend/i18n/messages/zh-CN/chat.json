@@ -116,6 +116,14 @@
     "contextCompressed": "上下文已自动压缩",
     "scrollToBottom": "回到底部",
     "processing": "正在处理…",
+    "waitingResponse": {
+      "title": "正在生成回复",
+      "subtitle": "上下文已准备好，模型开始输出后会实时显示。",
+      "live": "实时",
+      "contextReady": "上下文就绪",
+      "modelWorking": "模型生成中",
+      "streamSoon": "即将输出"
+    },
     "editCreatesBranch": "保存后会在当前 conversation 内创建新分支。",
     "previousBranch": "切换到上一个分支",
     "nextBranch": "切换到下一个分支",
@@ -504,6 +512,7 @@
     },
     "process": {
       "titleActive": "处理中",
+      "titleReady": "上下文已就绪",
       "titleDone": "处理完成"
     },
     "compaction": {

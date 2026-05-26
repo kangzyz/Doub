@@ -174,6 +174,7 @@ type ProcessTraceLabels = {
   };
   process: {
     titleActive: string;
+    titleReady: string;
     titleDone: string;
   };
   compaction: {
@@ -326,6 +327,7 @@ function useProcessTraceLabels(): ProcessTraceLabels {
       },
       process: {
         titleActive: t("process.titleActive"),
+        titleReady: t("process.titleReady"),
         titleDone: t("process.titleDone"),
       },
       compaction: {
@@ -2517,6 +2519,7 @@ export function MessageProcessTrace({
 }) {
   const labels = useProcessTraceLabels();
   const processStreaming = Boolean(active && trace?.process?.status === "streaming");
+  const processReady = Boolean(active && trace?.process && !processStreaming);
   const [accordionValue, setAccordionValue] = React.useState(() => (processStreaming ? "message-process-trace" : ""));
 
   React.useEffect(() => {
@@ -2545,6 +2548,7 @@ export function MessageProcessTrace({
     return null;
   }
   const open = accordionValue === "message-process-trace";
+  const processTitle = processStreaming ? labels.process.titleActive : processReady ? labels.process.titleReady : labels.process.titleDone;
 
   return (
     <div className={TRACE_ROOT_CLASS}>
@@ -2565,10 +2569,14 @@ export function MessageProcessTrace({
                 <span
                   className={cn(
                     "text-[13px] font-medium transition-colors",
-                    processStreaming ? "thinking-shimmer" : "text-muted-foreground group-hover/trace:text-foreground",
+                    processStreaming
+                      ? "thinking-shimmer"
+                      : processReady
+                        ? "text-foreground"
+                        : "text-muted-foreground group-hover/trace:text-foreground",
                   )}
                 >
-                  {processStreaming ? labels.process.titleActive : labels.process.titleDone}
+                  {processTitle}
                 </span>
               </div>
               {summary ? (

@@ -82,6 +82,19 @@ Do not hard-code long UI copy in components. Product names, protocol labels,
 model names, and data values may remain inline when they are not translatable
 application text.
 
+## Streaming And Waiting States
+
+- Distinguish preparation completion from response completion. When an assistant
+  message is still streaming but its process trace is no longer `streaming`, use
+  an intermediate label such as "Context ready" rather than a completed label.
+- Empty assistant replies should render an explicit waiting state with the
+  current phase and next expected step. Use skeleton lines only for generic
+  page or list loading, not for the active response slot where the user is
+  waiting for model output.
+- Keep waiting indicators compact, `aria-live` aware, and geometry-stable so
+  the first streamed token can replace the placeholder without shifting the
+  surrounding chat layout.
+
 ## Feature UI Examples
 
 - `features/chat/components/app-chat-area.tsx` coordinates feature hooks and

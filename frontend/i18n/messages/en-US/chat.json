@@ -116,6 +116,14 @@
     "contextCompressed": "Context was automatically compressed",
     "scrollToBottom": "Scroll to bottom",
     "processing": "Processing...",
+    "waitingResponse": {
+      "title": "Generating reply",
+      "subtitle": "Context is ready. The answer will appear here as soon as the model starts streaming.",
+      "live": "Live",
+      "contextReady": "Context ready",
+      "modelWorking": "Model working",
+      "streamSoon": "Streaming next"
+    },
     "editCreatesBranch": "Saving creates a new branch in this conversation.",
     "previousBranch": "Switch to previous branch",
     "nextBranch": "Switch to next branch",
@@ -504,6 +512,7 @@
     },
     "process": {
       "titleActive": "Processing",
+      "titleReady": "Context ready",
       "titleDone": "Processing complete"
     },
     "compaction": {

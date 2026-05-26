@@ -24,7 +24,6 @@ import {
   Alert,
   AlertDescription,
 } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { summarizeUpstreamError } from "@/features/chat/utils/chat-runtime";
@@ -396,20 +395,50 @@ function formatJSON(value: string): string {
 
 export function AssistantMessageSkeleton({ fileProc, label }: { fileProc?: boolean; label?: string } = {}) {
   const t = useTranslations("chat.messages");
+  const resolvedLabel = label?.trim() || (fileProc ? t("processing") : t("waitingResponse.title"));
   if (fileProc) {
     return (
-      <div className="flex items-center gap-2 pt-1 text-[13px] text-muted-foreground">
-        <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-muted border-t-foreground/50" />
-        {label?.trim() || t("processing")}
+      <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-border/55 bg-muted/25 px-3 py-2 text-[13px] text-muted-foreground">
+        <span className="inline-block size-3.5 shrink-0 animate-spin rounded-full border-2 border-muted border-t-foreground/60" />
+        <span className="min-w-0 truncate">{resolvedLabel}</span>
       </div>
     );
   }
   return (
-    <div className="w-full max-w-[680px] space-y-2.5 pt-1">
-      <Skeleton className="h-4 w-[72%] rounded-full bg-muted/35" />
-      <Skeleton className="h-4 w-[96%] rounded-full bg-muted/35" />
-      <Skeleton className="h-4 w-[88%] rounded-full bg-muted/35" />
-      <Skeleton className="h-4 w-[64%] rounded-full bg-muted/35" />
+    <div className="w-full max-w-[560px] pt-1" role="status" aria-live="polite">
+      <div className="rounded-lg border border-border/55 bg-muted/20 px-3.5 py-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="relative mt-1 flex size-4 shrink-0 items-center justify-center">
+            <span className="absolute inline-flex size-4 animate-ping rounded-full bg-primary/25" />
+            <span className="relative inline-flex size-2 rounded-full bg-primary" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="min-w-0 text-[13px] font-medium leading-5 text-foreground">{resolvedLabel}</p>
+              <span className="rounded-full border border-primary/15 bg-primary/8 px-2 py-0.5 text-[11px] font-medium leading-4 text-primary">
+                {t("waitingResponse.live")}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
+              {t("waitingResponse.subtitle")}
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] leading-4 text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 text-emerald-600 dark:text-emerald-400">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {t("waitingResponse.contextReady")}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-1 text-primary">
+                <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+                {t("waitingResponse.modelWorking")}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-1">
+                <span className="size-1.5 rounded-full bg-muted-foreground/35" />
+                {t("waitingResponse.streamSoon")}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
