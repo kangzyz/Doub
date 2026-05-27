@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Use existing frontend component conventions for compact chat suggestion controls."}
+{"file": ".trellis/spec/frontend/api-integration.md", "reason": "Keep suggestion clicks on the existing chat submission path."}
+{"file": ".trellis/spec/backend/ai-and-conversation.md", "reason": "Preserve the existing assistant follow-up suggestion contract and generation behavior."}

@@ -71,35 +71,65 @@
   },
   "suggestions": {
     "empty": {
+      "stuck": {
+        "title": "I'm stuck",
+        "subtitle": "Help me find the next move.",
+        "prompt": "I'm stuck on something. Ask me 2-3 clarifying questions first, then help me name the problem and choose a few practical next steps."
+      },
+      "untangle": {
+        "title": "Untangle this",
+        "subtitle": "Turn loose thoughts into shape.",
+        "prompt": "I have scattered thoughts I want to sort out. Let me brain-dump first, then group the key points, tensions, and next actions."
+      },
       "rewrite": {
-        "title": "Improve a draft",
-        "subtitle": "Clarify tone, structure, and wording.",
-        "prompt": "Help me improve a draft for clarity, tone, and structure. Ask me for the draft and the target audience first."
+        "title": "Say it better",
+        "subtitle": "Make the wording feel natural.",
+        "prompt": "Help me rewrite a passage so it feels clearer, more natural, and more persuasive. Ask me for the original text and the tone I want first."
       },
       "summarize": {
-        "title": "Summarize content",
-        "subtitle": "Extract key points and next actions.",
-        "prompt": "Summarize long content into key points and next actions. Ask me to paste the content first."
+        "title": "Find the point",
+        "subtitle": "Pull the main thread out.",
+        "prompt": "I'll paste some content. Help me find the main points, spot what is missing, and turn it into a list I can act on."
       },
       "code": {
-        "title": "Explain code",
-        "subtitle": "Make a snippet or error practical.",
-        "prompt": "Explain a code snippet or error in practical terms. Ask me to paste the code, stack trace, or error message first."
+        "title": "Debug with me",
+        "subtitle": "Work through the weird part.",
+        "prompt": "I'm dealing with a code or error issue. Ask me for the code and symptoms first, then help me narrow down likely causes step by step."
       },
-      "learn": {
-        "title": "Plan learning",
-        "subtitle": "Create a short path for a topic.",
-        "prompt": "Build a short learning plan for a topic. Ask me for the topic, current level, and time available."
+      "plain": {
+        "title": "Make it plain",
+        "subtitle": "Explain it like a real person.",
+        "prompt": "I want to understand a concept. Explain it in plain language, give me a concrete example, and suggest what I might ask next."
       },
-      "ideate": {
-        "title": "Generate ideas",
-        "subtitle": "Explore options with constraints.",
-        "prompt": "Generate several options for a project. Ask me for the goal, constraints, and audience first."
+      "choose": {
+        "title": "Help me choose",
+        "subtitle": "Lay out the tradeoffs.",
+        "prompt": "I am choosing between a few options. Ask me for the options, constraints, and what matters most, then compare them clearly."
+      },
+      "risks": {
+        "title": "Check the risks",
+        "subtitle": "Look for the gotchas early.",
+        "prompt": "I want to do something. Walk through the goal, risks, cost, and next step with me. Ask me for the background first."
+      },
+      "brainstorm": {
+        "title": "Open some paths",
+        "subtitle": "Start with a few directions.",
+        "prompt": "I want to explore directions for a topic. Ask me for the goal and limits first, then give me 5 angles to consider."
       },
       "breakdown": {
-        "title": "Break down a problem",
-        "subtitle": "Turn ambiguity into concrete steps.",
-        "prompt": "Break a vague problem into concrete steps. Ask me what problem I am trying to solve first."
+        "title": "Break it down",
+        "subtitle": "Turn it into small moves.",
+        "prompt": "I want to move something forward. Break it into small steps, and tell me the output and priority for each step."
+      },
+      "writing": {
+        "title": "Talk before writing",
+        "subtitle": "Set the audience and purpose.",
+        "prompt": "I am preparing to write something. Ask me who it is for and what it should accomplish, then help me shape a natural structure."
+      },
+      "review": {
+        "title": "Review what happened",
+        "subtitle": "Find what to improve next time.",
+        "prompt": "I want to review something that happened. Ask me what happened, how it went, and what felt off, then help me turn it into lessons and next steps."
       }
     }
   },

@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify the empty-state suggestion UI stays compact and stable."}
+{"file": ".trellis/spec/backend/ai-and-conversation.md", "reason": "Verify follow-up suggestion behavior remains scoped to latest text assistant replies."}

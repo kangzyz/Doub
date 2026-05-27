@@ -34,15 +34,32 @@ import type { ConversationOptions } from "@/shared/api/conversation.types";
 import type { MCPToolDTO } from "@/shared/api/mcp.types";
 
 const MODEL_OPTIONS_STORAGE_PREFIX = "doub-chat:chat-model-options:";
+const EMPTY_CHAT_SUGGESTION_COUNT = 3;
 const EMPTY_CHAT_SUGGESTION_IDS = [
+  "stuck",
+  "untangle",
   "rewrite",
   "summarize",
   "code",
-  "learn",
-  "ideate",
+  "plain",
+  "choose",
+  "risks",
+  "brainstorm",
   "breakdown",
+  "writing",
+  "review",
 ] as const;
 const EMPTY_CONVERSATION_OPTIONS: ConversationOptions = {};
+type EmptyChatSuggestionID = (typeof EMPTY_CHAT_SUGGESTION_IDS)[number];
+
+function pickEmptyChatSuggestionIDs(): EmptyChatSuggestionID[] {
+  const pool = [...EMPTY_CHAT_SUGGESTION_IDS];
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+  }
+  return pool.slice(0, EMPTY_CHAT_SUGGESTION_COUNT);
+}
 
 function modelOptionsStorageKey(platformModelName: string): string {
   return `${MODEL_OPTIONS_STORAGE_PREFIX}${encodeURIComponent(platformModelName)}`;
@@ -97,16 +114,23 @@ export function AppChatArea() {
     ignoredConversationID: string | null;
   } | null>(null);
   const previousNewConversationRevisionRef = React.useRef(newConversationRevision);
+  const [emptyChatSuggestionIDs, setEmptyChatSuggestionIDs] = React.useState<EmptyChatSuggestionID[]>(() =>
+    EMPTY_CHAT_SUGGESTION_IDS.slice(0, EMPTY_CHAT_SUGGESTION_COUNT),
+  );
   const emptyChatSuggestions = React.useMemo<EmptyChatSuggestion[]>(
     () =>
-      EMPTY_CHAT_SUGGESTION_IDS.map((id) => ({
+      emptyChatSuggestionIDs.map((id) => ({
         id,
         title: t(`suggestions.empty.${id}.title`),
         subtitle: t(`suggestions.empty.${id}.subtitle`),
         prompt: t(`suggestions.empty.${id}.prompt`),
       })),
-    [t],
+    [emptyChatSuggestionIDs, t],
   );
+
+  React.useEffect(() => {
+    setEmptyChatSuggestionIDs(pickEmptyChatSuggestionIDs());
+  }, [newConversationRevision, routeConversationID]);
 
   React.useEffect(() => {
     if (previousNewConversationRevisionRef.current === newConversationRevision) {
