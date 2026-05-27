@@ -28,7 +28,7 @@ Confirmed baseline requirements retained:
 * Reduce the static empty-chat suggestion count from 6 to 3 for the MVP.
 * Keep suggestion labels short and role-oriented enough to fit compact text links on desktop and mobile.
 * Ship a larger built-in role prompt pool and randomly show 3 prompts on the empty-chat screen.
-* Role prompts should state who the assistant is, what it can help with, and how it should work; they should not be question-first task prompts.
+* Role prompts should state who the assistant is, what it can help with, and how it should work; they should initialize the role for later user requests, not answer the role prompt with a full plan.
 * Preserve direct-send behavior when clicking a static empty-chat suggestion.
 * Preserve generated follow-up behavior from the baseline PRD.
 
@@ -49,7 +49,7 @@ The MVP should show 3 localized built-in role prompts at a time, randomly select
 11. Growth operator.
 12. Interview coach.
 
-The visible copy should render as three lightweight rows below the composer. Each row shows an underlined role name and a short capability description. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
+The visible copy should render as three lightweight rows below the composer. Each row shows an underlined role name and a short capability description. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output for future turns. The assistant should reply only with a short readiness acknowledgement after the role prompt is sent, then wait for the user's real request.
 
 ## Acceptance Criteria
 
@@ -59,6 +59,7 @@ The visible copy should render as three lightweight rows below the composer. Eac
 * [x] Empty-chat static suggestions are randomly selected from a larger built-in pool.
 * [x] Empty-chat static suggestion copy is role-oriented and capability-focused.
 * [x] Static suggestion prompts establish role-play instructions rather than only asking the user for more information.
+* [x] Static suggestion prompts instruct the assistant to acknowledge readiness only and wait for the next user request.
 * [x] Suggestion text is localized for English and Chinese UI.
 * [x] Clicking a static suggestion sends that prompt immediately.
 * [x] Follow-up suggestions still appear only below the latest text assistant response.
