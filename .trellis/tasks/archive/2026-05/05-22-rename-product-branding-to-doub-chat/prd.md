@@ -24,8 +24,8 @@ Rebrand product naming from DEEIX to DOUB across both user-visible surfaces and 
 - Existing image/icon file contents remain unchanged; the user will replace same-name assets later.
 - Technical identifiers should be migrated to DOUB naming, including storage keys, event names, package names, Docker resource names, database names, Go module path, import paths, build outputs, service names, tracing/logger names, default accounts/secrets, cache namespaces, and documentation examples.
 - Replacement brand channels are available:
-  - Website: `doub.vexown.com`
-  - Support email: `support@vexown.com`
+  - Website: `about.doub.chat`
+  - Support email: `support@doub.chat`
   - Social account: `@doubingchat`
   - Repository: `https://github.com/kangzyz/Doub`
 
@@ -48,8 +48,8 @@ Rebrand product naming from DEEIX to DOUB across both user-visible surfaces and 
 - Update both English and Chinese frontend message files where visible brand text appears.
 - Update backend defaults that can surface to users, including emails, 2FA issuer, app/build metadata, settings defaults, and API documentation title/description.
 - Update visible brand channel labels and links to:
-  - Website label/link: `doub.vexown.com`
-  - Contact email/link: `support@vexown.com`
+  - Website label/link: `about.doub.chat`
+  - Contact email/link: `support@doub.chat`
   - Social label/link: `@doubingchat`
   - Repository label/link: `DOUB-Chat` / `https://github.com/kangzyz/Doub`
 - Migrate technical identifiers from DEEIX/deeix naming to DOUB/doub naming.
@@ -147,7 +147,7 @@ Run checks and classify remaining `DEEIX`/`deeix` occurrences.
 
 ## Open Questions
 
-- Resolved: use `doub-chat`, `doub_chat`, `DOUB_CHAT_`, `github.com/kangzyz/Doub/backend`, `ghcr.io/kangzyz/doub-chat`, `https://doub.vexown.com`, `support@vexown.com`, and `@doubingchat`.
+- Resolved: use `doub-chat`, `doub_chat`, `DOUB_CHAT_`, `github.com/kangzyz/Doub/backend`, `ghcr.io/kangzyz/doub-chat`, `https://doub.chat`, `support@doub.chat`, and `@doubingchat`.
 - Resolved: keep existing SVG/ICO/PNG/JPG file contents and existing screenshot filenames unchanged for later same-name asset replacement by the user.
 
 ## Execution Results

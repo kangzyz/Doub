@@ -302,7 +302,7 @@ DOUB Chat is built on the open-source ecosystem. Thanks to all maintainers and c
 
 ## Contact & Community
 
-- Email: [support@vexown.com](mailto:support@vexown.com)
+- Email: [support@doub.chat](mailto:support@doub.chat)
 - X: [@doubingchat](https://x.com/doubingchat)
 
 ## License

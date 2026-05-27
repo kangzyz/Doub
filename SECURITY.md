@@ -4,7 +4,7 @@
 
 Please do not report security vulnerabilities through public GitHub issues.
 
-Send security reports to support@vexown.com with:
+Send security reports to support@doub.chat with:
 
 - a clear description of the issue
 - affected version or commit

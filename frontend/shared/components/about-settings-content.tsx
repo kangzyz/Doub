@@ -118,8 +118,8 @@ export function AboutSettingsContent({
     },
     {
       label: labels.contact,
-      value: "support@vexown.com",
-      href: "mailto:support@vexown.com",
+      value: "support@doub.chat",
+      href: "mailto:support@doub.chat",
       icon: Mail,
     },
   ];

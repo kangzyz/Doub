@@ -302,7 +302,7 @@ DOUB Chat 基于开源生态构建，感谢所有 AI 工具生态中的维护者
 
 ## 联系&交流
 
-- 邮箱：[support@vexown.com](mailto:support@vexown.com)
+- 邮箱：[support@doub.chat](mailto:support@doub.chat)
 - 社媒：[@doubingchat](https://x.com/doubingchat)
 
 ## 开源协议

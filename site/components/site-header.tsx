@@ -53,7 +53,7 @@ export function SiteHeader({ locale }: SiteHeaderProps) {
           </button>
           <a
             className="hidden h-9 items-center gap-2 rounded-full border border-border/50 bg-card/70 px-4 text-sm font-medium text-foreground backdrop-blur-md transition hover:border-primary/40 hover:bg-primary/5 sm:inline-flex"
-            href="mailto:support@vexown.com"
+            href="mailto:support@doub.chat"
           >
             {contactLabel}
             <ArrowUpRight className="size-4" aria-hidden />

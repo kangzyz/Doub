@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability report
     url: https://github.com/kangzyz/Doub/blob/main/SECURITY.md
-    about: Please do not report security vulnerabilities through public GitHub issues. Email support@vexown.com instead.
+    about: Please do not report security vulnerabilities through public GitHub issues. Email support@doub.chat instead.
   - name: Contribution guidelines
     url: https://github.com/kangzyz/Doub/blob/main/CONTRIBUTING.md
     about: Read the contribution guidelines before opening an issue or pull request.

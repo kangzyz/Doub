@@ -389,7 +389,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </div>
             <div className="grid gap-1 text-right text-sm">
               <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">{t.supportLabel}</p>
-              <a className="text-foreground transition hover:text-primary" href="mailto:support@vexown.com">support@vexown.com</a>
+              <a className="text-foreground transition hover:text-primary" href="mailto:support@doub.chat">support@doub.chat</a>
             </div>
           </div>
 
