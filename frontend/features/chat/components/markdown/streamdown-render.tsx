@@ -431,16 +431,25 @@ function parseNeutralColor(value: string): ParsedNeutralColor | null {
   };
 }
 
-function isLightNeutralSurface(value: unknown): value is string {
+function normalizeHtmlVisualSurfaceColor(value: unknown): unknown {
   if (typeof value !== "string") {
-    return false;
+    return value;
   }
 
   const color = parseNeutralColor(value);
-  return Boolean(color?.neutral && color.alpha >= 0.5 && color.luminance >= 0.72);
+  if (!color?.neutral || color.alpha < 0.5) {
+    return value;
+  }
+  if (color.luminance >= 0.72) {
+    return "var(--card)";
+  }
+  if (color.luminance <= 0.18) {
+    return "var(--muted)";
+  }
+  return value;
 }
 
-function normalizeHtmlVisualTextColor(value: unknown): unknown {
+function normalizeHtmlVisualTextColor(value: unknown, darkSurfaceNormalized = false): unknown {
   if (typeof value !== "string") {
     return value;
   }
@@ -450,6 +459,9 @@ function normalizeHtmlVisualTextColor(value: unknown): unknown {
     return value;
   }
 
+  if (darkSurfaceNormalized && color.luminance >= 0.72) {
+    return "var(--foreground)";
+  }
   if (color.luminance <= 0.45) {
     return "var(--foreground)";
   }
@@ -483,14 +495,16 @@ function normalizeHtmlVisualStyle(style: React.CSSProperties | string | undefine
   const next: Record<string, unknown> = { ...style };
 
   for (const key of HTML_VISUAL_SURFACE_STYLE_KEYS) {
-    if (isLightNeutralSurface(next[key])) {
-      next[key] = "var(--card)";
+    const value = normalizeHtmlVisualSurfaceColor(next[key]);
+    if (value !== next[key]) {
+      next[key] = value;
       changed = true;
     }
   }
 
+  const darkSurfaceNormalized = HTML_VISUAL_SURFACE_STYLE_KEYS.some((key) => next[key] === "var(--muted)");
   for (const key of HTML_VISUAL_TEXT_STYLE_KEYS) {
-    const value = normalizeHtmlVisualTextColor(next[key]);
+    const value = normalizeHtmlVisualTextColor(next[key], darkSurfaceNormalized);
     if (value !== next[key]) {
       next[key] = value;
       changed = true;
