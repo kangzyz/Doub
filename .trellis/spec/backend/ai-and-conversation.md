@@ -294,3 +294,82 @@ assistantMsg.FollowUpsJSON = marshal(followUps)
 // Persist the assistant answer first, then generate suggestions asynchronously.
 s.maybeGenerateFollowUpsAsync(*input.Conversation, *input.UserMessage, *input.AssistantMessage)
 ```
+
+## Scenario: Upstream Citation Reference Links
+
+### 1. Scope / Trigger
+
+Use this contract when changing chat behavior that consumes provider-native
+citations from web/search tools, output annotations, image references, or
+server-side tool calls.
+
+### 2. Signatures
+
+- Infra result: `llm.GenerateOutput.Citations []string`
+- Application helper:
+  `appendCitationReferenceDefinitions(content string, citations []string) string`
+- Stored assistant content: normal Markdown string in `chat_messages.content`
+
+### 3. Contracts
+
+- Provider adapters collect citation URLs into `GenerateOutput.Citations`; they
+  should not render provider-specific citation UI.
+- The conversation application layer maps numeric markers in the final assistant
+  text (`[1]`, `[2]`, etc.) to display-only Markdown reference links
+  (`[[1]][citation-1]` plus `[citation-1]: URL`). This keeps URL text out of
+  the visible body while rendering the bracketed marker as the clickable label.
+- The visible assistant text is preserved; reference definitions are appended as
+  Markdown metadata for the existing frontend renderer.
+- Inline numeric citation links from providers (`[1](https://...)`) must be
+  rewritten to the same display-only reference format so the visible body does
+  not show raw URL text.
+- Adjacent numeric markers (`[1][2]`) must be rewritten as separate
+  display-only citation references so they parse as two links.
+- Streaming deltas stay provider text only. The completed/persisted message may
+  contain appended reference definitions.
+- Do not add a new API field for citation links unless Markdown reference
+  definitions cannot represent the required behavior.
+
+### 4. Validation & Error Matrix
+
+- Blank assistant content -> return unchanged.
+- No citation URLs -> return unchanged.
+- No numeric citation markers in content -> return unchanged.
+- Citation marker has no URL at the matching one-based index -> skip it.
+- Empty, malformed, or non-HTTP(S) citation URL -> skip it.
+- Existing numeric reference definition already present -> do not duplicate it.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `answer [1][2]` plus two URLs persists as
+  `answer [[1]][citation-1][[2]][citation-2]\n\n[citation-1]: https://...\n[citation-2]: https://...`.
+- Good: `answer [1](https://example.com)` persists as
+  `answer [[1]][citation-1]\n\n[citation-1]: https://example.com`.
+- Base: `answer [1]` plus three URLs appends only the referenced first URL.
+- Bad: frontend code guesses URLs from process trace output and rewrites message
+  text client-side.
+
+### 6. Tests Required
+
+- Unit tests for marker-to-URL mapping, inline numeric link rewriting, adjacent
+  marker separation, existing-definition deduplication, invalid URL filtering,
+  and unchanged content without markers.
+- Existing server-side tool trace tests must continue to prove citation URLs are
+  still captured for process trace visibility.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+// Do not make the frontend infer clickable references from trace rows.
+message.Content = upstream.Text
+message.ProcessTrace.Tools = citationsJSON
+```
+
+#### Correct
+
+```go
+// Keep the API contract as Markdown content and let the renderer handle links.
+message.Content = appendCitationReferenceDefinitions(upstream.Text, upstream.Citations)
+```

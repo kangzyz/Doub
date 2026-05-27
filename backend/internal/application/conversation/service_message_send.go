@@ -1037,6 +1037,7 @@ func (s *Service) sendMessageInternal(
 		assistantText, nextNativeToolRows = syncUpstreamOutputTrace(traceRecorder, upstreamOutput, runID)
 		toolCallRows = append(toolCallRows, nextNativeToolRows...)
 	}
+	assistantText = appendCitationReferenceDefinitions(assistantText, upstreamOutput.Citations)
 
 	effectiveInputTokens := totalUsage.InputTokens
 	if effectiveInputTokens <= 0 {
