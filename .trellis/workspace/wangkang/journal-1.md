@@ -38,3 +38,36 @@ Completed DOUB Chat rebrand across visible product text, technical identifiers, 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Chat suggestions
+
+**Date**: 2026-05-27
+**Task**: Chat suggestions
+**Branch**: `main`
+
+### Summary
+
+Implemented empty-chat prompt suggestions, assistant follow-up suggestion generation, settings route/hydration fixes, Swagger updates, tests, and specs.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `691ac7e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
