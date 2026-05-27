@@ -24,9 +24,9 @@ Confirmed baseline requirements retained:
 ## Requirements
 
 * Empty-chat suggestions must be visually small and secondary to the composer.
-* Empty-chat suggestions should render directly above the input box, not as a large block higher in the empty state.
+* Empty-chat suggestions should render directly below the input box as lightweight role links, not as a large block higher in the empty state.
 * Reduce the static empty-chat suggestion count from 6 to 3 for the MVP.
-* Keep suggestion labels short and role-oriented enough to fit compact chips/buttons on desktop and mobile.
+* Keep suggestion labels short and role-oriented enough to fit compact text links on desktop and mobile.
 * Ship a larger built-in role prompt pool and randomly show 3 prompts on the empty-chat screen.
 * Role prompts should state who the assistant is, what it can help with, and how it should work; they should not be question-first task prompts.
 * Preserve direct-send behavior when clicking a static empty-chat suggestion.
@@ -49,12 +49,12 @@ The MVP should show 3 localized built-in role prompts at a time, randomly select
 11. Growth operator.
 12. Interview coach.
 
-The visible copy should show the role name plus a short capability summary. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
+The visible copy should show the role name as an underlined text link below the composer. Capability summaries remain available as accessible labels/tooltips. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
 
 ## Acceptance Criteria
 
-* [x] Empty-chat static suggestions appear immediately above the composer.
-* [x] Empty-chat static suggestions are compact chips/buttons, not large cards.
+* [x] Empty-chat static suggestions appear immediately below the composer.
+* [x] Empty-chat static suggestions are compact underlined text links, not large cards or boxed chips.
 * [x] Empty-chat static suggestions display 3 items.
 * [x] Empty-chat static suggestions are randomly selected from a larger built-in pool.
 * [x] Empty-chat static suggestion copy is role-oriented and capability-focused.
@@ -95,5 +95,5 @@ The visible copy should show the role name plus a short capability summary. The 
   * `frontend/features/chat/components/sections/chat-input.tsx`
   * `frontend/i18n/messages/en-US/chat.json`
   * `frontend/i18n/messages/zh-CN/chat.json`
-* Static empty-chat suggestion UI should be placed in the same max-width composer column so it visually belongs to the input surface.
+* Static empty-chat suggestion UI should be placed below the composer in the same max-width column so it visually belongs to the input surface.
 * Use compact, stable dimensions so suggestions do not shift the composer layout.
