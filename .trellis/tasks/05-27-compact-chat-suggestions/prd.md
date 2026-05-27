@@ -26,29 +26,30 @@ Confirmed baseline requirements retained:
 * Empty-chat suggestions must be visually small and secondary to the composer.
 * Empty-chat suggestions should render directly above the input box, not as a large block higher in the empty state.
 * Reduce the static empty-chat suggestion count from 6 to 3 for the MVP.
-* Keep suggestion labels short, conversational, and idea-oriented enough to fit compact chips/buttons on desktop and mobile.
-* Ship a larger built-in suggestion pool and randomly show 3 prompts on the empty-chat screen.
+* Keep suggestion labels short and role-oriented enough to fit compact chips/buttons on desktop and mobile.
+* Ship a larger built-in role prompt pool and randomly show 3 prompts on the empty-chat screen.
+* Role prompts should state who the assistant is, what it can help with, and how it should work; they should not be question-first task prompts.
 * Preserve direct-send behavior when clicking a static empty-chat suggestion.
 * Preserve generated follow-up behavior from the baseline PRD.
 
 ## Static Suggestion Set
 
-The MVP should show 3 localized built-in suggestions at a time, randomly selected from a larger built-in pool:
+The MVP should show 3 localized built-in role prompts at a time, randomly selected from a larger built-in pool:
 
-1. Unblocking / clarifying a stuck idea.
-2. Untangling loose thoughts.
-3. Rewriting in a more natural voice.
-4. Finding the point in long content.
-5. Debugging code or errors.
-6. Explaining concepts plainly.
-7. Comparing choices and tradeoffs.
-8. Checking risks.
-9. Opening brainstorm directions.
-10. Breaking work into small steps.
-11. Planning writing through audience and purpose.
-12. Reviewing what happened and improving next time.
+1. Product advisor.
+2. Technical architect.
+3. Code mentor.
+4. AI workflow advisor.
+5. Writing editor.
+6. Decision consultant.
+7. Data analyst.
+8. Project operator.
+9. Learning coach.
+10. Review coach.
+11. Growth operator.
+12. Interview coach.
 
-The visible copy should feel like lightweight thought starters rather than rigid feature cards.
+The visible copy should show the role name plus a short capability summary. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
 
 ## Acceptance Criteria
 
@@ -56,7 +57,8 @@ The visible copy should feel like lightweight thought starters rather than rigid
 * [x] Empty-chat static suggestions are compact chips/buttons, not large cards.
 * [x] Empty-chat static suggestions display 3 items.
 * [x] Empty-chat static suggestions are randomly selected from a larger built-in pool.
-* [x] Empty-chat static suggestion copy is conversational and idea-oriented.
+* [x] Empty-chat static suggestion copy is role-oriented and capability-focused.
+* [x] Static suggestion prompts establish role-play instructions rather than only asking the user for more information.
 * [x] Suggestion text is localized for English and Chinese UI.
 * [x] Clicking a static suggestion sends that prompt immediately.
 * [x] Follow-up suggestions still appear only below the latest text assistant response.

@@ -36,18 +36,18 @@ import type { MCPToolDTO } from "@/shared/api/mcp.types";
 const MODEL_OPTIONS_STORAGE_PREFIX = "doub-chat:chat-model-options:";
 const EMPTY_CHAT_SUGGESTION_COUNT = 3;
 const EMPTY_CHAT_SUGGESTION_IDS = [
-  "stuck",
-  "untangle",
-  "rewrite",
-  "summarize",
-  "code",
-  "plain",
-  "choose",
-  "risks",
-  "brainstorm",
-  "breakdown",
-  "writing",
-  "review",
+  "product_advisor",
+  "tech_architect",
+  "code_mentor",
+  "ai_workflow_advisor",
+  "writing_editor",
+  "decision_consultant",
+  "data_analyst",
+  "project_operator",
+  "learning_coach",
+  "review_coach",
+  "growth_operator",
+  "interview_coach",
 ] as const;
 const EMPTY_CONVERSATION_OPTIONS: ConversationOptions = {};
 type EmptyChatSuggestionID = (typeof EMPTY_CHAT_SUGGESTION_IDS)[number];

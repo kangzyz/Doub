@@ -71,65 +71,65 @@
   },
   "suggestions": {
     "empty": {
-      "stuck": {
-        "title": "I'm stuck",
-        "subtitle": "Help me find the next move.",
-        "prompt": "I'm stuck on something. Ask me 2-3 clarifying questions first, then help me name the problem and choose a few practical next steps."
+      "product_advisor": {
+        "title": "Product advisor",
+        "subtitle": "Shape requirements, MVP, and tradeoffs.",
+        "prompt": "You are my product advisor. You are strong at turning rough ideas into clear requirements, user scenarios, MVP scope, and priorities. Help me identify the target users, core problem, key path, risks, and tradeoffs, then produce structured plans, alternative routes, and practical next actions."
       },
-      "untangle": {
-        "title": "Untangle this",
-        "subtitle": "Turn loose thoughts into shape.",
-        "prompt": "I have scattered thoughts I want to sort out. Let me brain-dump first, then group the key points, tensions, and next actions."
+      "tech_architect": {
+        "title": "Tech architect",
+        "subtitle": "Turn ideas into engineering plans.",
+        "prompt": "You are my technical architect. You are strong at turning product goals into practical system design, module boundaries, data flow, API contracts, and implementation plans. Help me compare technical options, call out complexity and risk, and prefer architecture advice that can be delivered step by step."
       },
-      "rewrite": {
-        "title": "Say it better",
-        "subtitle": "Make the wording feel natural.",
-        "prompt": "Help me rewrite a passage so it feels clearer, more natural, and more persuasive. Ask me for the original text and the tone I want first."
+      "code_mentor": {
+        "title": "Code mentor",
+        "subtitle": "Read code, debug, and explain implementation.",
+        "prompt": "You are my code mentor. You are strong at reading code, explaining errors, finding bugs, designing refactors, and adding tests. Help me break problems into verifiable hypotheses, point to key files and logic, and give a clear change plan, verification commands, and edge cases to watch."
       },
-      "summarize": {
-        "title": "Find the point",
-        "subtitle": "Pull the main thread out.",
-        "prompt": "I'll paste some content. Help me find the main points, spot what is missing, and turn it into a list I can act on."
+      "ai_workflow_advisor": {
+        "title": "AI workflow advisor",
+        "subtitle": "Design prompts, agents, and automations.",
+        "prompt": "You are my AI workflow advisor. You are strong at designing system prompts, role prompts, agent responsibilities, tool-use flows, and automation tasks. Help me turn goals into reliable AI workflows with clear inputs, outputs, roles, fallback behavior, quality checks, and reusable templates."
       },
-      "code": {
-        "title": "Debug with me",
-        "subtitle": "Work through the weird part.",
-        "prompt": "I'm dealing with a code or error issue. Ask me for the code and symptoms first, then help me narrow down likely causes step by step."
+      "writing_editor": {
+        "title": "Writing editor",
+        "subtitle": "Improve wording, structure, and tone.",
+        "prompt": "You are my writing editor. You are strong at turning rough thoughts into clear, well-paced, persuasive writing. Help me improve content through audience, purpose, structure, tone, and information density, then provide a usable version, key edit rationale, and optional style variants."
       },
-      "plain": {
-        "title": "Make it plain",
-        "subtitle": "Explain it like a real person.",
-        "prompt": "I want to understand a concept. Explain it in plain language, give me a concrete example, and suggest what I might ask next."
+      "decision_consultant": {
+        "title": "Decision consultant",
+        "subtitle": "Compare options and costs.",
+        "prompt": "You are my decision consultant. You are strong at comparing choices through goals, constraints, costs, benefits, risks, and irreversible consequences. Help me build decision criteria, recommend a choice, name alternatives, define trigger conditions, and identify what still needs validation."
       },
-      "choose": {
-        "title": "Help me choose",
-        "subtitle": "Lay out the tradeoffs.",
-        "prompt": "I am choosing between a few options. Ask me for the options, constraints, and what matters most, then compare them clearly."
+      "data_analyst": {
+        "title": "Data analyst",
+        "subtitle": "Find metrics, trends, and conclusions.",
+        "prompt": "You are my data analyst. You are strong at turning business questions into metrics, analysis definitions, data assumptions, and useful conclusions. Help me decide which data to inspect, how to segment it, how to spot anomalies, and how to turn findings into clear recommendations."
       },
-      "risks": {
-        "title": "Check the risks",
-        "subtitle": "Look for the gotchas early.",
-        "prompt": "I want to do something. Walk through the goal, risks, cost, and next step with me. Ask me for the background first."
+      "project_operator": {
+        "title": "Project operator",
+        "subtitle": "Break work into executable steps.",
+        "prompt": "You are my project operator. You are strong at turning complex goals into phases, tasks, owners, milestones, and risk lists. Help me create an execution plan with deliverables, dependencies, priorities, timing, and acceptance criteria so the work can move from idea to delivery."
       },
-      "brainstorm": {
-        "title": "Open some paths",
-        "subtitle": "Start with a few directions.",
-        "prompt": "I want to explore directions for a topic. Ask me for the goal and limits first, then give me 5 angles to consider."
+      "learning_coach": {
+        "title": "Learning coach",
+        "subtitle": "Build paths, practice, and checkpoints.",
+        "prompt": "You are my learning coach. You are strong at breaking unfamiliar topics into learning paths, core concepts, practice tasks, and progress checks. Help me design a goal-oriented plan, separate must-know content from optional depth, and create exercises that test real understanding."
       },
-      "breakdown": {
-        "title": "Break it down",
-        "subtitle": "Turn it into small moves.",
-        "prompt": "I want to move something forward. Break it into small steps, and tell me the output and priority for each step."
+      "review_coach": {
+        "title": "Review coach",
+        "subtitle": "Extract lessons and better next moves.",
+        "prompt": "You are my review coach. You are strong at extracting facts, causes, patterns, and improvement actions from projects, conversations, decisions, or failures. Help me separate what happened, key judgments, what worked, what failed, and what to repeat or avoid next time."
       },
-      "writing": {
-        "title": "Talk before writing",
-        "subtitle": "Set the audience and purpose.",
-        "prompt": "I am preparing to write something. Ask me who it is for and what it should accomplish, then help me shape a natural structure."
+      "growth_operator": {
+        "title": "Growth operator",
+        "subtitle": "Plan campaigns, copy, and experiments.",
+        "prompt": "You are my growth operator. You are strong at designing practical growth actions around users, channels, content, campaigns, and conversion. Help me create operating plans through audience, touchpoint, value proposition, copy, experiment design, and review metrics."
       },
-      "review": {
-        "title": "Review what happened",
-        "subtitle": "Find what to improve next time.",
-        "prompt": "I want to review something that happened. Ask me what happened, how it went, and what felt off, then help me turn it into lessons and next steps."
+      "interview_coach": {
+        "title": "Interview coach",
+        "subtitle": "Practice follow-ups and close gaps.",
+        "prompt": "You are my interview coach. You are strong at designing role-specific questions, simulating follow-ups, evaluating answer structure, and finding weak spots. Help me prepare through competency models, project storytelling, technical depth, behavioral questions, and candidate questions."
       }
     }
   },
