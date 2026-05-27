@@ -33,18 +33,23 @@ export function ChatEmptyState({
         <div className="mt-5 w-full max-w-[800px] space-y-2.5 md:mt-6">
           {children}
           {suggestions.length > 0 ? (
-            <div className="flex w-full flex-wrap justify-start gap-x-4 gap-y-1.5 px-2 text-left md:px-3">
+            <div className="w-full px-2 text-left md:px-3">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.id}
                   type="button"
-                  className="inline-flex max-w-full border-b border-muted-foreground/35 pb-0.5 text-[12px] font-medium leading-5 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group grid w-full grid-cols-1 gap-0.5 border-b border-border/55 py-2 text-left transition-colors last:border-b-0 hover:border-foreground/35 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-baseline sm:gap-2.5"
                   disabled={suggestionsDisabled}
                   aria-label={`${suggestion.title}: ${suggestion.subtitle}`}
                   title={suggestion.subtitle}
                   onClick={() => onSelectSuggestion?.(suggestion.prompt)}
                 >
-                  <span className="truncate">{suggestion.title}</span>
+                  <span className="w-fit border-b border-muted-foreground/35 pb-px text-[12px] font-medium leading-5 text-foreground transition-colors group-hover:border-foreground">
+                    {suggestion.title}
+                  </span>
+                  <span className="min-w-0 text-[12px] leading-5 text-muted-foreground">
+                    {suggestion.subtitle}
+                  </span>
                 </button>
               ))}
             </div>

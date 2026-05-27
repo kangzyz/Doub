@@ -49,12 +49,12 @@ The MVP should show 3 localized built-in role prompts at a time, randomly select
 11. Growth operator.
 12. Interview coach.
 
-The visible copy should show the role name as an underlined text link below the composer. Capability summaries remain available as accessible labels/tooltips. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
+The visible copy should render as three lightweight rows below the composer. Each row shows an underlined role name and a short capability description. The sent prompt should be a complete role-playing prompt that establishes role, capabilities, working style, and expected output.
 
 ## Acceptance Criteria
 
 * [x] Empty-chat static suggestions appear immediately below the composer.
-* [x] Empty-chat static suggestions are compact underlined text links, not large cards or boxed chips.
+* [x] Empty-chat static suggestions are three compact underlined role rows with short descriptions, not large cards or boxed chips.
 * [x] Empty-chat static suggestions display 3 items.
 * [x] Empty-chat static suggestions are randomly selected from a larger built-in pool.
 * [x] Empty-chat static suggestion copy is role-oriented and capability-focused.
