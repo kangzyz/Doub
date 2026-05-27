@@ -32,6 +32,30 @@ wrappers server-renderable when possible.
 - Avoid nested cards and decorative page sections that make operational screens
   harder to scan.
 
+## Markdown Rendering
+
+- Chat Markdown rendering is owned by
+  `frontend/features/chat/components/markdown/streamdown-render.tsx`.
+- When allowing AI-generated raw HTML for visual layouts, extend Streamdown's
+  sanitizer with a narrow `allowedTags` policy. Do not bypass the Markdown AST
+  pipeline with `dangerouslySetInnerHTML`.
+- `allowedTags` entries replace Streamdown's tag-specific sanitizer attributes
+  for the same tag. When adding visual attributes to existing Markdown tags,
+  preserve renderer-critical attributes such as link `href`, footnote
+  `dataFootnoteRef` / `dataFootnoteBackref`, section `dataFootnotes`, image
+  `src`, and code `className` / `metastring`.
+- Raw HTML visual components should normalize obvious hard-coded neutral inline
+  colors into theme tokens during render. Examples: light neutral backgrounds
+  become `var(--card)`, dark neutral text becomes `var(--foreground)`, and
+  neutral borders become `var(--border)`. Do not globally override colored
+  accents or charts with `!important` dark-mode CSS.
+- Keep executable or app-embedding tags out of the allowed schema unless a task
+  explicitly designs an isolated sandbox. Examples: `script`, `iframe`,
+  `object`, `embed`, `link`, `meta`, `form`, `input`, `button`, `textarea`,
+  and `select`.
+- Full standalone HTML pages should use a dedicated artifact/iframe preview
+  path instead of being rendered directly inside the chat message DOM.
+
 ## Typography Effects
 
 Do not invent custom font effects, pixel text effects, scrambling headings,

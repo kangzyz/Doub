@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cjk } from "@streamdown/cjk";
-import { type PluginConfig, Streamdown } from "streamdown";
+import { type AllowedTags, type Components, type PluginConfig, Streamdown } from "streamdown";
 import { useTranslations } from "next-intl";
 
 import { ChevronDown } from "@/components/animate-ui/icons/chevron-down";
@@ -46,6 +46,21 @@ type StreamdownFeatureFlags = {
   mermaid: boolean;
 };
 
+type ParsedNeutralColor = {
+  alpha: number;
+  luminance: number;
+  neutral: boolean;
+};
+
+type HtmlVisualComponentProps = Record<string, unknown> & {
+  color?: unknown;
+  fill?: unknown;
+  node?: unknown;
+  stopColor?: unknown;
+  stroke?: unknown;
+  style?: React.CSSProperties | string;
+};
+
 const BASE_STREAMDOWN_PLUGINS: PluginConfig = {
   cjk,
 };
@@ -73,10 +88,520 @@ const STREAMDOWN_REMEND = {
 
 const STREAMDOWN_CARET = "circle" as const;
 const STREAMDOWN_LINK_SAFETY = { enabled: false } as const;
+const HTML_VISUAL_COLOR_TOKEN_RE = /#[\da-f]{3,8}\b|rgba?\([^)]*\)|\b(?:black|white)\b/gi;
+const HTML_VISUAL_STYLE_ATTRIBUTES = ["style", "title"] as const;
+const HTML_VISUAL_BOX_ATTRIBUTES = [...HTML_VISUAL_STYLE_ATTRIBUTES, "align", "height", "width"];
+const HTML_VISUAL_LINK_ATTRIBUTES = [
+  ...HTML_VISUAL_STYLE_ATTRIBUTES,
+  "ariaDescribedBy",
+  "ariaLabel",
+  "ariaLabelledBy",
+  "dataFootnoteBackref",
+  "dataFootnoteRef",
+  "href",
+];
+const HTML_VISUAL_IMAGE_ATTRIBUTES = [
+  ...HTML_VISUAL_BOX_ATTRIBUTES,
+  "ariaDescribedBy",
+  "ariaLabel",
+  "ariaLabelledBy",
+  "alt",
+  "longDesc",
+  "src",
+];
+const HTML_VISUAL_CODE_ATTRIBUTES = [...HTML_VISUAL_STYLE_ATTRIBUTES, "className", "metastring"];
+const HTML_VISUAL_SECTION_ATTRIBUTES = [...HTML_VISUAL_BOX_ATTRIBUTES, "className", "dataFootnotes"];
+const HTML_VISUAL_TABLE_CELL_ATTRIBUTES = [
+  ...HTML_VISUAL_STYLE_ATTRIBUTES,
+  "align",
+  "colSpan",
+  "height",
+  "rowSpan",
+  "width",
+];
+const HTML_VISUAL_SVG_ATTRIBUTES = [
+  ...HTML_VISUAL_STYLE_ATTRIBUTES,
+  "clipPath",
+  "cx",
+  "cy",
+  "d",
+  "dominantBaseline",
+  "fill",
+  "fillOpacity",
+  "fontFamily",
+  "fontSize",
+  "fontWeight",
+  "height",
+  "markerEnd",
+  "markerStart",
+  "markerUnits",
+  "markerWidth",
+  "markerHeight",
+  "offset",
+  "opacity",
+  "orient",
+  "points",
+  "preserveAspectRatio",
+  "r",
+  "refX",
+  "refY",
+  "rx",
+  "ry",
+  "stopColor",
+  "stopOpacity",
+  "stroke",
+  "strokeDasharray",
+  "strokeLinecap",
+  "strokeLinejoin",
+  "strokeOpacity",
+  "strokeWidth",
+  "textAnchor",
+  "transform",
+  "viewBox",
+  "width",
+  "x",
+  "x1",
+  "x2",
+  "y",
+  "y1",
+  "y2",
+];
+const STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS: AllowedTags = {
+  a: [...HTML_VISUAL_LINK_ATTRIBUTES],
+  article: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  aside: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  blockquote: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  br: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  caption: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  circle: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  code: [...HTML_VISUAL_CODE_ATTRIBUTES],
+  col: [...HTML_VISUAL_BOX_ATTRIBUTES, "span"],
+  colgroup: [...HTML_VISUAL_BOX_ATTRIBUTES, "span"],
+  dd: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  defs: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  del: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  details: [...HTML_VISUAL_BOX_ATTRIBUTES, "open"],
+  div: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  dl: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  dt: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  ellipse: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  em: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  figcaption: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  figure: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  g: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  h1: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  h2: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  h3: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  h4: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  h5: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  h6: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  hr: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  img: [...HTML_VISUAL_IMAGE_ATTRIBUTES],
+  ins: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  li: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  line: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  linearGradient: [...HTML_VISUAL_SVG_ATTRIBUTES, "gradientTransform", "gradientUnits", "id"],
+  marker: [...HTML_VISUAL_SVG_ATTRIBUTES, "id"],
+  ol: [...HTML_VISUAL_BOX_ATTRIBUTES, "start", "type"],
+  p: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  path: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  polygon: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  polyline: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  pre: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  rect: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  section: [...HTML_VISUAL_SECTION_ATTRIBUTES],
+  small: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  span: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  stop: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  strong: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  sub: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  summary: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  sup: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  svg: [...HTML_VISUAL_SVG_ATTRIBUTES, "aria-label", "role"],
+  table: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  tbody: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  td: [...HTML_VISUAL_TABLE_CELL_ATTRIBUTES],
+  text: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  tfoot: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  th: [...HTML_VISUAL_TABLE_CELL_ATTRIBUTES, "scope"],
+  thead: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  tr: [...HTML_VISUAL_BOX_ATTRIBUTES],
+  tspan: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  u: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  ul: [...HTML_VISUAL_BOX_ATTRIBUTES],
+};
+const HTML_VISUAL_COMPONENT_TAGS: string[] = [
+  "article",
+  "aside",
+  "blockquote",
+  "caption",
+  "circle",
+  "dd",
+  "del",
+  "details",
+  "div",
+  "dl",
+  "dt",
+  "ellipse",
+  "em",
+  "figcaption",
+  "figure",
+  "g",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "ins",
+  "li",
+  "line",
+  "linearGradient",
+  "marker",
+  "ol",
+  "path",
+  "polygon",
+  "polyline",
+  "rect",
+  "section",
+  "small",
+  "span",
+  "stop",
+  "strong",
+  "sub",
+  "summary",
+  "sup",
+  "svg",
+  "table",
+  "tbody",
+  "td",
+  "text",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "tspan",
+  "u",
+  "ul",
+];
+const HTML_VISUAL_SURFACE_STYLE_KEYS = ["background", "backgroundColor"] as const;
+const HTML_VISUAL_TEXT_STYLE_KEYS = ["color", "textDecorationColor"] as const;
+const HTML_VISUAL_BORDER_COLOR_STYLE_KEYS = [
+  "borderBlockColor",
+  "borderBottomColor",
+  "borderColor",
+  "borderInlineColor",
+  "borderLeftColor",
+  "borderRightColor",
+  "borderTopColor",
+  "columnRuleColor",
+  "outlineColor",
+] as const;
+const HTML_VISUAL_BORDER_STYLE_KEYS = [
+  "border",
+  "borderBlock",
+  "borderBlockEnd",
+  "borderBlockStart",
+  "borderBottom",
+  "borderInline",
+  "borderInlineEnd",
+  "borderInlineStart",
+  "borderLeft",
+  "borderRight",
+  "borderTop",
+  "columnRule",
+  "outline",
+] as const;
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
 const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[a-z*]+\}/i;
 const INLINE_MATH_RE = /(^|[^\\$])\$[^$\n]{1,400}\$/;
+
+function parseColorChannel(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.endsWith("%")) {
+    const percent = Number.parseFloat(trimmed.slice(0, -1));
+    return Number.isFinite(percent) ? Math.round((Math.max(0, Math.min(percent, 100)) / 100) * 255) : null;
+  }
+
+  const channel = Number.parseFloat(trimmed);
+  return Number.isFinite(channel) ? Math.round(Math.max(0, Math.min(channel, 255))) : null;
+}
+
+function parseAlphaChannel(value: string | undefined): number {
+  if (!value) {
+    return 1;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.endsWith("%")) {
+    const percent = Number.parseFloat(trimmed.slice(0, -1));
+    return Number.isFinite(percent) ? Math.max(0, Math.min(percent, 100)) / 100 : 1;
+  }
+
+  const alpha = Number.parseFloat(trimmed);
+  return Number.isFinite(alpha) ? Math.max(0, Math.min(alpha, 1)) : 1;
+}
+
+function parseHexColor(value: string): [number, number, number, number] | null {
+  const hex = value.trim().replace(/^#/, "");
+  if (![3, 4, 6, 8].includes(hex.length)) {
+    return null;
+  }
+
+  const expanded =
+    hex.length <= 4
+      ? hex
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : hex;
+  const red = Number.parseInt(expanded.slice(0, 2), 16);
+  const green = Number.parseInt(expanded.slice(2, 4), 16);
+  const blue = Number.parseInt(expanded.slice(4, 6), 16);
+  const alpha = expanded.length === 8 ? Number.parseInt(expanded.slice(6, 8), 16) / 255 : 1;
+
+  return [red, green, blue, alpha].every(Number.isFinite) ? [red, green, blue, alpha] : null;
+}
+
+function parseRgbColor(value: string): [number, number, number, number] | null {
+  const match = value.trim().match(/^rgba?\((.+)\)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const parts = match[1].replace(/\//g, " ").split(/[,\s]+/).filter(Boolean);
+  const red = parseColorChannel(parts[0] ?? "");
+  const green = parseColorChannel(parts[1] ?? "");
+  const blue = parseColorChannel(parts[2] ?? "");
+  if (red == null || green == null || blue == null) {
+    return null;
+  }
+
+  return [red, green, blue, parseAlphaChannel(parts[3])];
+}
+
+function getRelativeLuminance(red: number, green: number, blue: number): number {
+  const toLinear = (channel: number) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+
+  return 0.2126 * toLinear(red) + 0.7152 * toLinear(green) + 0.0722 * toLinear(blue);
+}
+
+function parseNeutralColor(value: string): ParsedNeutralColor | null {
+  const normalized = value.trim().toLowerCase();
+  if (
+    !normalized ||
+    normalized === "currentcolor" ||
+    normalized === "none" ||
+    normalized === "transparent" ||
+    normalized.startsWith("var(") ||
+    normalized.startsWith("url(") ||
+    normalized.includes("gradient(")
+  ) {
+    return null;
+  }
+
+  const channels =
+    normalized === "white"
+      ? [255, 255, 255, 1]
+      : normalized === "black"
+        ? [0, 0, 0, 1]
+        : normalized.startsWith("#")
+          ? parseHexColor(normalized)
+          : parseRgbColor(normalized);
+
+  if (!channels) {
+    return null;
+  }
+
+  const [red, green, blue, alpha] = channels;
+  const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+  return {
+    alpha,
+    luminance: getRelativeLuminance(red, green, blue),
+    neutral: spread <= 32,
+  };
+}
+
+function isLightNeutralSurface(value: unknown): value is string {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const color = parseNeutralColor(value);
+  return Boolean(color?.neutral && color.alpha >= 0.5 && color.luminance >= 0.72);
+}
+
+function normalizeHtmlVisualTextColor(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const color = parseNeutralColor(value);
+  if (!color?.neutral || color.alpha < 0.5) {
+    return value;
+  }
+
+  if (color.luminance <= 0.45) {
+    return "var(--foreground)";
+  }
+  if (color.luminance <= 0.72) {
+    return "var(--muted-foreground)";
+  }
+  return value;
+}
+
+function normalizeHtmlVisualBorderColor(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const color = parseNeutralColor(value);
+  return color?.neutral && color.alpha >= 0.08 ? "var(--border)" : value;
+}
+
+function replaceNeutralBorderTokens(value: string): string {
+  return value.replace(HTML_VISUAL_COLOR_TOKEN_RE, (token) =>
+    normalizeHtmlVisualBorderColor(token) === "var(--border)" ? "var(--border)" : token,
+  );
+}
+
+function normalizeHtmlVisualStyle(style: React.CSSProperties | string | undefined): React.CSSProperties | undefined {
+  if (!style || typeof style !== "object") {
+    return undefined;
+  }
+
+  let changed = false;
+  const next: Record<string, unknown> = { ...style };
+
+  for (const key of HTML_VISUAL_SURFACE_STYLE_KEYS) {
+    if (isLightNeutralSurface(next[key])) {
+      next[key] = "var(--card)";
+      changed = true;
+    }
+  }
+
+  for (const key of HTML_VISUAL_TEXT_STYLE_KEYS) {
+    const value = normalizeHtmlVisualTextColor(next[key]);
+    if (value !== next[key]) {
+      next[key] = value;
+      changed = true;
+    }
+  }
+
+  for (const key of HTML_VISUAL_BORDER_COLOR_STYLE_KEYS) {
+    const value = normalizeHtmlVisualBorderColor(next[key]);
+    if (value !== next[key]) {
+      next[key] = value;
+      changed = true;
+    }
+  }
+
+  for (const key of HTML_VISUAL_BORDER_STYLE_KEYS) {
+    const value = next[key];
+    if (typeof value !== "string") {
+      continue;
+    }
+    const normalizedValue = replaceNeutralBorderTokens(value);
+    if (normalizedValue !== value) {
+      next[key] = normalizedValue;
+      changed = true;
+    }
+  }
+
+  return changed ? (next as React.CSSProperties) : style;
+}
+
+function normalizeHtmlVisualPaint(
+  tag: string,
+  role: "fill" | "stopColor" | "stroke",
+  value: unknown,
+): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const color = parseNeutralColor(value);
+  if (!color?.neutral || color.alpha < 0.5) {
+    return value;
+  }
+
+  if (role === "stroke") {
+    return "var(--border)";
+  }
+  if (tag === "text" || tag === "tspan") {
+    return color.luminance <= 0.72 ? "var(--foreground)" : value;
+  }
+  if (color.luminance >= 0.72) {
+    return "var(--card)";
+  }
+
+  return value;
+}
+
+function createHtmlVisualComponent(tag: string) {
+  function HtmlVisualComponent({
+    color,
+    fill,
+    node: _node,
+    stopColor,
+    stroke,
+    style,
+    ...props
+  }: HtmlVisualComponentProps) {
+    const normalizedProps: Record<string, unknown> = { ...props };
+    const normalizedStyle = normalizeHtmlVisualStyle(style);
+    const normalizedColor = normalizeHtmlVisualTextColor(color);
+    const normalizedFill = normalizeHtmlVisualPaint(tag, "fill", fill);
+    const normalizedStopColor = normalizeHtmlVisualPaint(tag, "stopColor", stopColor);
+    const normalizedStroke = normalizeHtmlVisualPaint(tag, "stroke", stroke);
+
+    if (normalizedStyle) normalizedProps.style = normalizedStyle;
+    if (normalizedColor !== undefined) normalizedProps.color = normalizedColor;
+    if (normalizedFill !== undefined) normalizedProps.fill = normalizedFill;
+    if (normalizedStopColor !== undefined) normalizedProps.stopColor = normalizedStopColor;
+    if (normalizedStroke !== undefined) normalizedProps.stroke = normalizedStroke;
+
+    return React.createElement(tag, normalizedProps);
+  }
+
+  HtmlVisualComponent.displayName = `HtmlVisual${tag}`;
+  return HtmlVisualComponent;
+}
+
+function MarkdownVisualLink({
+  style,
+  ...props
+}: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string; style?: React.CSSProperties | string }) {
+  return <MarkdownLink {...props} style={normalizeHtmlVisualStyle(style)} />;
+}
+
+function MarkdownVisualImage({
+  style,
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement> & { alt?: string; src?: string; style?: React.CSSProperties | string }) {
+  return <MarkdownImage {...props} style={normalizeHtmlVisualStyle(style)} />;
+}
+
+function MarkdownVisualParagraph({
+  style,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement> & { style?: React.CSSProperties | string }) {
+  return <MarkdownParagraph {...props} style={normalizeHtmlVisualStyle(style)} />;
+}
+
+const HTML_VISUAL_COMPONENTS = HTML_VISUAL_COMPONENT_TAGS.reduce<Components>((components, tag) => {
+  components[tag] = createHtmlVisualComponent(tag);
+  return components;
+}, {});
 
 const BASE_MARKDOWN_CLASSNAME = cn(
   "chat-font-content min-w-0 max-w-full overflow-hidden leading-6 text-foreground [overflow-wrap:anywhere]",
@@ -149,9 +674,10 @@ const THINKING_MARKDOWN_CLASSNAME = cn(
 );
 
 const DEFAULT_STREAMDOWN_COMPONENTS = {
-  a: MarkdownLink,
-  img: MarkdownImage,
-  p: MarkdownParagraph,
+  ...HTML_VISUAL_COMPONENTS,
+  a: MarkdownVisualLink,
+  img: MarkdownVisualImage,
+  p: MarkdownVisualParagraph,
   pre: CollapsibleCodePre,
 } as const;
 
@@ -354,6 +880,7 @@ function ThinkingSegmentBlock({
             controls={STREAMDOWN_CONTROLS}
             plugins={plugins}
             remend={STREAMDOWN_REMEND}
+            allowedTags={STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS}
             mode={streaming ? "streaming" : "static"}
             parseIncompleteMarkdown={streaming || incomplete}
             shikiTheme={["github-light", "github-dark"]}
@@ -424,6 +951,7 @@ export const StreamdownRender = React.memo(function StreamdownRender({
             plugins={plugins}
             remend={STREAMDOWN_REMEND}
             linkSafety={STREAMDOWN_LINK_SAFETY}
+            allowedTags={STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS}
             caret={streaming ? STREAMDOWN_CARET : undefined}
             mode={streaming ? "streaming" : "static"}
             parseIncompleteMarkdown={streaming}
