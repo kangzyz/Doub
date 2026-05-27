@@ -52,6 +52,11 @@ type ParsedNeutralColor = {
   neutral: boolean;
 };
 
+type HtmlVisualStyleNormalization = {
+  darkSurfaceNormalized: boolean;
+  style?: React.CSSProperties;
+};
+
 type HtmlVisualComponentProps = Record<string, unknown> & {
   color?: unknown;
   fill?: unknown;
@@ -65,6 +70,7 @@ const BASE_STREAMDOWN_PLUGINS: PluginConfig = {
   cjk,
 };
 
+const HtmlVisualToneContext = React.createContext(false);
 const STREAMDOWN_PLUGIN_CACHE = new Map<string, PluginConfig>();
 const STREAMDOWN_PLUGIN_PROMISE_CACHE = new Map<string, Promise<PluginConfig>>();
 
@@ -486,12 +492,23 @@ function replaceNeutralBorderTokens(value: string): string {
   );
 }
 
-function normalizeHtmlVisualStyle(style: React.CSSProperties | string | undefined): React.CSSProperties | undefined {
+function normalizeHtmlVisualStyle(
+  style: React.CSSProperties | string | undefined,
+  inheritedDarkSurfaceNormalized = false,
+): React.CSSProperties | undefined {
+  return normalizeHtmlVisualStyleWithTone(style, inheritedDarkSurfaceNormalized).style;
+}
+
+function normalizeHtmlVisualStyleWithTone(
+  style: React.CSSProperties | string | undefined,
+  inheritedDarkSurfaceNormalized = false,
+): HtmlVisualStyleNormalization {
   if (!style || typeof style !== "object") {
-    return undefined;
+    return { darkSurfaceNormalized: false };
   }
 
   let changed = false;
+  let darkSurfaceNormalized = false;
   const next: Record<string, unknown> = { ...style };
 
   for (const key of HTML_VISUAL_SURFACE_STYLE_KEYS) {
@@ -500,11 +517,14 @@ function normalizeHtmlVisualStyle(style: React.CSSProperties | string | undefine
       next[key] = value;
       changed = true;
     }
+    if (value === "var(--muted)") {
+      darkSurfaceNormalized = true;
+    }
   }
 
-  const darkSurfaceNormalized = HTML_VISUAL_SURFACE_STYLE_KEYS.some((key) => next[key] === "var(--muted)");
+  const normalizeLightText = inheritedDarkSurfaceNormalized || darkSurfaceNormalized;
   for (const key of HTML_VISUAL_TEXT_STYLE_KEYS) {
-    const value = normalizeHtmlVisualTextColor(next[key], darkSurfaceNormalized);
+    const value = normalizeHtmlVisualTextColor(next[key], normalizeLightText);
     if (value !== next[key]) {
       next[key] = value;
       changed = true;
@@ -531,7 +551,10 @@ function normalizeHtmlVisualStyle(style: React.CSSProperties | string | undefine
     }
   }
 
-  return changed ? (next as React.CSSProperties) : style;
+  return {
+    darkSurfaceNormalized,
+    style: changed ? (next as React.CSSProperties) : style,
+  };
 }
 
 function normalizeHtmlVisualPaint(
@@ -571,9 +594,14 @@ function createHtmlVisualComponent(tag: string) {
     style,
     ...props
   }: HtmlVisualComponentProps) {
+    const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
     const normalizedProps: Record<string, unknown> = { ...props };
-    const normalizedStyle = normalizeHtmlVisualStyle(style);
-    const normalizedColor = normalizeHtmlVisualTextColor(color);
+    const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
+      style,
+      inheritedDarkSurfaceNormalized,
+    );
+    const normalizeLightText = inheritedDarkSurfaceNormalized || darkSurfaceNormalized;
+    const normalizedColor = normalizeHtmlVisualTextColor(color, normalizeLightText);
     const normalizedFill = normalizeHtmlVisualPaint(tag, "fill", fill);
     const normalizedStopColor = normalizeHtmlVisualPaint(tag, "stopColor", stopColor);
     const normalizedStroke = normalizeHtmlVisualPaint(tag, "stroke", stroke);
@@ -584,7 +612,12 @@ function createHtmlVisualComponent(tag: string) {
     if (normalizedStopColor !== undefined) normalizedProps.stopColor = normalizedStopColor;
     if (normalizedStroke !== undefined) normalizedProps.stroke = normalizedStroke;
 
-    return React.createElement(tag, normalizedProps);
+    const element = React.createElement(tag, normalizedProps);
+    return darkSurfaceNormalized ? (
+      <HtmlVisualToneContext.Provider value={true}>{element}</HtmlVisualToneContext.Provider>
+    ) : (
+      element
+    );
   }
 
   HtmlVisualComponent.displayName = `HtmlVisual${tag}`;
@@ -595,21 +628,42 @@ function MarkdownVisualLink({
   style,
   ...props
 }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string; style?: React.CSSProperties | string }) {
-  return <MarkdownLink {...props} style={normalizeHtmlVisualStyle(style)} />;
+  const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
+    style,
+    inheritedDarkSurfaceNormalized,
+  );
+  const element = <MarkdownLink {...props} style={normalizedStyle} />;
+  return darkSurfaceNormalized ? (
+    <HtmlVisualToneContext.Provider value={true}>{element}</HtmlVisualToneContext.Provider>
+  ) : (
+    element
+  );
 }
 
 function MarkdownVisualImage({
   style,
   ...props
 }: React.ImgHTMLAttributes<HTMLImageElement> & { alt?: string; src?: string; style?: React.CSSProperties | string }) {
-  return <MarkdownImage {...props} style={normalizeHtmlVisualStyle(style)} />;
+  const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  return <MarkdownImage {...props} style={normalizeHtmlVisualStyle(style, inheritedDarkSurfaceNormalized)} />;
 }
 
 function MarkdownVisualParagraph({
   style,
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement> & { style?: React.CSSProperties | string }) {
-  return <MarkdownParagraph {...props} style={normalizeHtmlVisualStyle(style)} />;
+  const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
+    style,
+    inheritedDarkSurfaceNormalized,
+  );
+  const element = <MarkdownParagraph {...props} style={normalizedStyle} />;
+  return darkSurfaceNormalized ? (
+    <HtmlVisualToneContext.Provider value={true}>{element}</HtmlVisualToneContext.Provider>
+  ) : (
+    element
+  );
 }
 
 const HTML_VISUAL_COMPONENTS = HTML_VISUAL_COMPONENT_TAGS.reduce<Components>((components, tag) => {

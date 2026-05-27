@@ -48,8 +48,10 @@ wrappers server-renderable when possible.
   colors into theme tokens during render. Examples: light neutral backgrounds
   become `var(--card)`, dark neutral backgrounds become `var(--muted)`, dark
   neutral text becomes `var(--foreground)`, and neutral borders become
-  `var(--border)`. Do not globally override colored accents or charts with
-  `!important` dark-mode CSS.
+  `var(--border)`. When a dark neutral parent surface is normalized, normalize
+  hard-coded light neutral descendant text as well so white/gray text does not
+  become low-contrast on the softened surface. Do not globally override colored
+  accents or charts with `!important` dark-mode CSS.
 - Keep executable or app-embedding tags out of the allowed schema unless a task
   explicitly designs an isolated sandbox. Examples: `script`, `iframe`,
   `object`, `embed`, `link`, `meta`, `form`, `input`, `button`, `textarea`,
