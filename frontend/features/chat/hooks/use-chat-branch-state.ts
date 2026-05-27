@@ -103,6 +103,7 @@ function buildPendingMessages({
       cacheWriteTokens: pendingExchange.assistantCacheWriteTokens,
       reasoningTokens: pendingExchange.assistantReasoningTokens,
       latencyMS: pendingExchange.assistantLatencyMS,
+      followUps: pendingExchange.assistantFollowUps,
       compactDone: pendingExchange.compactDone,
     });
   }
@@ -147,6 +148,7 @@ function mergePendingAssistantState(messages: ChatAreaMessage[], pendingExchange
       cacheWriteTokens: pendingExchange.assistantCacheWriteTokens ?? item.cacheWriteTokens,
       reasoningTokens: pendingExchange.assistantReasoningTokens ?? item.reasoningTokens,
       latencyMS: pendingExchange.assistantLatencyMS ?? item.latencyMS,
+      followUps: pendingExchange.assistantFollowUps ?? item.followUps,
       compactDone: pendingExchange.compactDone ?? item.compactDone,
       platformModelName: pendingExchange.platformModelName ?? item.platformModelName,
     };

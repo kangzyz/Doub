@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/shared/auth/auth-guard";
 import { AuthSessionProvider } from "@/shared/auth/auth-session-context";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
-import { readAccessToken, SESSION_SNAPSHOT_CHANGED_EVENT, type SessionSnapshot } from "@/shared/auth/session";
+import { SESSION_SNAPSHOT_CHANGED_EVENT, type SessionSnapshot } from "@/shared/auth/session";
 
 const AdminAccessGate = dynamic(
   () => import("@/features/admin/components/admin-access-gate").then((mod) => mod.AdminAccessGate),
@@ -28,7 +28,7 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function OptionalShareWorkspace({ children }: { children: React.ReactNode }) {
-  const [accessToken, setAccessToken] = React.useState<string | null>(() => readAccessToken() || null);
+  const [accessToken, setAccessToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;

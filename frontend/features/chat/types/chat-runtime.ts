@@ -71,6 +71,7 @@ export type PendingExchange = {
   assistantImageAspectRatio?: ImageLoadingAspectRatio;
   assistantProcessTrace?: ChatMessageProcessTrace;
   assistantInlineAlert?: ChatInlineAlert;
+  assistantFollowUps?: string[];
   assistantServerMessageID?: number;
   assistantCreatedAt: string;
   assistantUpdatedAt?: string;

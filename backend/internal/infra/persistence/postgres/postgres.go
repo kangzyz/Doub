@@ -303,6 +303,9 @@ func applyConversationBaselineIndexes(db *gorm.DB) error {
 		`ALTER TABLE "chat_conversations"
 		ADD COLUMN IF NOT EXISTS "project_id" bigint`,
 		`COMMENT ON COLUMN "chat_conversations"."project_id" IS '项目分组ID'`,
+		`ALTER TABLE "chat_messages"
+		ADD COLUMN IF NOT EXISTS "follow_ups_json" text NOT NULL DEFAULT '[]'`,
+		`COMMENT ON COLUMN "chat_messages"."follow_ups_json" IS '后续建议JSON'`,
 		`CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_status_starred_updated_at
 		ON "chat_conversations" ("user_id", "status", "is_starred", "updated_at" DESC, "id" DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_status_starred_starred_at

@@ -147,6 +147,12 @@ function areBillingCostsEqual(
   );
 }
 
+function areFollowUpsEqual(previous: string[] | undefined, next: string[] | undefined) {
+  if (previous === next) return true;
+  if (!previous || !next || previous.length !== next.length) return false;
+  return previous.every((item, index) => item === next[index]);
+}
+
 export function areChatAreaMessagesRenderEqual(
   previous: ChatAreaMessage,
   next: ChatAreaMessage,
@@ -181,6 +187,7 @@ export function areChatAreaMessagesRenderEqual(
     areBillingCostsEqual(previous.billingCost, next.billingCost) &&
     areBranchNavigatorsEqual(previous.branchNavigator, next.branchNavigator) &&
     areAttachmentsEqual(previous.attachments, next.attachments) &&
+    areFollowUpsEqual(previous.followUps, next.followUps) &&
     areProcessTracesEqual(previous.processTrace, next.processTrace) &&
     areInlineAlertsEqual(previous.inlineAlert, next.inlineAlert) &&
     areCompactDoneEqual(previous.compactDone, next.compactDone)

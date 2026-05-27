@@ -617,6 +617,7 @@ type MessageResponse struct {
 	ErrorCode         string                       `json:"errorCode"`
 	ErrorMessage      string                       `json:"errorMessage"`
 	Attachments       string                       `json:"attachments"`
+	FollowUps         []string                     `json:"followUps"`
 	PlatformModelName string                       `json:"platformModelName"`
 	UpstreamModelName string                       `json:"upstreamModelName"`
 	ModelVendor       string                       `json:"modelVendor"`
@@ -802,6 +803,29 @@ func toMessageBillingCostResponse(m model.Message) *MessageBillingCostResponse {
 	}
 }
 
+func toMessageFollowUpsResponse(raw string) []string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return []string{}
+	}
+	var items []string
+	if err := json.Unmarshal([]byte(value), &items); err != nil {
+		return []string{}
+	}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		normalized := strings.Join(strings.Fields(strings.TrimSpace(item)), " ")
+		if normalized == "" {
+			continue
+		}
+		result = append(result, normalized)
+		if len(result) >= 5 {
+			break
+		}
+	}
+	return result
+}
+
 func toMessageResponse(m model.Message) MessageResponse {
 	return toMessageResponseWithRun(m, model.Run{})
 }
@@ -842,6 +866,7 @@ func toMessageResponseWithRunAndFallback(m model.Message, run model.Run, fallbac
 		ErrorCode:         m.ErrorCode,
 		ErrorMessage:      m.ErrorMessage,
 		Attachments:       m.Attachments,
+		FollowUps:         toMessageFollowUpsResponse(m.FollowUpsJSON),
 		PlatformModelName: platformModelName,
 		UpstreamModelName: strings.TrimSpace(run.UpstreamModelName),
 		ModelVendor:       strings.TrimSpace(run.ModelVendor),

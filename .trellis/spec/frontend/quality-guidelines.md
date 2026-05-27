@@ -51,3 +51,15 @@ scripts are out of sync.
 
 The app is configured with `output: "export"`. Avoid runtime-only Next server
 features for product APIs. Keep business API behavior in the Go backend.
+
+## Root Layout And Hydration Review
+
+- In App Router root layouts, do not render raw `<script>` tags for client-side
+  initialization. Use `next/script` with an `id`; use
+  `strategy="beforeInteractive"` only for site-wide scripts that must run before
+  hydration, such as theme bootstrapping.
+- Client shells that affect the top-level rendered tree must not initialize
+  `useState` from `localStorage`, cookies, or other browser-only session
+  storage. Render the same first frame on server and client, then read browser
+  state in an effect. This prevents route-level hydration errors on pages such
+  as settings and admin.

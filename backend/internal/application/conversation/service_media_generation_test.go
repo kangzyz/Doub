@@ -503,6 +503,16 @@ func (r *mediaImageTestRepo) UpdateAssistantMessageCompletion(ctx context.Contex
 	return nil
 }
 
+func (r *mediaImageTestRepo) UpdateMessageFollowUps(ctx context.Context, messageID uint, followUpsJSON string) error {
+	for index := range r.messages {
+		if r.messages[index].ID == messageID {
+			r.messages[index].FollowUpsJSON = followUpsJSON
+			return nil
+		}
+	}
+	return nil
+}
+
 func (r *mediaImageTestRepo) CreateConversationRun(ctx context.Context, item *model.Run) error {
 	r.runs = append(r.runs, *item)
 	return nil

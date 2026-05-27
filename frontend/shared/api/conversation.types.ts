@@ -66,6 +66,7 @@ export type MessageDTO = {
   errorCode: string;
   errorMessage: string;
   attachments: string;
+  followUps?: string[];
   platformModelName?: string;
   upstreamModelName?: string;
   modelVendor?: string;

@@ -45,6 +45,7 @@ import type {
 } from "@/shared/api/conversation.types";
 
 const CONVERSATION_METADATA_REFRESH_DELAYS = [800, 1200, 1800, 2600, 3500, 5000] as const;
+const FOLLOW_UP_REFRESH_DELAYS = [1200, 2500, 4500, 7000, 10000, 15000, 20000] as const;
 
 function resolveSubmitBlockDescription(
   reason: ChatSubmitBlockReason,
@@ -149,6 +150,13 @@ async function refreshGeneratedConversationMetadata(
       touchByPublicID(conversationPublicID, latest);
       return;
     }
+  }
+}
+
+async function refreshGeneratedFollowUps(reload: () => void): Promise<void> {
+  for (const delay of FOLLOW_UP_REFRESH_DELAYS) {
+    await sleep(delay);
+    reload();
   }
 }
 
@@ -549,6 +557,7 @@ export function useChatMessageSubmit({
             assistantReasoningTokens: completed.assistantMessage.reasoningTokens,
             assistantLatencyMS: completed.assistantMessage.latencyMS,
             assistantProcessTrace: toPendingProcessTrace(completed.assistantMessage.processTrace),
+            assistantFollowUps: completed.assistantMessage.followUps,
             assistantInlineAlert: undefined,
             assistantText:
               streamedText === completed.assistantMessage.content
@@ -584,6 +593,9 @@ export function useChatMessageSubmit({
           conversationTitle: targetConversation?.title || "DOUB Chat",
         });
         reload();
+        if (submitTask === "chat") {
+          void refreshGeneratedFollowUps(reload).catch(() => undefined);
+        }
       } catch (error) {
         resetStreamBuffer();
         if (streamAbortController.signal.aborted) {
@@ -699,6 +711,24 @@ export function useChatMessageSubmit({
     });
   }, [attachments, currentLeafMessage?.publicID, draft, submitMessage, visibleMessages]);
 
+  const onSendPrompt = React.useCallback(
+    async (prompt: string) => {
+      const content = prompt.trim();
+      if (!content) {
+        return;
+      }
+      const parentMessage = resolveDefaultSubmissionParentMessage(visibleMessages);
+      await submitMessage({
+        content,
+        currentAttachments: [],
+        resetComposer: true,
+        parentMessagePublicID: parentMessage?.publicID ?? currentLeafMessage?.publicID ?? null,
+        branchReason: "default",
+      });
+    },
+    [currentLeafMessage?.publicID, submitMessage, visibleMessages],
+  );
+
   const onRetryUserMessage = React.useCallback(
     async (message: ChatAreaMessage) => {
       await submitMessage({
@@ -779,6 +809,7 @@ export function useChatMessageSubmit({
     onRetryAssistantMessage,
     onRetryUserMessage,
     onSendMessage,
+    onSendPrompt,
     onStopMessage,
     sending,
   };

@@ -72,6 +72,7 @@ type ChatAreaProps = {
   onRetryUserMessage: (message: ChatAreaMessage) => Promise<void> | void;
   onRetryAssistantMessage: (message: ChatAreaMessage) => Promise<void> | void;
   onEditUserMessage: (message: ChatAreaMessage, content: string) => Promise<boolean> | boolean;
+  onSendSuggestion: (prompt: string) => Promise<void> | void;
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
   onCycleMessageBranch: (parentPublicID: string | null, direction: "previous" | "next") => void;
   onToggleStar?: () => void | Promise<void>;
@@ -103,6 +104,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   onRetryUserMessage,
   onRetryAssistantMessage,
   onEditUserMessage,
+  onSendSuggestion,
   onEditImageAttachment,
   onCycleMessageBranch,
   onReactAssistantMessage,
@@ -111,6 +113,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   showLatency,
   showTokenUsage,
   showBillingCost,
+  showFollowUps,
 }: {
   item: ChatAreaMessage;
   busy: boolean;
@@ -118,6 +121,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   onRetryUserMessage: (message: ChatAreaMessage) => Promise<void> | void;
   onRetryAssistantMessage: (message: ChatAreaMessage) => Promise<void> | void;
   onEditUserMessage: (message: ChatAreaMessage, content: string) => Promise<boolean> | boolean;
+  onSendSuggestion: (prompt: string) => Promise<void> | void;
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
   onCycleMessageBranch: (parentPublicID: string | null, direction: "previous" | "next") => void;
   onReactAssistantMessage: (publicID: string, reaction: AssistantReaction) => void;
@@ -126,6 +130,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   showLatency: boolean;
   showTokenUsage: boolean;
   showBillingCost: boolean;
+  showFollowUps: boolean;
 }) {
   const t = useTranslations("chat.messages");
   const isUser = item.role === "user";
@@ -170,6 +175,8 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
         showLatency={showLatency}
         showTokenUsage={showTokenUsage}
         showBillingCost={showBillingCost}
+        showFollowUps={showFollowUps && Boolean(item.followUps?.length) && !item.isPending && !item.isStreaming}
+        onSendSuggestion={onSendSuggestion}
       />
     );
   }
@@ -194,6 +201,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   previous.showLatency === next.showLatency &&
   previous.showTokenUsage === next.showTokenUsage &&
   previous.showBillingCost === next.showBillingCost &&
+  previous.showFollowUps === next.showFollowUps &&
   previous.onEditImageAttachment === next.onEditImageAttachment &&
   areChatAreaMessagesRenderEqual(previous.item, next.item)
 ));
@@ -212,6 +220,7 @@ export function ChatArea({
   onRetryUserMessage,
   onRetryAssistantMessage,
   onEditUserMessage,
+  onSendSuggestion,
   onEditImageAttachment,
   onCycleMessageBranch,
   onToggleStar,
@@ -231,6 +240,7 @@ export function ChatArea({
   const stableOnRetryUserMessage = useStableEvent(onRetryUserMessage);
   const stableOnRetryAssistantMessage = useStableEvent(onRetryAssistantMessage);
   const stableOnEditUserMessage = useStableEvent(onEditUserMessage);
+  const stableOnSendSuggestion = useStableEvent(onSendSuggestion);
   const stableOnEditImageAttachment = useStableEvent((attachment: MessageAttachment, sourceModelName?: string) => {
     onEditImageAttachment?.(attachment, sourceModelName);
   });
@@ -238,6 +248,15 @@ export function ChatArea({
   const stableOnReactAssistantMessage = useStableEvent(onReactAssistantMessage);
   const editImageAttachmentHandler = onEditImageAttachment ? stableOnEditImageAttachment : undefined;
   const shareLabel = shareActive ? t("manageShare") : t("shareConversation");
+  const latestAssistantPublicID = React.useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const item = messages[index];
+      if (item.role === "assistant" && !item.isPending && !item.isStreaming && item.status !== "error") {
+        return item.publicID;
+      }
+    }
+    return "";
+  }, [messages]);
 
   return (
     <>
@@ -302,6 +321,7 @@ export function ChatArea({
                   onRetryUserMessage={stableOnRetryUserMessage}
                   onRetryAssistantMessage={stableOnRetryAssistantMessage}
                   onEditUserMessage={stableOnEditUserMessage}
+                  onSendSuggestion={stableOnSendSuggestion}
                   onEditImageAttachment={editImageAttachmentHandler}
                   onCycleMessageBranch={stableOnCycleMessageBranch}
                   onReactAssistantMessage={stableOnReactAssistantMessage}
@@ -310,6 +330,7 @@ export function ChatArea({
                   showLatency={showLatency}
                   showTokenUsage={showTokenUsage}
                   showBillingCost={showBillingCost}
+                  showFollowUps={item.publicID === latestAssistantPublicID}
                 />
               );
 

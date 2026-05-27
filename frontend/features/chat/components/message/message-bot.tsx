@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, CircleAlert } from "lucide-react";
+import { ArrowUpRight, ChevronDown, CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { AssistantMessageMeta } from "@/features/chat/components/message/message-meta";
@@ -85,6 +85,7 @@ type ChatMessageBotProps = {
   onCycleMessageBranch: (parentPublicID: string | null, direction: "previous" | "next") => void;
   onReactAssistantMessage: (publicID: string, reaction: AssistantReaction) => void;
   onCopy: () => void;
+  onSendSuggestion?: (prompt: string) => void | Promise<void>;
   markdownRender?: boolean;
   showModelInfo?: boolean;
   showLatency?: boolean;
@@ -94,6 +95,7 @@ type ChatMessageBotProps = {
   attachmentContentLoader?: (file: PreviewDialogFile) => Promise<FileContentResult>;
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
   showBranchNavigator?: boolean;
+  showFollowUps?: boolean;
 };
 
 export function ChatMessageBot({
@@ -104,6 +106,7 @@ export function ChatMessageBot({
   onCycleMessageBranch,
   onReactAssistantMessage,
   onCopy,
+  onSendSuggestion,
   markdownRender = true,
   showModelInfo = true,
   showLatency = true,
@@ -113,6 +116,7 @@ export function ChatMessageBot({
   attachmentContentLoader,
   onEditImageAttachment,
   showBranchNavigator = true,
+  showFollowUps = false,
 }: ChatMessageBotProps) {
   const onRetry = React.useCallback(() => {
     void onRetryAssistantMessage(item);
@@ -231,6 +235,10 @@ export function ChatMessageBot({
         </div>
       ) : null}
 
+      {showFollowUps && item.followUps && item.followUps.length > 0 && onSendSuggestion ? (
+        <AssistantFollowUpSuggestions items={item.followUps} onSelect={onSendSuggestion} />
+      ) : null}
+
       <AssistantMessageMeta
         item={item}
         busy={busy}
@@ -247,6 +255,30 @@ export function ChatMessageBot({
         alwaysVisible={readOnly}
         showBranchNavigator={showBranchNavigator}
       />
+    </div>
+  );
+}
+
+function AssistantFollowUpSuggestions({
+  items,
+  onSelect,
+}: {
+  items: string[];
+  onSelect: (prompt: string) => void | Promise<void>;
+}) {
+  return (
+    <div className="mt-3 flex max-w-full flex-wrap gap-2">
+      {items.map((item) => (
+        <button
+          key={item}
+          type="button"
+          className="group inline-flex max-w-full items-start gap-2 rounded-lg border border-border/65 bg-muted/25 px-3 py-2 text-left text-[13px] leading-5 text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-muted/45 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          onClick={() => onSelect(item)}
+        >
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
+          <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 transition-colors group-hover:text-foreground" />
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 
 import { ChatFontProvider } from "@/features/layouts/components/providers/chat-font-provider";
 import { WorkspaceShell } from "@/features/layouts/components/sections/workspace-shell";
@@ -123,7 +124,11 @@ export default function RootLayout({
     <html lang="en" className="h-full dark-safe" style={initialDocumentStyle} suppressHydrationWarning>
       <head>
         <style id="doub-theme-bootstrap" dangerouslySetInnerHTML={{ __html: themeBootstrapStyle }} />
-        <script id="doub-theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <Script
+          id="doub-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} h-full min-h-svh overflow-hidden antialiased`}

@@ -10842,6 +10842,12 @@ const docTemplate = `{
                 "errorMessage": {
                     "type": "string"
                 },
+                "followUps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "id": {
                     "type": "integer"
                 },

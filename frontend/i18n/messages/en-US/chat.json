@@ -69,6 +69,40 @@
       }
     }
   },
+  "suggestions": {
+    "empty": {
+      "rewrite": {
+        "title": "Improve a draft",
+        "subtitle": "Clarify tone, structure, and wording.",
+        "prompt": "Help me improve a draft for clarity, tone, and structure. Ask me for the draft and the target audience first."
+      },
+      "summarize": {
+        "title": "Summarize content",
+        "subtitle": "Extract key points and next actions.",
+        "prompt": "Summarize long content into key points and next actions. Ask me to paste the content first."
+      },
+      "code": {
+        "title": "Explain code",
+        "subtitle": "Make a snippet or error practical.",
+        "prompt": "Explain a code snippet or error in practical terms. Ask me to paste the code, stack trace, or error message first."
+      },
+      "learn": {
+        "title": "Plan learning",
+        "subtitle": "Create a short path for a topic.",
+        "prompt": "Build a short learning plan for a topic. Ask me for the topic, current level, and time available."
+      },
+      "ideate": {
+        "title": "Generate ideas",
+        "subtitle": "Explore options with constraints.",
+        "prompt": "Generate several options for a project. Ask me for the goal, constraints, and audience first."
+      },
+      "breakdown": {
+        "title": "Break down a problem",
+        "subtitle": "Turn ambiguity into concrete steps.",
+        "prompt": "Break a vague problem into concrete steps. Ask me what problem I am trying to solve first."
+      }
+    }
+  },
   "labelMenu": {
     "actions": "Conversation actions",
     "star": "Star",

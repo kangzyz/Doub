@@ -836,6 +836,19 @@ func (r *Repo) UpdateAssistantMessageCompletion(
 		Error)
 }
 
+// UpdateMessageFollowUps 回填助手消息后续建议。
+func (r *Repo) UpdateMessageFollowUps(ctx context.Context, messageID uint, followUpsJSON string) error {
+	value := strings.TrimSpace(followUpsJSON)
+	if value == "" {
+		value = "[]"
+	}
+	return translateError(r.db.WithContext(ctx).
+		Model(&models.Message{}).
+		Where("id = ?", messageID).
+		Update("follow_ups_json", value).
+		Error)
+}
+
 // CompleteAssistantMessageWithAttachments 原子写入助手附件，并同步用户用量与助手完成态。
 func (r *Repo) CompleteAssistantMessageWithAttachments(
 	ctx context.Context,
@@ -1344,7 +1357,7 @@ SELECT id, conversation_id, user_id, public_id, parent_message_id, run_id,
        role, content_type, content, branch_reason, source_message_id,
        token_usage, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens,
        latency_ms, billed_currency, billed_nanousd, pricing_snapshot,
-       status, error_code, error_message, is_compacted,
+       status, error_code, error_message, follow_ups_json, is_compacted,
        created_at, updated_at, deleted_at
 FROM ancestors
 ORDER BY id ASC`
@@ -2473,6 +2486,7 @@ func toMessageDomain(item models.Message) domainconversation.Message {
 		Status:           item.Status,
 		ErrorCode:        item.ErrorCode,
 		ErrorMessage:     item.ErrorMessage,
+		FollowUpsJSON:    item.FollowUpsJSON,
 		Attachments:      item.Attachments,
 		ParentPublicID:   item.ParentPublicID,
 		SourcePublicID:   item.SourcePublicID,
@@ -2520,6 +2534,7 @@ func toMessageModel(item *domainconversation.Message) models.Message {
 		Status:           item.Status,
 		ErrorCode:        item.ErrorCode,
 		ErrorMessage:     item.ErrorMessage,
+		FollowUpsJSON:    item.FollowUpsJSON,
 	}
 }
 

@@ -147,6 +147,7 @@ export type ChatAreaMessage = {
   thumbsDownCount?: number;
   branchNavigator?: ChatMessageBranchNavigator;
   attachments?: MessageAttachment[];
+  followUps?: string[];
   // Token usage for assistant messages.
   inputTokens?: number;
   outputTokens?: number;

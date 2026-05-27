@@ -149,6 +149,7 @@ export function useChatRuntime({
     onRetryAssistantMessage: submitState.onRetryAssistantMessage,
     onRetryUserMessage: submitState.onRetryUserMessage,
     onSendMessage: submitState.onSendMessage,
+    onSendPrompt: submitState.onSendPrompt,
     onStopMessage: submitState.onStopMessage,
     sending: submitState.sending,
     showPendingAssistant: branchState.showPendingAssistant,

@@ -85,6 +85,7 @@ func (s *Service) persistSuccessfulMessageGeneration(ctx context.Context, input 
 
 	s.updateStatefulResponseAsync(input.SendInput.ConversationID, input.ResponseID, input.StatefulPromptFingerprint)
 	s.maybeGenerateConversationMetadataAsync(*input.Conversation, *input.UserMessage, *input.AssistantMessage)
+	s.maybeGenerateFollowUpsAsync(*input.Conversation, *input.UserMessage, *input.AssistantMessage)
 	s.embedMessagePairAsync(input.SendInput, input.UserMessage, input.AssistantMessage)
 
 	return nil

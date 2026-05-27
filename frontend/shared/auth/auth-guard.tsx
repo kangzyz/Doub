@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { AuthSessionProvider } from "@/shared/auth/auth-session-context";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
-import { readAccessToken, SESSION_SNAPSHOT_CHANGED_EVENT, type SessionSnapshot } from "@/shared/auth/session";
+import { SESSION_SNAPSHOT_CHANGED_EVENT, type SessionSnapshot } from "@/shared/auth/session";
 
 function normalizeNextPath(value: string): string {
   if (!value.startsWith("/") || value.startsWith("//")) {
@@ -19,7 +19,7 @@ function normalizeNextPath(value: string): string {
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const common = useTranslations("common");
   const router = useRouter();
-  const [accessToken, setAccessToken] = React.useState<string | null>(() => readAccessToken() || null);
+  const [accessToken, setAccessToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;

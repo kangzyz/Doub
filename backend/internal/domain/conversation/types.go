@@ -176,6 +176,7 @@ type Message struct {
 	ErrorCode        string
 	ErrorMessage     string
 	Attachments      string
+	FollowUpsJSON    string
 	ParentPublicID   string
 	SourcePublicID   string
 	MyFeedback       string
