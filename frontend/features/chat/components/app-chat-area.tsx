@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { ChatArea, ChatAreaLoadError, ChatAreaSkeleton } from "@/features/chat/components/sections/chat-area";
-import { ChatEmptyState, type EmptyChatSuggestion } from "@/features/chat/components/sections/chat-empty";
+import { ChatEmptyState } from "@/features/chat/components/sections/chat-empty";
 import { useChatSession } from "@/features/chat/context/chat-session-context";
 import { useChatAttachments } from "@/features/chat/hooks/use-chat-attachments";
 import { useConversationComposerState } from "@/features/chat/hooks/use-conversation-composer-state";
@@ -34,32 +34,7 @@ import type { ConversationOptions } from "@/shared/api/conversation.types";
 import type { MCPToolDTO } from "@/shared/api/mcp.types";
 
 const MODEL_OPTIONS_STORAGE_PREFIX = "doub-chat:chat-model-options:";
-const EMPTY_CHAT_SUGGESTION_COUNT = 3;
-const EMPTY_CHAT_SUGGESTION_IDS = [
-  "product_advisor",
-  "tech_architect",
-  "code_mentor",
-  "ai_workflow_advisor",
-  "writing_editor",
-  "decision_consultant",
-  "data_analyst",
-  "project_operator",
-  "learning_coach",
-  "review_coach",
-  "growth_operator",
-  "interview_coach",
-] as const;
 const EMPTY_CONVERSATION_OPTIONS: ConversationOptions = {};
-type EmptyChatSuggestionID = (typeof EMPTY_CHAT_SUGGESTION_IDS)[number];
-
-function pickEmptyChatSuggestionIDs(): EmptyChatSuggestionID[] {
-  const pool = [...EMPTY_CHAT_SUGGESTION_IDS];
-  for (let index = pool.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
-  }
-  return pool.slice(0, EMPTY_CHAT_SUGGESTION_COUNT);
-}
 
 function modelOptionsStorageKey(platformModelName: string): string {
   return `${MODEL_OPTIONS_STORAGE_PREFIX}${encodeURIComponent(platformModelName)}`;
@@ -114,23 +89,6 @@ export function AppChatArea() {
     ignoredConversationID: string | null;
   } | null>(null);
   const previousNewConversationRevisionRef = React.useRef(newConversationRevision);
-  const [emptyChatSuggestionIDs, setEmptyChatSuggestionIDs] = React.useState<EmptyChatSuggestionID[]>(() =>
-    EMPTY_CHAT_SUGGESTION_IDS.slice(0, EMPTY_CHAT_SUGGESTION_COUNT),
-  );
-  const emptyChatSuggestions = React.useMemo<EmptyChatSuggestion[]>(
-    () =>
-      emptyChatSuggestionIDs.map((id) => ({
-        id,
-        title: t(`suggestions.empty.${id}.title`),
-        subtitle: t(`suggestions.empty.${id}.subtitle`),
-        prompt: t(`suggestions.empty.${id}.prompt`),
-      })),
-    [emptyChatSuggestionIDs, t],
-  );
-
-  React.useEffect(() => {
-    setEmptyChatSuggestionIDs(pickEmptyChatSuggestionIDs());
-  }, [newConversationRevision, routeConversationID]);
 
   React.useEffect(() => {
     if (previousNewConversationRevisionRef.current === newConversationRevision) {
@@ -595,12 +553,7 @@ export function AppChatArea() {
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {shouldUseCenteredComposer ? (
-          <ChatEmptyState
-            greetingTitle={greetingTitle}
-            suggestions={emptyChatSuggestions}
-            suggestionsDisabled={generating || loading || uploading}
-            onSelectSuggestion={onSendPrompt}
-          >
+          <ChatEmptyState greetingTitle={greetingTitle}>
             <ChatInput {...chatInputProps} />
           </ChatEmptyState>
         ) : (
