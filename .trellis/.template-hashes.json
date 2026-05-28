@@ -83,7 +83,7 @@
     ".codex/hooks/session-start.py": "3fd36631fc85a9d12a698d79b459008d568dc276bc0aa2bf0191acebb559c934",
     ".codex/hooks/inject-workflow-state.py": "fe4cca4db7ca8c252f614efca16fa588009a4238542a2c9aa85167409f6f9a4c",
     ".codex/hooks.json": "7bad6065612c5bd0d4e0bb587bf3c9f3950c8060f9a52f4defd7247dd9ba8aec",
-    ".codex/config.toml": "cd29d64a44b4631593aca8ff4b071f1156f914fc9dfb976450af6f91b735bb57",
+    ".codex/config.toml": "4224eb7df6802a623cb1bee522aed0a23ba6be862b90f1b597a313fc16864b06",
     "AGENTS.md": "6cacfe99748b435d0660c2463c697bc323d53798aecf3492283ca8eac1b29682",
     ".trellis/config.yaml": "5c9207418cecc390e9d86d589b4183b831f76697d92fb42fefd5221cd8772e51",
     ".trellis/scripts/add_session.py": "f26b66a539d160c739d4b88fd926b3d7f6745be326cd57131e5ef17a7b011fbe",
