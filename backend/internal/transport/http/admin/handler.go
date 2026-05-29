@@ -121,7 +121,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "resolve subscription failed")
+		response.Error(c, http.StatusInternalServerError, "load user profile failed")
 		return
 	}
 
@@ -201,7 +201,7 @@ func (h *Handler) PatchUser(c *gin.Context) {
 
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "resolve subscription failed")
+		response.Error(c, http.StatusInternalServerError, "load user profile failed")
 		return
 	}
 
@@ -453,7 +453,7 @@ func (h *Handler) UpdateUserStatus(c *gin.Context) {
 
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "resolve subscription failed")
+		response.Error(c, http.StatusInternalServerError, "load user profile failed")
 		return
 	}
 

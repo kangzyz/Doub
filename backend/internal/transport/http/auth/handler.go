@@ -289,7 +289,7 @@ func (h *Handler) CompleteEmailBootstrap(c *gin.Context) {
 	}
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 	response.Success(c, MeResponse{User: toUserResponse(view)})
@@ -327,7 +327,7 @@ func (h *Handler) CompleteCurrentEmailVerification(c *gin.Context) {
 	}
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 	response.Success(c, MeResponse{User: toUserResponse(view)})
@@ -393,7 +393,7 @@ func (h *Handler) CompleteEmailChange(c *gin.Context) {
 	}
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 	response.Success(c, MeResponse{User: toUserResponse(view)})
@@ -875,7 +875,7 @@ func (h *Handler) Me(c *gin.Context) {
 	}
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 
@@ -1047,7 +1047,7 @@ func (h *Handler) PatchMe(c *gin.Context) {
 
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 
@@ -1107,7 +1107,7 @@ func (h *Handler) PatchUsername(c *gin.Context) {
 
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 
@@ -1154,7 +1154,7 @@ func (h *Handler) CompleteOnboarding(c *gin.Context) {
 	}
 	view, err := h.service.BuildUserView(c.Request.Context(), *item)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to resolve subscription")
+		response.Error(c, http.StatusInternalServerError, "failed to load user profile")
 		return
 	}
 	if passwordChanged {
