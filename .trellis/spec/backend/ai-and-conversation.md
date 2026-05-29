@@ -314,6 +314,11 @@ server-side tool calls.
 
 - Provider adapters collect citation URLs into `GenerateOutput.Citations`; they
   should not render provider-specific citation UI.
+- OpenAI Chat Completions compatible adapters must normalize provider citation
+  payloads into `GenerateOutput.Citations` even when URLs arrive outside the
+  standard message annotation shape. Known shapes include non-stream response
+  root `sources` and streaming final chunk root `sources` arrays containing
+  `{ "url": "...", "title": "..." }` objects.
 - The conversation application layer maps numeric markers in the final assistant
   text (`[1]`, `[2]`, etc.) to display-only Markdown reference links
   (`[[1]][citation-1]` plus `[citation-1]: URL`). This keeps URL text out of
@@ -346,6 +351,9 @@ server-side tool calls.
 - Good: `answer [1](https://example.com)` persists as
   `answer [[1]][citation-1]\n\n[citation-1]: https://example.com`.
 - Base: `answer [1]` plus three URLs appends only the referenced first URL.
+- Base: a Chat Completions stream whose final chunk is
+  `{ "choices": [{ "delta": {}, "finish_reason": "stop" }], "sources": [...] }`
+  still yields citations for the completed persisted assistant message.
 - Bad: frontend code guesses URLs from process trace output and rewrites message
   text client-side.
 
@@ -354,6 +362,9 @@ server-side tool calls.
 - Unit tests for marker-to-URL mapping, inline numeric link rewriting, adjacent
   marker separation, existing-definition deduplication, invalid URL filtering,
   and unchanged content without markers.
+- LLM adapter tests must cover provider citation extraction for both
+  non-streaming responses and streaming terminal chunks when an upstream uses a
+  custom root `sources` field.
 - Existing server-side tool trace tests must continue to prove citation URLs are
   still captured for process trace visibility.
 

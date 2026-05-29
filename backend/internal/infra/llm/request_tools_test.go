@@ -563,6 +563,54 @@ func TestParseChatCompletionsCustomToolCall(t *testing.T) {
 	}
 }
 
+func TestParseChatCompletionsRootSourcesAsCitations(t *testing.T) {
+	payload := mustDecodeObject(t, `{
+		"id": "chatcmpl_1",
+		"choices": [{
+			"message": {
+				"role": "assistant",
+				"content": "answer [1][2]"
+			}
+		}],
+		"sources": [
+			{"url": "https://example.com/a", "title": "A"},
+			{"url": "https://example.com/b", "title": "B"},
+			{"url": "https://example.com/a", "title": "A duplicate"}
+		]
+	}`)
+
+	result := buildGenerateOutputFromParsed(EndpointChatCompletions, payload)
+	if result.Text != "answer [1][2]" {
+		t.Fatalf("expected assistant text, got %q", result.Text)
+	}
+	if len(result.Citations) != 2 || result.Citations[0] != "https://example.com/a" || result.Citations[1] != "https://example.com/b" {
+		t.Fatalf("expected root sources as citations, got %#v", result.Citations)
+	}
+}
+
+func TestChatStreamFinalChunkRootSourcesAsCitations(t *testing.T) {
+	result := &GenerateOutput{ToolCalls: make([]ToolCall, 0)}
+	rawStream := strings.Join([]string{
+		`data: {"id":"chatcmpl_1","choices":[{"delta":{"content":"answer [1]"}}]}`,
+		``,
+		`data: {"choices":[{"delta":{},"finish_reason":"stop"}],"sources":[{"url":"https://example.com/a","title":"A"},{"url":"https://example.com/a","title":"duplicate"}]}`,
+		``,
+		`data: [DONE]`,
+		``,
+	}, "\n")
+
+	err := consumeOpenAIGenerateStream(EndpointChatCompletions, AdapterOpenAIChatCompletions, strings.NewReader(rawStream), result, nil)
+	if err != nil {
+		t.Fatalf("consume stream: %v", err)
+	}
+	if result.Text != "answer [1]" {
+		t.Fatalf("expected streamed text, got %q", result.Text)
+	}
+	if len(result.Citations) != 1 || result.Citations[0] != "https://example.com/a" {
+		t.Fatalf("expected final chunk root sources as citations, got %#v", result.Citations)
+	}
+}
+
 func TestConsumeChatStreamErrorPayloadReturnsUpstreamError(t *testing.T) {
 	result := &GenerateOutput{ToolCalls: make([]ToolCall, 0)}
 	stream := bytes.NewBufferString("data: {\"error\":{\"message\":\"Param Incorrect\",\"code\":400}}\n\n")

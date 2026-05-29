@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, CornerUpLeft, Download, Maximize2, WandSparkles } from "lucide-react";
+import { ArrowUpRight, Check, Copy, CornerUpLeft, Download, Maximize2, WandSparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { ChevronDown } from "@/components/animate-ui/icons/chevron-down";
 import { ChevronUp } from "@/components/animate-ui/icons/chevron-up";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   downloadMarkdownImageSource,
@@ -61,6 +62,18 @@ type MarkdownParagraphProps = React.HTMLAttributes<HTMLParagraphElement> & {
 
 type MarkdownHeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   children?: React.ReactNode;
+};
+
+type CitationLinkData = {
+  displayURL: string;
+  href: string;
+  index: number;
+  label: string;
+};
+
+type PotentialMarkdownLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+  children?: React.ReactNode;
+  href?: unknown;
 };
 
 const StreamdownLinkContext = React.createContext(false);
@@ -165,6 +178,120 @@ function getReactNodeText(node: React.ReactNode): string {
       return "";
     })
     .join("");
+}
+
+function getCitationLinkDataFromNode(node: React.ReactNode): CitationLinkData | null {
+  if (!React.isValidElement<PotentialMarkdownLinkProps>(node)) {
+    return null;
+  }
+  const href = node.props.href;
+  if (typeof href !== "string" || resolveLinkKind(href) !== "external") {
+    return null;
+  }
+  if (isFootnoteBackref(node.props) || isFootnoteReference(node.props)) {
+    return null;
+  }
+
+  const marker = getReactNodeText(node.props.children).trim();
+  const markerMatch = /^(?:\[(\d+)\]|【(\d+)】|(\d+))$/.exec(marker);
+  const rawIndex = markerMatch?.[1] ?? markerMatch?.[2] ?? markerMatch?.[3];
+  if (!rawIndex) {
+    return null;
+  }
+  const index = Number.parseInt(rawIndex, 10);
+  if (!Number.isFinite(index) || index <= 0) {
+    return null;
+  }
+
+  return {
+    displayURL: citationSourceDisplayURL(href),
+    href,
+    index,
+    label: citationSourceLabel(href),
+  };
+}
+
+function citationSourceLabel(href: string): string {
+  try {
+    const hostname = new URL(href).hostname.toLowerCase().replace(/^www\./, "");
+    const parts = hostname.split(".").filter(Boolean);
+    if (parts.length === 0) {
+      return href;
+    }
+
+    const compoundSuffixes = new Set([
+      "co.jp",
+      "co.uk",
+      "com.au",
+      "com.cn",
+      "com.hk",
+      "com.sg",
+      "com.tw",
+      "net.cn",
+      "org.cn",
+    ]);
+    const suffix = parts.slice(-2).join(".");
+    const labelIndex = compoundSuffixes.has(suffix) ? parts.length - 3 : parts.length - 2;
+    return parts[Math.max(0, labelIndex)] ?? hostname;
+  } catch {
+    return href.replace(/^https?:\/\//, "").split(/[/?#]/)[0] || href;
+  }
+}
+
+function citationSourceDisplayURL(href: string): string {
+  try {
+    const url = new URL(href);
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    const path = `${url.pathname}${url.search}`.replace(/\/$/, "");
+    return `${hostname}${path && path !== "/" ? path : ""}`;
+  } catch {
+    return href.replace(/^https?:\/\//, "");
+  }
+}
+
+function isWhitespaceReactNode(node: React.ReactNode): boolean {
+  return typeof node === "string" && node.trim() === "";
+}
+
+function groupCitationChildren(children: React.ReactNode): React.ReactNode {
+  const nodes = React.Children.toArray(children);
+  if (nodes.length === 0) {
+    return children;
+  }
+
+  const grouped: React.ReactNode[] = [];
+  for (let index = 0; index < nodes.length; index += 1) {
+    const citation = getCitationLinkDataFromNode(nodes[index]);
+    if (!citation) {
+      grouped.push(nodes[index]);
+      continue;
+    }
+
+    const citations = [citation];
+    let cursor = index + 1;
+    while (cursor < nodes.length) {
+      if (isWhitespaceReactNode(nodes[cursor]) && getCitationLinkDataFromNode(nodes[cursor + 1])) {
+        cursor += 1;
+        continue;
+      }
+      const nextCitation = getCitationLinkDataFromNode(nodes[cursor]);
+      if (!nextCitation) {
+        break;
+      }
+      citations.push(nextCitation);
+      cursor += 1;
+    }
+
+    grouped.push(
+      <CitationCluster
+        key={`citation-${citation.index}-${grouped.length}`}
+        items={citations}
+      />,
+    );
+    index = cursor - 1;
+  }
+
+  return grouped;
 }
 
 function resolveFootnoteBackrefIndex(children: React.ReactNode, ariaLabel?: string): string {
@@ -300,6 +427,113 @@ function openExternalURL(url: string) {
   window.open(url, "_blank", "noreferrer");
 }
 
+function CitationCluster({
+  className,
+  items,
+}: {
+  className?: string;
+  items: CitationLinkData[];
+}) {
+  const t = useTranslations("chat.markdown.citation");
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [pendingURL, setPendingURL] = React.useState("");
+  const primary = items[0];
+
+  const openSource = React.useCallback((url: string) => {
+    setPendingURL(url);
+    setPopoverOpen(false);
+    setModalOpen(true);
+  }, []);
+
+  const handleConfirm = React.useCallback(() => {
+    if (!pendingURL) {
+      return;
+    }
+    openExternalURL(pendingURL);
+    setModalOpen(false);
+  }, [pendingURL]);
+
+  if (!primary) {
+    return null;
+  }
+
+  const extraCount = items.length - 1;
+  const chip = (
+    <button
+      type="button"
+      data-streamdown="citation"
+      className={cn(
+        "group/citation relative mx-0.5 inline-flex h-[1.32rem] max-w-[12rem] translate-y-[-0.08em] items-center gap-1 rounded-[5px] border border-foreground/[0.07] bg-foreground/[0.055] px-1.5 font-mono text-[0.68em] font-medium leading-none text-muted-foreground/88 no-underline align-baseline shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition-[background-color,border-color,color] duration-150 hover:border-foreground/15 hover:bg-foreground/[0.085] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-1 focus-visible:ring-offset-background active:bg-foreground/[0.11] data-[state=open]:border-foreground/15 data-[state=open]:bg-foreground/[0.095] data-[state=open]:text-foreground dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+        className,
+      )}
+      aria-label={items.length > 1 ? t("openGroup", { count: items.length }) : t("open", { source: primary.label })}
+      onClick={() => {
+        if (items.length === 1) {
+          openSource(primary.href);
+        }
+      }}
+    >
+      <span className="min-w-0 truncate">{primary.label}</span>
+      {extraCount > 0 ? (
+        <span className="shrink-0 text-[0.9em] leading-none text-muted-foreground/60 transition-colors group-hover/citation:text-foreground/65">
+          +{extraCount}
+        </span>
+      ) : null}
+    </button>
+  );
+
+  return (
+    <>
+      {items.length > 1 ? (
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <PopoverTrigger asChild>{chip}</PopoverTrigger>
+          <PopoverContent align="start" className="w-72 max-w-[calc(100vw-2rem)] p-2">
+            <div className="px-2 pb-1.5 text-[11px] font-medium leading-4 text-muted-foreground">
+              {t("sources", { count: items.length })}
+            </div>
+            <div className="grid gap-1">
+              {items.map((item) => (
+                <button
+                  key={`${item.index}-${item.href}`}
+                  type="button"
+                  className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] leading-5 text-popover-foreground transition-colors hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+                  aria-label={t("open", { source: item.label })}
+                  onClick={() => openSource(item.href)}
+                >
+                  <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-muted/60 font-mono text-[10px] text-muted-foreground">
+                    {item.index}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{item.label}</span>
+                    <span className="block truncate font-mono text-[10px] leading-4 text-muted-foreground/68">
+                      {item.displayURL}
+                    </span>
+                  </span>
+                  <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>{chip}</TooltipTrigger>
+          <TooltipContent sideOffset={4} className="max-w-xs break-all font-mono text-[11px]">
+            {primary.displayURL}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      <ExternalLinkSafetyDialog
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleConfirm}
+        url={pendingURL}
+      />
+    </>
+  );
+}
+
 function isEmptyReactNode(node: React.ReactNode): boolean {
   return node == null || node === "";
 }
@@ -399,6 +633,10 @@ export function MarkdownLink({ children, className, href, onClick, ...props }: M
       ),
     [normalizedChildren],
   );
+  const citation = React.useMemo(
+    () => getCitationLinkDataFromNode(<a href={href}>{children}</a>),
+    [children, href],
+  );
 
   const handleClick = React.useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -455,6 +693,10 @@ export function MarkdownLink({ children, className, href, onClick, ...props }: M
         {children}
       </span>
     );
+  }
+
+  if (citation && !footnoteBackref && !footnoteReference) {
+    return <CitationCluster className={className} items={[citation]} />;
   }
 
   return (
@@ -683,11 +925,12 @@ export function MarkdownParagraph({ children, className, ...props }: MarkdownPar
     }
   }
   const footnoteBackrefCount = normalizedChildren.filter(isFootnoteBackrefElement).length;
+  const citationGroupedChildren = groupCitationChildren(children);
   const paragraphChildren =
     footnoteBackrefCount > 1 ? (
-      <FootnoteBackrefGroupContext.Provider value={true}>{children}</FootnoteBackrefGroupContext.Provider>
+      <FootnoteBackrefGroupContext.Provider value={true}>{citationGroupedChildren}</FootnoteBackrefGroupContext.Provider>
     ) : (
-      children
+      citationGroupedChildren
     );
 
   return (

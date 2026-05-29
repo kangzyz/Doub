@@ -257,6 +257,7 @@ func applyChatStreamEvent(
 			}
 		}
 	}
+	result.Citations = appendUniqueStrings(result.Citations, parseChatCompletionsCitations(parsed)...)
 	return nil
 }
 
@@ -315,6 +316,17 @@ func parseChatCompletionsOutput(adapter string, parsed map[string]interface{}, r
 	if len(toolCalls) > 0 {
 		result.ToolCalls = append(result.ToolCalls, toolCalls...)
 	}
+	result.Citations = appendUniqueStrings(result.Citations, parseChatCompletionsCitations(parsed)...)
+}
+
+func parseChatCompletionsCitations(parsed map[string]interface{}) []string {
+	citations := parseResponseCitations(parsed)
+	for _, rawChoice := range asSlice(parsed["choices"]) {
+		choice := asMap(rawChoice)
+		citations = appendUniqueStrings(citations, parseResponseCitations(asMap(choice["message"]))...)
+		citations = appendUniqueStrings(citations, parseResponseCitations(asMap(choice["delta"]))...)
+	}
+	return citations
 }
 
 func parseChatReasoningOutput(message map[string]interface{}) *ReasoningOutput {

@@ -153,6 +153,11 @@
     "previewImage": "Preview image",
     "editImage": "Edit image",
     "downloadImage": "Download image",
+    "citation": {
+      "open": "Open source {source}",
+      "openGroup": "Open {count} sources",
+      "sources": "{count, plural, one {Source} other {Sources}}"
+    },
     "externalLink": {
       "title": "Open external link?",
       "description": "You are about to leave this site. Confirm the link before continuing.",
