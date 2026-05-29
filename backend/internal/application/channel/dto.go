@@ -1,7 +1,5 @@
 package channel
 
-import appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
-
 const (
 	BatchDeleteStatusDeleted  = "deleted"
 	BatchDeleteStatusNotFound = "not_found"
@@ -134,7 +132,6 @@ type ModelView struct {
 	SourceCount       int64
 	ActiveSourceCount int64
 	ProtocolsJSON     string
-	Pricing           *appbilling.PublicModelPricing
 	CreatedAt         string
 	UpdatedAt         string
 }

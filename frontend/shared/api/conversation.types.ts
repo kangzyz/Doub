@@ -75,7 +75,6 @@ export type MessageDTO = {
   myFeedback: "up" | "down" | "";
   thumbsUpCount: number;
   thumbsDownCount: number;
-  billingCost?: MessageBillingCostDTO;
   createdAt: string;
   updatedAt: string;
 };
@@ -112,14 +111,6 @@ export type ConversationRunDTO = {
   endedAt: string | null;
   createdAt: string;
   updatedAt: string;
-};
-
-export type MessageBillingCostDTO = {
-  billingMode: string;
-  billedCurrency: string;
-  billedNanousd: number;
-  billedUSD: number;
-  pricingSnapshotJSON: string;
 };
 
 export type TraceBlockDTO = {

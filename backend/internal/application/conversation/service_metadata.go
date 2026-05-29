@@ -105,7 +105,6 @@ func (s *Service) generateConversationMetadata(ctx context.Context, conversation
 				setGenerateErr(err)
 				return
 			}
-			s.recordBasicServiceUsage(ctx, conversation.UserID, conversation.ID, "title", "标题", out.PlatformModelName, out.RoutedBindingCode, out.ProviderProtocol, out.UpstreamName, out.UpstreamModel, "5m", out.Usage, out.Messages, out.Text, out.LatencyMS)
 			mu.Lock()
 			title = sanitizeGeneratedConversationTitle(parseGeneratedConversationTitle(out.Text))
 			mu.Unlock()
@@ -121,7 +120,6 @@ func (s *Service) generateConversationMetadata(ctx context.Context, conversation
 			setGenerateErr(err)
 			return
 		}
-		s.recordBasicServiceUsage(ctx, conversation.UserID, conversation.ID, "labels", "标签", labelsOut.PlatformModelName, labelsOut.RoutedBindingCode, labelsOut.ProviderProtocol, labelsOut.UpstreamName, labelsOut.UpstreamModel, "5m", labelsOut.Usage, labelsOut.Messages, labelsOut.Text, labelsOut.LatencyMS)
 		labels := sanitizeGeneratedConversationLabels(parseGeneratedConversationLabels(labelsOut.Text))
 		if len(labels) == 0 {
 			return

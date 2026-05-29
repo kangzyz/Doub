@@ -63,19 +63,6 @@
     "verificationCodeInvalid": "Verification code is invalid or expired.",
     "verificationCodeRecent": "A verification code was sent recently. Try again later."
   },
-  "billing": {
-    "insufficientBalance": "Insufficient balance.",
-    "insufficientFunds": "Insufficient balance.",
-    "invalidDailyUsageDateRange": "Invalid usage date range.",
-    "invalidDailyUsageDays": "Invalid usage day count.",
-    "invalidModelPricing": "Invalid model pricing.",
-    "invalidSubscriptionExpiry": "Invalid subscription expiry.",
-    "invalidSubscriptionTier": "Invalid subscription tier.",
-    "paymentRequired": "Payment is required.",
-    "periodCreditExceeded": "Period credit has been exhausted.",
-    "pricingRequired": "Model pricing is required.",
-    "subscriptionExpiryRequired": "Subscription expiry is required."
-  },
   "config": {
     "invalidJson": "Invalid JSON configuration."
   },
@@ -183,20 +170,6 @@
     "notFound": "Message not found.",
     "tooManyFiles": "Too many files in one message."
   },
-  "payment": {
-    "checkoutFailed": "Failed to create checkout.",
-    "epayTypeUnsupported": "This EPay payment type is not supported.",
-    "invalidEvent": "Invalid payment event.",
-    "invalidSignature": "Invalid payment signature.",
-    "invalidWebhookBody": "Invalid webhook body.",
-    "notificationMismatch": "Payment notification does not match the order.",
-    "orderNoRequired": "Order number is required.",
-    "providerUnavailable": "Payment provider is unavailable.",
-    "returnUrlCrossOrigin": "Payment return URL must use the configured public web origin.",
-    "returnUrlInvalid": "Invalid payment return URL.",
-    "webhookBodyTooLarge": "Webhook body is too large.",
-    "webhookNotConfigured": "Payment webhook is not configured."
-  },
   "quota": {
     "exceeded": "Quota exceeded."
   },
@@ -231,7 +204,6 @@
     "unavailable": "Service is unavailable. Try again later."
   },
   "settings": {
-    "billingPaymentInvalid": "Invalid billing payment settings.",
     "embeddingInvalid": "Invalid embedding settings.",
     "extractInvalid": "Invalid file extraction settings.",
     "invalidKey": "Invalid setting key.",

@@ -197,7 +197,6 @@ export function mapServerMessage(
     msg.cacheWriteTokens = item.cacheWriteTokens ?? 0;
     msg.reasoningTokens = item.reasoningTokens ?? 0;
     msg.latencyMS = item.latencyMS ?? 0;
-    msg.billingCost = item.billingCost;
     msg.processTrace = parseProcessTrace(item);
     if (Array.isArray(item.followUps) && item.followUps.length > 0) {
       msg.followUps = item.followUps.map((followUp) => followUp.trim()).filter(Boolean).slice(0, 5);

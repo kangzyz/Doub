@@ -39,7 +39,6 @@ export function AdminSidebar({
         channels: "sections.channels",
         models: "sections.models",
         "tool-settings": "sections.toolSettings",
-        billing: "sections.billing",
         logs: "sections.logs",
         "login-settings": "sections.loginSettings",
         "conversation-settings": "sections.conversationSettings",

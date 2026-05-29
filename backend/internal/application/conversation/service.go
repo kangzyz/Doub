@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
 	"github.com/kangzyz/Doub/backend/internal/application/channel"
 	appcompact "github.com/kangzyz/Doub/backend/internal/application/compact"
 	appembedding "github.com/kangzyz/Doub/backend/internal/application/embedding"
@@ -52,13 +51,6 @@ type auditWriter interface {
 	Write(ctx context.Context, requestID string, actorUserID uint, action string, resource string, resourceID string, ip string, userAgent string, detail interface{})
 }
 
-type basicServiceBillingContextKey struct{}
-
-type basicServiceBillingContext struct {
-	UserID         uint
-	ConversationID uint
-}
-
 // Service 封装会话业务能力。
 type Service struct {
 	cfg               *config.Runtime
@@ -75,7 +67,6 @@ type Service struct {
 	processingSvc     *appprocessing.Service
 	extractSvc        *extraction.Service
 	ragSvc            *apprag.Service
-	billingSvc        *appbilling.Service
 	auditWriter       auditWriter
 	storeProvider     appstorage.Provider
 	logger            *zap.Logger
@@ -277,11 +268,6 @@ func NewServiceWithRuntime(
 // 由外部（memory handler 写入后）通过回调触发，避免循环依赖。
 func (s *Service) InvalidateMemoryCache(userID uint) {
 	s.userMemCache.Delete(userID)
-}
-
-// SetBillingService 注入计费服务，用于记录标题、标签、上下文压缩等基础 LLM 服务用量。
-func (s *Service) SetBillingService(billingSvc *appbilling.Service) {
-	s.billingSvc = billingSvc
 }
 
 // SetAuditWriter 注入会话域审计写入器。

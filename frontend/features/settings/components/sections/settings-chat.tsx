@@ -406,8 +406,7 @@ function PreferenceMemorySection() {
 
 export function SettingsChat() {
   const t = useTranslations("settings.chatPage");
-  const { settings, loading, billingMode, vendorGroups, handleBool, handleEnum, handleDefaultModel } = useSettingsChat();
-  const billingEnabled = billingMode !== "self";
+  const { settings, loading, vendorGroups, handleBool, handleEnum, handleDefaultModel } = useSettingsChat();
   const [modifierLabel, setModifierLabel] = React.useState<"Command" | "Ctrl">("Ctrl");
   const [modifierShortcut, setModifierShortcut] = React.useState<Exclude<SendShortcut, "enter">>("ctrl_enter");
   const modelOptions = React.useMemo<ModelOption[]>(
@@ -587,20 +586,6 @@ export function SettingsChat() {
                 onCheckedChange={handleBool("chat.show_latency", "showLatency")}
                 disabled={loading}
                 aria-label={t("display.latencyTitle")}
-              />
-            </SettingsFieldRow>
-          </div>
-
-          <div className="pt-4">
-            <SettingsFieldRow
-              title={t("display.costTitle")}
-              description={billingEnabled ? t("display.costDescription") : t("display.costDescriptionSelfMode")}
-            >
-              <Switch
-                checked={billingEnabled && settings.showBillingCost}
-                onCheckedChange={handleBool("chat.show_billing_cost", "showBillingCost")}
-                disabled={loading || !billingEnabled}
-                aria-label={t("display.costTitle")}
               />
             </SettingsFieldRow>
           </div>

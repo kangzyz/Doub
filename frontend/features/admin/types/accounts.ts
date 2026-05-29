@@ -10,7 +10,6 @@ export const USER_STATUS_OPTIONS: AdminUserStatus[] = [
 ];
 
 export const USER_ROLE_OPTIONS: AdminUserRole[] = ["user", "admin", "superadmin"];
-export const USER_TIER_OPTIONS = ["free", "pro", "max", "ultra"] as const;
 
 export const USER_SORT_OPTIONS = [
   { labelKey: "sort.idDesc", value: "id_desc" },
@@ -23,7 +22,6 @@ export const USER_SORT_OPTIONS = [
 export const COMPACT_COMBOBOX_CLASSNAME =
   "rounded-sm [&_[data-slot=input-group-control]]:px-2 [&_[data-slot=input-group-addon]]:pr-1.5 [&_[data-slot=input-group-button]]:size-4.5 [&_[data-slot=combobox-trigger-icon]]:size-3.5";
 
-export type UserTier = string;
 export type UserSortValue = (typeof USER_SORT_OPTIONS)[number]["value"];
 
 export type PendingAction =
@@ -35,7 +33,6 @@ export type PendingAction =
   | "bulk-status"
   | "bulk-delete"
   | "bulk-timezone"
-  | "bulk-balance"
   | "reset-password"
   | "reset-2fa"
   | "revoke-sessions"
@@ -57,8 +54,6 @@ export type CreateUserPayload = {
   email: string;
   timezone: string;
   locale: string;
-  subscriptionTier: UserTier;
-  subscriptionExpiresAt: string;
 };
 
 export type EditUserPayload = {
@@ -70,9 +65,6 @@ export type EditUserPayload = {
   status: AdminUserStatus;
   timezone: string;
   locale: string;
-  subscriptionTier: UserTier;
-  subscriptionExpiresAt: string;
-  billingBalanceUSD: string;
   profilePreferences: string;
   reason: string;
 };
@@ -85,6 +77,4 @@ export const DEFAULT_CREATE_USER_PAYLOAD: CreateUserPayload = {
   email: "",
   timezone: "Etc/UTC",
   locale: "en-US",
-  subscriptionTier: "free",
-  subscriptionExpiresAt: "",
 };

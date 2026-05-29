@@ -11,9 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kangzyz/Doub/backend/internal/application/billing"
 	appconversation "github.com/kangzyz/Doub/backend/internal/application/conversation"
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	model "github.com/kangzyz/Doub/backend/internal/domain/conversation"
 	"github.com/kangzyz/Doub/backend/internal/shared/response"
 	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
@@ -96,58 +94,6 @@ func (h *Handler) parseSendMessageInput(c *gin.Context) (appconversation.SendMes
 	return input, conversation, &req, nil
 }
 
-func sendMessageBillingInput(
-	userID uint,
-	conversation *model.Conversation,
-	req *SendMessageRequest,
-	result *appconversation.SendMessageResult,
-) appconversation.SendMessageBillingInput {
-	input := appconversation.SendMessageBillingInput{
-		UserID:            userID,
-		PlatformModelName: strings.TrimSpace(req.Model),
-		ClientRunID:       strings.TrimSpace(req.ClientRunID),
-		Result:            result,
-	}
-	if conversation != nil {
-		input.ConversationID = conversation.ID
-		input.ConversationModel = conversation.Model
-	}
-	return input
-}
-
-func (h *Handler) reserveSendMessageUsageBalance(c *gin.Context, conversation *model.Conversation, req *SendMessageRequest) (*domainbilling.UsageBalanceReservation, error) {
-	reservation, err := h.service.ReserveSendMessageUsageBalance(
-		c.Request.Context(),
-		sendMessageBillingInput(middleware.MustUserID(c), conversation, req, nil),
-	)
-	if err != nil {
-		if errors.Is(err, billing.ErrUsageBalanceInsufficient) {
-			response.Error(c, http.StatusPaymentRequired, "usage balance is insufficient")
-			return nil, err
-		}
-		if errors.Is(err, billing.ErrModelPricingRequired) {
-			response.Error(c, http.StatusPaymentRequired, "model pricing is required")
-			return nil, err
-		}
-		response.Error(c, http.StatusInternalServerError, "usage balance reservation failed")
-		return nil, err
-	}
-	return reservation, nil
-}
-
-func shouldReleaseReservationAfterBillingError(err error) bool {
-	return appconversation.ShouldReleaseSendMessageUsageReservationAfterBillingError(err)
-}
-
-func (h *Handler) releaseSendMessageUsageReservation(reservation *domainbilling.UsageBalanceReservation, description string) error {
-	if reservation == nil {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	return h.service.ReleaseSendMessageUsageReservation(ctx, reservation, description)
-}
-
 // recordSendMessageAudit 记录审计日志（同步，供非流式路径使用）。
 func (h *Handler) recordSendMessageAudit(c *gin.Context, conversation *model.Conversation, req *SendMessageRequest, result *appconversation.SendMessageResult, action string) {
 	h.recordSendMessageAuditCtx(
@@ -186,46 +132,6 @@ func (h *Handler) recordSendMessageAuditCtx(
 			Result:         result,
 		},
 	)
-}
-
-func handleSendMessageBillingError(c *gin.Context, err error) {
-	if errors.Is(err, billing.ErrUsageBalanceInsufficient) {
-		response.Error(c, http.StatusPaymentRequired, "usage balance is insufficient")
-		return
-	}
-	if errors.Is(err, billing.ErrModelPricingRequired) {
-		response.Error(c, http.StatusPaymentRequired, "model pricing is required")
-		return
-	}
-	response.Error(c, http.StatusInternalServerError, "record billing failed")
-}
-
-func mapBillingStreamError(err error) streamError {
-	status := http.StatusInternalServerError
-	message := "record billing failed"
-	if errors.Is(err, billing.ErrUsageBalanceInsufficient) {
-		status = http.StatusPaymentRequired
-		message = "usage balance is insufficient"
-	}
-	if errors.Is(err, billing.ErrModelPricingRequired) {
-		status = http.StatusPaymentRequired
-		message = "model pricing is required"
-	}
-	code := response.InferErrorCode(status, message)
-	return streamError{
-		Status:  status,
-		Code:    code,
-		Message: response.PublicErrorMessage(status, code, message),
-	}
-}
-
-func billingStreamErrorPayload(err error) map[string]interface{} {
-	mapped := mapBillingStreamError(err)
-	return map[string]interface{}{
-		"type":      "error",
-		"message":   mapped.Message,
-		"errorCode": mapped.Code,
-	}
 }
 
 // handleSendMessageError 处理发送消息错误的公共方法。
@@ -276,37 +182,13 @@ func (h *Handler) SendMessage(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	if err = h.ensureBillingModelAccess(c, conversation, req); err != nil {
-		return
-	}
-	reservation, err := h.reserveSendMessageUsageBalance(c, conversation, req)
-	if err != nil {
-		return
-	}
 
 	result, err := h.service.SendMessage(c.Request.Context(), input)
 	if err != nil {
-		if releaseErr := h.releaseSendMessageUsageReservation(reservation, "模型调用失败退回预扣"); releaseErr != nil {
-			handleSendMessageBillingError(c, releaseErr)
-			return
-		}
 		handleSendMessageError(c, err)
 		return
 	}
 
-	usageLedger, err := h.service.RecordSendMessageBilling(
-		c.Request.Context(),
-		sendMessageBillingInput(middleware.MustUserID(c), conversation, req, result),
-		reservation,
-	)
-	if err != nil {
-		if shouldReleaseReservationAfterBillingError(err) {
-			_ = h.releaseSendMessageUsageReservation(reservation, "计费失败退回预扣")
-		}
-		handleSendMessageBillingError(c, err)
-		return
-	}
-	appconversation.ApplyUsageBilling(&result.AssistantMessage, usageLedger)
 	h.recordSendMessageAudit(c, conversation, req, result, "send_message")
 	response.Success(c, toSendMessageResponse(result))
 }
@@ -327,13 +209,6 @@ func (h *Handler) SendMessage(c *gin.Context) {
 // @Router /conversations/{id}/messages/stream [post]
 func (h *Handler) StreamMessage(c *gin.Context) {
 	input, conversation, req, err := h.parseSendMessageInput(c)
-	if err != nil {
-		return
-	}
-	if err = h.ensureBillingModelAccess(c, conversation, req); err != nil {
-		return
-	}
-	reservation, err := h.reserveSendMessageUsageBalance(c, conversation, req)
 	if err != nil {
 		return
 	}
@@ -384,11 +259,6 @@ func (h *Handler) StreamMessage(c *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		if releaseErr := h.releaseSendMessageUsageReservation(reservation, "模型调用失败退回预扣"); releaseErr != nil {
-			_ = flushStreamEvent(billingStreamErrorPayload(releaseErr))
-			h.service.FinishMessageGeneration(input.ClientRunID)
-			return
-		}
 		payload := streamErrorPayload(err)
 		if debug := appconversation.MessageErrorDebug(err); debug != nil {
 			payload["debug"] = debug
@@ -397,23 +267,6 @@ func (h *Handler) StreamMessage(c *gin.Context) {
 		h.service.FinishMessageGeneration(input.ClientRunID)
 		return
 	}
-
-	billingCtx, billingCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	usageLedger, billingErr := h.service.RecordSendMessageBilling(
-		billingCtx,
-		sendMessageBillingInput(middleware.MustUserID(c), conversation, req, result),
-		reservation,
-	)
-	billingCancel()
-	if billingErr != nil {
-		if shouldReleaseReservationAfterBillingError(billingErr) {
-			_ = h.releaseSendMessageUsageReservation(reservation, "计费失败退回预扣")
-		}
-		_ = flushStreamEvent(billingStreamErrorPayload(billingErr))
-		h.service.FinishMessageGeneration(input.ClientRunID)
-		return
-	}
-	appconversation.ApplyUsageBilling(&result.AssistantMessage, usageLedger)
 
 	_ = flushStreamEvent(map[string]interface{}{
 		"type": "completed",
@@ -564,25 +417,3 @@ func (h *Handler) ResumeMessageGenerationStream(c *gin.Context) {
 	}
 }
 
-func (h *Handler) ensureBillingModelAccess(c *gin.Context, conversation *model.Conversation, req *SendMessageRequest) error {
-	if err := h.service.EnsureSendMessageBillingAccess(
-		c.Request.Context(),
-		sendMessageBillingInput(middleware.MustUserID(c), conversation, req, nil),
-	); err != nil {
-		if errors.Is(err, billing.ErrPeriodCreditExceeded) {
-			response.Error(c, http.StatusPaymentRequired, "period usage credit exceeded")
-			return err
-		}
-		if errors.Is(err, billing.ErrModelPricingRequired) {
-			response.Error(c, http.StatusPaymentRequired, "model pricing is required")
-			return err
-		}
-		if errors.Is(err, billing.ErrUsageBalanceInsufficient) {
-			response.Error(c, http.StatusPaymentRequired, "usage balance is insufficient")
-			return err
-		}
-		response.Error(c, http.StatusInternalServerError, "billing access check failed")
-		return err
-	}
-	return nil
-}

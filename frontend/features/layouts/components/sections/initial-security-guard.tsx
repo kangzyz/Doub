@@ -50,7 +50,6 @@ const adminOnboardingTips: OnboardingTip[] = [
   { key: "adminTips.files" },
   { key: "adminTips.context" },
   { key: "adminTips.trace" },
-  { key: "adminTips.billing" },
   { key: "adminTips.admin" },
   { key: "adminTips.ops" },
 ];

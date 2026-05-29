@@ -14,6 +14,5 @@ func (m *Module) RegisterRoutes(adminGroup *gin.RouterGroup) {
 	adminGroup.DELETE("/users/:id", m.Handler.DeleteUser)
 	adminGroup.GET("/user-auth-events", m.Handler.ListUserAuthEvents)
 	adminGroup.GET("/audit-logs", m.Handler.ListAuditLogs)
-	adminGroup.GET("/call-logs", m.Handler.ListUsageLogs)
 	adminGroup.GET("/system-events", m.Handler.ListSystemEvents)
 }

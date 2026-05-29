@@ -63,7 +63,6 @@ export function NavUser({
 
   React.useEffect(() => {
     router.prefetch("/setting/general")
-    router.prefetch("/setting/subscription")
     if (isAdmin) {
       router.prefetch("/admin")
     }
@@ -190,12 +189,6 @@ export function NavUser({
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={navigateFromMenu("/setting/subscription")}>
-                {t("upgradePlan")}
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {isAdmin ? (

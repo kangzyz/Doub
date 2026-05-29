@@ -112,14 +112,6 @@ export type ChatInlineAlert = {
   details?: UpstreamDebugInfo;
 };
 
-export type ChatBillingCost = {
-  billingMode: string;
-  billedCurrency: string;
-  billedNanousd: number;
-  billedUSD: number;
-  pricingSnapshotJSON: string;
-};
-
 export type ImageLoadingAspectRatio = "wide" | "portrait" | "square";
 
 export type ChatAreaMessage = {
@@ -155,7 +147,6 @@ export type ChatAreaMessage = {
   cacheWriteTokens?: number;
   reasoningTokens?: number;
   latencyMS?: number;
-  billingCost?: ChatBillingCost;
   processTrace?: ChatMessageProcessTrace;
   inlineAlert?: ChatInlineAlert;
   compactDone?: { method: string; freed_tokens: number; summary_preview: string };

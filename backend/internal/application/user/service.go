@@ -9,7 +9,6 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 	"github.com/kangzyz/Doub/backend/internal/repository"
 	"golang.org/x/crypto/bcrypt"
@@ -83,9 +82,6 @@ func (s *Service) CreateUser(
 	phone string,
 	timezone string,
 	locale string,
-	billingMode string,
-	subscriptionTier string,
-	subscriptionExpiresAt *time.Time,
 ) (*domainuser.User, error) {
 	normalizedUsername, err := NormalizeUsername(username)
 	if err != nil {
@@ -146,49 +142,6 @@ func (s *Service) CreateUser(
 		return nil, err
 	}
 
-	normalizedBillingMode := strings.ToLower(strings.TrimSpace(billingMode))
-	var subscriptionPlanID uint
-	var subscriptionPriceID uint
-	var normalizedSubscriptionEndAt *time.Time
-	autoRenew := false
-	if normalizedBillingMode == "period" {
-		normalizedSubscriptionTier := strings.ToLower(strings.TrimSpace(subscriptionTier))
-		if normalizedSubscriptionTier == "" {
-			normalizedSubscriptionTier = defaultFreePlanCode
-		}
-
-		plan, planErr := s.repo.GetActivePlanByCode(ctx, normalizedSubscriptionTier)
-		if planErr != nil {
-			if errors.Is(planErr, repository.ErrNotFound) {
-				return nil, ErrInvalidSubscriptionTier
-			}
-			return nil, planErr
-		}
-
-		price, priceErr := s.repo.GetActiveDefaultPriceByPlanID(ctx, plan.ID)
-		if priceErr != nil {
-			if errors.Is(priceErr, repository.ErrNotFound) {
-				return nil, ErrInvalidSubscriptionTier
-			}
-			return nil, priceErr
-		}
-
-		subscriptionPlanID = plan.ID
-		subscriptionPriceID = price.ID
-		if plan.Code != defaultFreePlanCode {
-			if subscriptionExpiresAt == nil {
-				return nil, ErrSubscriptionExpiryRequired
-			}
-			expiresAt := subscriptionExpiresAt.UTC()
-			if !expiresAt.After(time.Now().UTC()) {
-				return nil, ErrInvalidSubscriptionExpiry
-			}
-			normalizedSubscriptionEndAt = &expiresAt
-		} else if price.BillingInterval != domainbilling.IntervalLifetime {
-			autoRenew = true
-		}
-	}
-
 	item := &domainuser.User{
 		PublicID:    normalizePublicID(uuid.NewString()),
 		Username:    normalizedUsername,
@@ -214,10 +167,10 @@ func (s *Service) CreateUser(
 			PasswordSetAt:     &now,
 			PasswordOrigin:    domainuser.PasswordOriginAdminCreated,
 		},
-		subscriptionPlanID,
-		subscriptionPriceID,
-		normalizedSubscriptionEndAt,
-		autoRenew,
+		0,
+		0,
+		nil,
+		false,
 	); err != nil {
 		return nil, err
 	}

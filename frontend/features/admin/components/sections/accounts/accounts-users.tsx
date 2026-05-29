@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { DollarSign, Globe, Plus, Settings, ShieldCheck, ShieldX, Trash2, UserCheck } from "lucide-react";
+import { Globe, Plus, Settings, ShieldCheck, ShieldX, Trash2, UserCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -39,7 +38,6 @@ import { useAuthSession } from "@/shared/auth/auth-session-context";
 import { TimeZoneSelect } from "@/shared/components/time-zone-select";
 import { useProgressiveRows } from "@/hooks/use-progressive-rows";
 import type { AdminUserRole, AdminUserStatus } from "@/features/admin/api/admin.types";
-import type { AdminBillingMode } from "@/features/admin/api/billing.types";
 import type { UserDTO } from "@/shared/api/auth.types";
 
 import { AccountAvatarEditorDialog } from "./account-avatar-dialog";
@@ -54,11 +52,9 @@ import {
   USER_ROLE_OPTIONS,
   USER_SORT_OPTIONS,
   USER_STATUS_OPTIONS,
-  USER_TIER_OPTIONS,
   type UserSortValue,
 } from "@/features/admin/types/accounts";
 import {
-  formatBillingBalance,
   formatDateTime,
   resolveCreateUserInitial,
   resolveUserInitial,
@@ -79,7 +75,7 @@ const EditUserSheet = dynamic(
   },
 );
 
-type AccountBulkAction = "role" | "status" | "timezone" | "balance" | "delete";
+type AccountBulkAction = "role" | "status" | "timezone" | "delete";
 
 function useUserStatusLabel() {
   const t = useTranslations("adminUsers.status");
@@ -96,56 +92,6 @@ function useUserStatusLabel() {
           return t("suspended");
         case "deactivated":
           return t("deactivated");
-        default:
-          return value?.trim() || "-";
-      }
-    },
-    [t],
-  );
-}
-
-function useSubscriptionStatusLabel() {
-  const t = useTranslations("adminUsers.subscriptionStatus");
-  return React.useCallback(
-    (value: string | null | undefined) => {
-      switch (value?.trim()) {
-        case "active":
-          return t("active");
-        case "trialing":
-          return t("trialing");
-        case "past_due":
-          return t("pastDue");
-        case "canceled":
-          return t("canceled");
-        case "unpaid":
-          return t("unpaid");
-        case "incomplete":
-          return t("incomplete");
-        case "incomplete_expired":
-          return t("incompleteExpired");
-        case "paused":
-          return t("paused");
-        default:
-          return value?.trim() || "-";
-      }
-    },
-    [t],
-  );
-}
-
-function useBillingAccountStatusLabel() {
-  const t = useTranslations("adminUsers.billingAccountStatus");
-  return React.useCallback(
-    (value: string | null | undefined) => {
-      switch (value?.trim()) {
-        case "active":
-          return t("active");
-        case "frozen":
-          return t("frozen");
-        case "closed":
-          return t("closed");
-        case "suspended":
-          return t("suspended");
         default:
           return value?.trim() || "-";
       }
@@ -198,7 +144,6 @@ type AccountsUsersProps = {
 type UserTableRowProps = {
   item: UserDTO;
   checked: boolean;
-  billingMode: AdminBillingMode;
   inlineRolePending: boolean;
   inlineStatusPending: boolean;
   pendingAction: string;
@@ -218,7 +163,6 @@ type UserTableRowProps = {
 const UserTableRow = React.memo(function UserTableRow({
   item,
   checked,
-  billingMode,
   inlineRolePending,
   inlineStatusPending,
   pendingAction,
@@ -233,8 +177,6 @@ const UserTableRow = React.memo(function UserTableRow({
   const t = useTranslations("adminUsers");
   const locale = useLocale();
   const resolveUserStatusLabel = useUserStatusLabel();
-  const resolveSubscriptionStatusLabel = useSubscriptionStatusLabel();
-  const resolveBillingAccountStatusLabel = useBillingAccountStatusLabel();
   const avatarAlt = item.displayName.trim() || item.username.trim() || item.publicID.trim() || t("fallbackUser");
   const disabled = Boolean(pendingAction) || !canManage;
   const rowRoleOptions = React.useMemo(
@@ -328,27 +270,6 @@ const UserTableRow = React.memo(function UserTableRow({
           </ComboboxContent>
         </Combobox>
       </TableCell>
-      {billingMode === "period" ? (
-        <TableCell className="text-foreground">
-          <div
-            className="max-w-[10rem] truncate"
-            title={resolveValue(
-              item.subscriptionPlanName.trim() || item.subscriptionTier.trim() || resolveSubscriptionStatusLabel(item.subscriptionStatus),
-            )}
-          >
-            {resolveValue(
-              item.subscriptionPlanName.trim() || item.subscriptionTier.trim() || resolveSubscriptionStatusLabel(item.subscriptionStatus),
-            )}
-          </div>
-        </TableCell>
-      ) : null}
-      {billingMode === "usage" ? (
-        <TableCell className="whitespace-nowrap text-foreground">
-          <span title={resolveBillingAccountStatusLabel(item.billingAccountStatus || "active")}>
-            {formatBillingBalance(item.billingBalanceUSD)}
-          </span>
-        </TableCell>
-      ) : null}
       <TableCell className="text-muted-foreground">
         <div className="flex items-center justify-center">
           {item.twoFactorEnabled ? <ShieldCheck className="size-3.5" /> : <ShieldX className="size-3.5" />}
@@ -425,8 +346,6 @@ export function AccountsUsers({
     setRoleFilter,
     statusFilter,
     setStatusFilter,
-    tierFilter,
-    setTierFilter,
     sortValue,
     setSortValue,
     selectedUserIDs,
@@ -436,20 +355,14 @@ export function AccountsUsers({
     setBatchStatus,
     batchTimezone,
     setBatchTimezone,
-    batchBalance,
-    setBatchBalance,
     createPayload,
     setCreatePayload,
     editPayload,
     setEditPayload,
     resetPasswordDraft,
     setResetPasswordDraft,
-    billingMode,
-    billingPlans,
     createAvatarSource,
     avatarDialogPreviewSrc,
-    createSubscriptionExpiryDate,
-    editSubscriptionExpiryDate,
     editStatusChanged,
     pageCount,
     filteredItems,
@@ -474,7 +387,6 @@ export function AccountsUsers({
     onBulkApplyStatus,
     onBulkDeleteUsers,
     onBulkApplyTimezone,
-    onBulkApplyBalance,
     handleRandomizeAvatarDialog,
   } = useAdminUsersPage({ items, total, page, pageSize, viewerRole: viewer?.role, onLoadUsers, onSetUsers, onSetTotal });
   const { visibleRows: renderedItems } = useProgressiveRows(filteredItems, {
@@ -499,9 +411,6 @@ export function AccountsUsers({
         break;
       case "timezone":
         void onBulkApplyTimezone().then(() => setBulkConfirmAction(null));
-        break;
-      case "balance":
-        void onBulkApplyBalance().then(() => setBulkConfirmAction(null));
         break;
       case "delete":
         void onBulkDeleteUsers().then(() => setBulkConfirmAction(null));
@@ -541,24 +450,6 @@ export function AccountsUsers({
                 ...USER_STATUS_OPTIONS.map((item) => ({ label: resolveUserStatusLabel(item), value: item })),
               ],
             },
-            ...(billingMode === "period"
-              ? [
-                  {
-                    key: "tier",
-                    label: t("fields.subscription"),
-                    value: tierFilter,
-                    onValueChange: setTierFilter,
-                    options: [
-                      { label: t("table.allSubscriptions"), value: "" },
-                      ...billingPlans.map((item) => ({ label: item.name || item.code, value: item.code })),
-                      ...USER_TIER_OPTIONS.filter((tier) => !billingPlans.some((plan) => plan.code === tier)).map((item) => ({
-                        label: item,
-                        value: item,
-                      })),
-                    ],
-                  },
-                ]
-              : []),
           ]}
           sort={{
             value: sortValue,
@@ -631,26 +522,6 @@ export function AccountsUsers({
                   onChange={setBatchTimezone}
                 />
               </BulkActionControlRow>
-
-              {billingMode === "usage" ? (
-                <BulkActionControlRow
-                  icon={<DollarSign className="size-3 stroke-1" />}
-                  label={t("actions.apply")}
-                  onApply={() => setBulkConfirmAction("balance")}
-                  disabled={loading || Boolean(pendingAction) || selectedUserIDs.size === 0 || !batchBalance.trim()}
-                >
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.000001"
-                    value={batchBalance}
-                    placeholder={t("fields.balance")}
-                    onChange={(event) => setBatchBalance(event.target.value)}
-                    disabled={loading || Boolean(pendingAction) || selectedUserIDs.size === 0}
-                    className="h-7 px-2 text-[11px]"
-                  />
-                </BulkActionControlRow>
-              ) : null}
             </div>
           }
           bulkActions={[
@@ -694,8 +565,6 @@ export function AccountsUsers({
                 <TableHead>{t("fields.info")}</TableHead>
                 <TableHead>{t("fields.role")}</TableHead>
                 <TableHead>{t("fields.status")}</TableHead>
-                {billingMode === "period" ? <TableHead>{t("fields.subscription")}</TableHead> : null}
-                {billingMode === "usage" ? <TableHead>{t("fields.balance")}</TableHead> : null}
                 <TableHead className="text-center">2FA</TableHead>
                 <TableHead>{t("fields.timezone")}</TableHead>
                 <TableHead>{t("fields.lastLogin")}</TableHead>
@@ -704,14 +573,13 @@ export function AccountsUsers({
             </TableHeader>
             <TableBody>
               {loading && filteredItems.length === 0 ? (
-                <TableSkeletonRows colSpan={billingMode === "self" ? 9 : 10} rowCount={10} />
+                <TableSkeletonRows colSpan={9} rowCount={10} />
               ) : null}
               {renderedItems.map((item) => (
                 <UserTableRow
                   key={item.id}
                   item={item}
                   checked={selectedUserIDs.has(item.id)}
-                  billingMode={billingMode}
                   inlineRolePending={Boolean(inlinePending[resolveInlineKey(item.id, "role")])}
                   inlineStatusPending={Boolean(inlinePending[resolveInlineKey(item.id, "status")])}
                   pendingAction={pendingAction}
@@ -725,7 +593,7 @@ export function AccountsUsers({
                 />
               ))}
               {!loading && filteredItems.length === 0 ? (
-                <TableEmptyRow colSpan={billingMode === "self" ? 9 : 10}>{t("table.empty")}</TableEmptyRow>
+                <TableEmptyRow colSpan={9}>{t("table.empty")}</TableEmptyRow>
               ) : null}
             </TableBody>
         </Table>
@@ -803,10 +671,7 @@ export function AccountsUsers({
           createDialogContentRef={createDialogContentRef}
           createPayload={createPayload}
           setCreatePayload={setCreatePayload}
-          billingMode={billingMode}
-          billingPlans={billingPlans}
           createAvatarSource={createAvatarSource}
-          createSubscriptionExpiryDate={createSubscriptionExpiryDate}
           onOpenCreateAvatarDialog={handleOpenCreateAvatarDialog}
           onCreateSubmit={onCreateUser}
           resolveCreateUserInitial={resolveCreateUserInitial}
@@ -825,9 +690,6 @@ export function AccountsUsers({
           editDialogTarget={editDialogTarget}
           editPayload={editPayload}
           setEditPayload={setEditPayload}
-          billingMode={billingMode}
-          billingPlans={billingPlans}
-          editSubscriptionExpiryDate={editSubscriptionExpiryDate}
           statusChanged={editStatusChanged}
           timeZoneOptions={timeZoneOptions}
           roleOptions={roleOptions}

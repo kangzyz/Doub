@@ -3,13 +3,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
-import { listAdminAuditLogs, listAdminSystemEvents, listAdminUsageLogs, listAdminUserAuthEvents } from "@/features/admin/api";
-import { listAdminLLMModels } from "@/features/admin/api/llm";
-import { listAllAdminPages } from "@/features/admin/api/shared";
-import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUsageLogDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
+import { listAdminAuditLogs, listAdminSystemEvents, listAdminUserAuthEvents } from "@/features/admin/api";
+import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
 import { resolveAdminErrorMessage } from "@/features/admin/utils/admin-error";
-import type { ModelSelectOption } from "@/shared/components/model-select";
-import { resolveModelOptionIconUrl } from "@/shared/lib/model-option-display";
 
 export const ADMIN_LOGS_PAGE_SIZE = 25;
 
@@ -34,18 +30,9 @@ export const SYSTEM_EVENT_SORT_OPTIONS = [
   { labelKey: "sort.idAsc", value: "id_asc" },
 ] as const;
 
-export const USAGE_LOG_SORT_OPTIONS = [
-  { labelKey: "sort.callTimeDesc", value: "created_desc" },
-  { labelKey: "sort.callTimeAsc", value: "created_asc" },
-  { labelKey: "sort.costDesc", value: "cost_desc" },
-  { labelKey: "sort.tokensDesc", value: "tokens_desc" },
-  { labelKey: "sort.latencyDesc", value: "latency_desc" },
-] as const;
-
 export type AuditLogSortValue = (typeof AUDIT_LOG_SORT_OPTIONS)[number]["value"];
 export type SecurityLogSortValue = (typeof SECURITY_LOG_SORT_OPTIONS)[number]["value"];
 export type SystemEventSortValue = (typeof SYSTEM_EVENT_SORT_OPTIONS)[number]["value"];
-export type UsageLogSortValue = (typeof USAGE_LOG_SORT_OPTIONS)[number]["value"];
 
 type UseAdminLogsState = {
   auditLogs: AdminAuditLogDTO[];
@@ -112,29 +99,6 @@ type UseAdminSystemEventsState = {
   sourceOptions: Array<{ label: string; value: string }>;
   eventOptions: Array<{ label: string; value: string }>;
   loadSystemEvents: (page?: number, pageSize?: number) => Promise<void>;
-};
-
-type UseAdminUsageLogsState = {
-  logs: AdminUsageLogDTO[];
-  total: number;
-  page: number;
-  pageSize: number;
-  pageCount: number;
-  loading: boolean;
-  query: string;
-  setQuery: (value: string) => void;
-  platformModelFilter: string;
-  setPlatformModelFilter: (value: string) => void;
-  billingModeFilter: string;
-  setBillingModeFilter: (value: string) => void;
-  createdFromFilter: string;
-  setCreatedFromFilter: (value: string) => void;
-  createdToFilter: string;
-  setCreatedToFilter: (value: string) => void;
-  sortValue: UsageLogSortValue;
-  setSortValue: (value: UsageLogSortValue) => void;
-  platformModelOptions: ModelSelectOption[];
-  loadUsageLogs: (page?: number, pageSize?: number) => Promise<void>;
 };
 
 function parsePositiveInt(value: string): number | undefined {
@@ -552,155 +516,5 @@ export function useAdminSystemEvents(): UseAdminSystemEventsState {
     sourceOptions,
     eventOptions,
     loadSystemEvents,
-  };
-}
-
-export function useAdminUsageLogs(): UseAdminUsageLogsState {
-  const t = useTranslations("adminLogs");
-  const [logs, setLogs] = React.useState<AdminUsageLogDTO[]>([]);
-  const [total, setTotal] = React.useState(0);
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(ADMIN_LOGS_PAGE_SIZE);
-  const [loading, setLoading] = React.useState(true);
-  const [query, setQueryState] = React.useState("");
-  const [debouncedQuery, setDebouncedQuery] = React.useState("");
-  const [platformModelFilter, setPlatformModelFilterState] = React.useState("");
-  const [billingModeFilter, setBillingModeFilterState] = React.useState("");
-  const [platformModelOptions, setPlatformModelOptions] = React.useState<ModelSelectOption[]>([]);
-  const [createdFromFilter, setCreatedFromFilterState] = React.useState("");
-  const [createdToFilter, setCreatedToFilterState] = React.useState("");
-  const [sortValue, setSortValueState] = React.useState<UsageLogSortValue>("created_desc");
-  const requestSeqRef = React.useRef(0);
-
-  React.useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  const loadUsageLogs = React.useCallback(async (nextPage = 1, nextPageSize = pageSize) => {
-    const requestSeq = requestSeqRef.current + 1;
-    requestSeqRef.current = requestSeq;
-    setLoading(true);
-    try {
-      const token = await resolveAccessToken();
-      if (!token) {
-        toast.error(t("toast.sessionExpired"), { description: t("toast.signInAgain") });
-        return;
-      }
-      const data = await listAdminUsageLogs(token, {
-        page: nextPage,
-        pageSize: nextPageSize,
-        query: /^\d+$/.test(debouncedQuery) ? undefined : debouncedQuery,
-        userID: parsePositiveInt(debouncedQuery),
-        platformModelName: platformModelFilter,
-        billingMode: billingModeFilter,
-        createdFrom: toRFC3339DateRangeBound(createdFromFilter, "start"),
-        createdTo: toRFC3339DateRangeBound(createdToFilter, "end"),
-        sort: sortValue,
-      });
-      if (requestSeq !== requestSeqRef.current) return;
-      setLogs(data.results);
-      setTotal(data.total);
-      setPage(nextPage);
-      setPageSize(nextPageSize);
-    } catch (error) {
-      toast.error(t("toast.usageLoadFailed"), { description: resolveAdminErrorMessage(error) });
-    } finally {
-      if (requestSeq === requestSeqRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [billingModeFilter, createdFromFilter, createdToFilter, debouncedQuery, pageSize, platformModelFilter, sortValue, t]);
-
-  React.useEffect(() => {
-    void loadUsageLogs(1);
-  }, [loadUsageLogs]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function loadPlatformModels() {
-      try {
-        const token = await resolveAccessToken();
-        if (!token) {
-          return;
-        }
-        const models = await listAllAdminPages((options) => listAdminLLMModels(token, { ...options, onlyActive: false }));
-        if (cancelled) {
-          return;
-        }
-        const options = models
-          .map((item) => ({
-            label: item.platformModelName.trim(),
-            value: item.platformModelName.trim(),
-            iconUrl: resolveModelOptionIconUrl({
-              platformModelName: item.platformModelName,
-              vendor: item.vendor ?? "",
-              icon: item.icon ?? "",
-            }),
-          }))
-          .filter((item) => item.value);
-        const dedupedOptions = [...new Map(options.map((item) => [item.value, item])).values()]
-          .sort((a, b) => a.label.localeCompare(b.label));
-        setPlatformModelOptions(dedupedOptions);
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(t("toast.modelFilterLoadFailed"), { description: resolveAdminErrorMessage(error) });
-        }
-      }
-    }
-
-    void loadPlatformModels();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
-
-  const setQuery = React.useCallback((value: string) => {
-    setQueryState(value);
-    setPage(1);
-  }, []);
-  const setPlatformModelFilter = React.useCallback((value: string) => {
-    setPlatformModelFilterState(value);
-    setPage(1);
-  }, []);
-  const setBillingModeFilter = React.useCallback((value: string) => {
-    setBillingModeFilterState(value);
-    setPage(1);
-  }, []);
-  const setCreatedFromFilter = React.useCallback((value: string) => {
-    setCreatedFromFilterState(value);
-    setPage(1);
-  }, []);
-  const setCreatedToFilter = React.useCallback((value: string) => {
-    setCreatedToFilterState(value);
-    setPage(1);
-  }, []);
-  const setSortValue = React.useCallback((value: UsageLogSortValue) => {
-    setSortValueState(value);
-    setPage(1);
-  }, []);
-
-  return {
-    logs,
-    total,
-    page,
-    pageSize,
-    pageCount: Math.max(1, Math.ceil(total / pageSize)),
-    loading,
-    query,
-    setQuery,
-    platformModelFilter,
-    setPlatformModelFilter,
-    billingModeFilter,
-    setBillingModeFilter,
-    createdFromFilter,
-    setCreatedFromFilter,
-    createdToFilter,
-    setCreatedToFilter,
-    sortValue,
-    setSortValue,
-    platformModelOptions,
-    loadUsageLogs,
   };
 }

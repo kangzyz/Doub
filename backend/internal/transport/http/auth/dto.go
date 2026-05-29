@@ -299,11 +299,6 @@ type UserResponse struct {
 	LastLoginAt             *time.Time `json:"lastLoginAt"`
 	CreatedAt               time.Time  `json:"createdAt"`
 	UpdatedAt               time.Time  `json:"updatedAt"`
-	SubscriptionTier        string     `json:"subscriptionTier"`
-	SubscriptionPlanID      *uint      `json:"subscriptionPlanID"`
-	SubscriptionPlanName    string     `json:"subscriptionPlanName"`
-	SubscriptionStatus      string     `json:"subscriptionStatus"`
-	SubscriptionExpiresAt   *time.Time `json:"subscriptionExpiresAt"`
 }
 
 // LoginResponse 登录响应。
@@ -477,11 +472,6 @@ func toUserResponse(v userview.UserView) UserResponse {
 		LastLoginAt:             v.LastLoginAt,
 		CreatedAt:               v.CreatedAt,
 		UpdatedAt:               v.UpdatedAt,
-		SubscriptionTier:        v.SubscriptionTier,
-		SubscriptionPlanID:      v.SubscriptionPlanID,
-		SubscriptionPlanName:    v.SubscriptionPlanName,
-		SubscriptionStatus:      v.SubscriptionStatus,
-		SubscriptionExpiresAt:   v.SubscriptionExpiresAt,
 	}
 }
 

@@ -47,7 +47,6 @@ func TestOutboundHTTPCallSitesAreExplicit(t *testing.T) {
 				"internal/infra/mcp/client.go",
 				"internal/infra/observability/tracing/http.go",
 				"internal/shared/security/security.go",
-				"internal/transport/http/billing/payment.go",
 			),
 		},
 		"platformtracing.NewHTTPClient(": {

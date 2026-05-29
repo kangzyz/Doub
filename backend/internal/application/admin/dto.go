@@ -1,8 +1,6 @@
 package admin
 
 import (
-	"time"
-
 	"github.com/kangzyz/Doub/backend/internal/application/userview"
 	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
 	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
@@ -11,18 +9,16 @@ import (
 
 // PatchUserInput 管理员局部更新用户输入。
 type PatchUserInput struct {
-	AvatarURL             *string
-	DisplayName           *string
-	Email                 *string
-	Phone                 *string
-	Role                  *string
-	Status                *string
-	Timezone              *string
-	Locale                *string
-	ProfilePreferences    *string
-	SubscriptionTier      *string
-	SubscriptionExpiresAt *time.Time
-	Reason                string
+	AvatarURL          *string
+	DisplayName        *string
+	Email              *string
+	Phone              *string
+	Role               *string
+	Status             *string
+	Timezone           *string
+	Locale             *string
+	ProfilePreferences *string
+	Reason             string
 }
 
 // UserResult 用户响应数据（内部传输，不携带序列化标记）。

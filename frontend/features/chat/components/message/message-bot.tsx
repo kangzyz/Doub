@@ -90,7 +90,6 @@ type ChatMessageBotProps = {
   showModelInfo?: boolean;
   showLatency?: boolean;
   showTokenUsage?: boolean;
-  showBillingCost?: boolean;
   readOnly?: boolean;
   attachmentContentLoader?: (file: PreviewDialogFile) => Promise<FileContentResult>;
   onEditImageAttachment?: (attachment: MessageAttachment, sourceModelName?: string) => void;
@@ -111,7 +110,6 @@ export function ChatMessageBot({
   showModelInfo = true,
   showLatency = true,
   showTokenUsage = true,
-  showBillingCost = false,
   readOnly = false,
   attachmentContentLoader,
   onEditImageAttachment,
@@ -250,7 +248,6 @@ export function ChatMessageBot({
         showModelInfo={showModelInfo}
         showLatency={showLatency}
         showTokenUsage={showTokenUsage}
-        showBillingCost={showBillingCost}
         readOnly={readOnly}
         alwaysVisible={readOnly}
         showBranchNavigator={showBranchNavigator}

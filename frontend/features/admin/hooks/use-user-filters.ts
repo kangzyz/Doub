@@ -10,8 +10,6 @@ type UseUserFiltersState = {
   setRoleFilter: (value: string) => void;
   statusFilter: string;
   setStatusFilter: (value: string) => void;
-  tierFilter: string;
-  setTierFilter: (value: string) => void;
   sortValue: UserSortValue;
   setSortValue: (value: UserSortValue) => void;
   filteredItems: UserDTO[];
@@ -21,12 +19,10 @@ export function useUserFilters(items: UserDTO[]): UseUserFiltersState {
   const [query, setQuery] = React.useState("");
   const [roleFilter, setRoleFilter] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
-  const [tierFilter, setTierFilter] = React.useState("");
   const [sortValue, setSortValue] = React.useState<UserSortValue>("id_desc");
   const deferredQuery = React.useDeferredValue(query);
   const deferredRoleFilter = React.useDeferredValue(roleFilter);
   const deferredStatusFilter = React.useDeferredValue(statusFilter);
-  const deferredTierFilter = React.useDeferredValue(tierFilter);
   const deferredSortValue = React.useDeferredValue(sortValue);
 
   const filteredItems = React.useMemo(() => {
@@ -40,8 +36,7 @@ export function useUserFilters(items: UserDTO[]): UseUserFiltersState {
         item.publicID.toLowerCase().includes(keyword);
       const matchesRole = !deferredRoleFilter || item.role === deferredRoleFilter;
       const matchesStatus = !deferredStatusFilter || item.status === deferredStatusFilter;
-      const matchesTier = !deferredTierFilter || item.subscriptionTier === deferredTierFilter;
-      return matchesQuery && matchesRole && matchesStatus && matchesTier;
+      return matchesQuery && matchesRole && matchesStatus;
     });
 
     const lastLoginTimestamps = new Map(next.map((item) => [item.id, new Date(item.lastLoginAt || 0).getTime()]));
@@ -64,7 +59,7 @@ export function useUserFilters(items: UserDTO[]): UseUserFiltersState {
     });
 
     return next;
-  }, [deferredQuery, deferredRoleFilter, deferredSortValue, deferredStatusFilter, deferredTierFilter, items]);
+  }, [deferredQuery, deferredRoleFilter, deferredSortValue, deferredStatusFilter, items]);
 
   return {
     query,
@@ -73,8 +68,6 @@ export function useUserFilters(items: UserDTO[]): UseUserFiltersState {
     setRoleFilter,
     statusFilter,
     setStatusFilter,
-    tierFilter,
-    setTierFilter,
     sortValue,
     setSortValue,
     filteredItems,

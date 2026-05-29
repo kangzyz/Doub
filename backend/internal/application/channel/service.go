@@ -1,30 +1,22 @@
 package channel
 
 import (
-	"context"
 	"sync"
 	"time"
 
-	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
 	"github.com/kangzyz/Doub/backend/internal/infra/config"
 	"github.com/kangzyz/Doub/backend/internal/infra/llm"
 	"github.com/kangzyz/Doub/backend/internal/repository"
 	"go.uber.org/zap"
 )
 
-type billingModelPricingFilter interface {
-	GetBillingMode(ctx context.Context) (string, error)
-	ListPublicModelPricing(ctx context.Context) (map[string]appbilling.PublicModelPricing, error)
-}
-
 // Service 封装上游、平台模型与路由绑定业务能力。
 type Service struct {
-	cfg                *config.Runtime
-	repo               repository.ChannelRepository
-	cache              repository.ChannelCacheRepository
-	llmClient          *llm.Client
-	modelPricingFilter billingModelPricingFilter
-	logger             *zap.Logger
+	cfg       *config.Runtime
+	repo      repository.ChannelRepository
+	cache     repository.ChannelCacheRepository
+	llmClient *llm.Client
+	logger    *zap.Logger
 
 	modelCatalogMu         sync.RWMutex
 	modelCatalog           []ModelView
@@ -112,11 +104,6 @@ func NewServiceWithRuntime(cfg *config.Runtime, repo repository.ChannelRepositor
 		cache:     cache,
 		llmClient: llmClient,
 	}
-}
-
-// SetBillingModelPricingFilter 注入计费模型过滤器，用于用户侧模型选择列表。
-func (s *Service) SetBillingModelPricingFilter(filter billingModelPricingFilter) {
-	s.modelPricingFilter = filter
 }
 
 // SetLogger 注入结构化日志记录器。

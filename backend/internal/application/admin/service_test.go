@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	auditapp "github.com/kangzyz/Doub/backend/internal/application/audit"
 	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
@@ -216,9 +215,6 @@ func (s *adminUserServiceFake) CreateUser(
 	string,
 	string,
 	string,
-	string,
-	string,
-	*time.Time,
 ) (*domainuser.User, error) {
 	return nil, nil
 }

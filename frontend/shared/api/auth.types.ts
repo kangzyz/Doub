@@ -31,15 +31,6 @@ export type UserDTO = {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
-  subscriptionTier: string;
-  subscriptionPlanID: number | null;
-  subscriptionPlanName: string;
-  subscriptionStatus: string;
-  subscriptionExpiresAt: string | null;
-  billingAccountCurrency: string;
-  billingBalanceNanousd: number;
-  billingBalanceUSD: number;
-  billingAccountStatus: string;
 };
 
 export type LoginData = {

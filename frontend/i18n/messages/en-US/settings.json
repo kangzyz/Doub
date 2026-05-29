@@ -3,7 +3,6 @@
   "general": "General",
   "account": "Account",
   "chat": "Chat",
-  "subscription": "Subscription",
   "about": "About",
   "navigation": "Settings navigation",
   "aboutPage": {
@@ -72,14 +71,14 @@
       "chatFont": "Chat font",
       "chatFontWeight": "Chat font weight",
       "preset": {
-        "default": "Default",
+        "default": "Warm Sand",
         "azure": "Azure",
-        "cobalt": "Cobalt",
+        "cobalt": "Midnight",
         "graphite": "Graphite",
-        "lagoon": "Lagoon",
+        "lagoon": "Aurora",
         "ink": "Ink",
-        "ochre": "Ochre",
-        "sepia": "Sepia"
+        "ochre": "Vivid",
+        "sepia": "Dusk"
       },
       "theme": {
         "light": "Light",
@@ -366,10 +365,7 @@
       "tokenTitle": "Show token usage",
       "tokenDescription": "Controls whether token usage for the request appears below AI replies.",
       "latencyTitle": "Show total latency",
-      "latencyDescription": "Controls whether total call latency appears below AI replies.",
-      "costTitle": "Show total cost",
-      "costDescription": "Controls whether total call cost appears below AI replies.",
-      "costDescriptionSelfMode": "Controls whether total call cost appears below AI replies. Hidden in self-use mode."
+      "latencyDescription": "Controls whether total call latency appears below AI replies."
     },
     "context": {
       "sectionTitle": "Context management",
@@ -419,167 +415,6 @@
     "toasts": {
       "saveFailed": "Failed to save",
       "retryLater": "Please try again later."
-    }
-  },
-  "subscriptionPage": {
-    "title": "Subscription",
-    "actions": {
-      "cancel": "Cancel",
-      "processing": "Processing"
-    },
-    "interval": {
-      "lifetime": "lifetime",
-      "year": "year",
-      "month": "month"
-    },
-    "currentSubscription": {
-      "title": "Current subscription",
-      "none": "No subscription",
-      "empty": "No subscription plan is available.",
-      "subscribe": "Subscribe"
-    },
-    "periodUsage": {
-      "title": "Plan usage",
-      "currentPeriod": "Current billing period",
-      "used": "Used {value}",
-      "total": "Total {value}"
-    },
-    "usageBilling": {
-      "title": "Usage billing",
-      "balance": "Account balance {value}",
-      "topUp": "Top up"
-    },
-    "selfMode": {
-      "title": "Billing mode",
-      "value": "Self-use mode"
-    },
-    "usageTrend": {
-      "dailyTitle": "Daily usage trend",
-      "monthlyTitle": "Monthly usage trend",
-      "daily": "Daily",
-      "monthly": "Monthly",
-      "dailyUsage": "Daily usage",
-      "monthlyUsage": "Monthly usage",
-      "empty": "No usage data.",
-      "metrics": {
-        "totalCost": "Total cost",
-        "totalTokens": "Total tokens",
-        "totalCalls": "Total calls",
-        "averageLatency": "Average latency"
-      },
-      "tooltip": {
-        "cost": "Cost",
-        "calls": "Calls"
-      }
-    },
-    "usageLog": {
-      "title": "Usage logs",
-      "searchModel": "Search models",
-      "type": "Type",
-      "filters": {
-        "all": "All",
-        "free": "Free models",
-        "billable": "Billable models"
-      },
-      "sort": {
-        "newest": "Newest calls",
-        "oldest": "Oldest calls",
-        "tokensDesc": "Most tokens",
-        "costDesc": "Highest cost",
-        "latencyDesc": "Longest latency"
-      },
-      "columns": {
-        "time": "Time",
-        "model": "Model",
-        "baseBilling": "Base billing",
-        "serviceBilling": "Service billing",
-        "latency": "Latency"
-      },
-      "empty": "No usage logs."
-    },
-    "billingTooltip": {
-      "cacheWrite": "Cache write",
-      "cacheWrite5m": "Cache write 5m",
-      "cacheWrite1h": "Cache write 1h",
-      "cacheWrite5m1h": "Cache write 5m/1h",
-      "cacheWritePricingLabel": "Cache write 5m",
-      "cacheWritePricingNote": "Claude cache read uses configured pricing; cache write 5m uses 1.25x, 1h uses 2x, and Fast Mode applies another 6x multiplier.",
-      "claudeCacheWriteMixedNote": "Claude cache write uses configured pricing at {multiplier}.",
-      "claudeCacheWriteNote": "Claude {timeout} cache write uses configured pricing at {multiplier}.",
-      "claudeFastModeNote": "Claude Fast Mode bills input, output, and cache usage at {multiplier}.",
-      "openaiServiceTierNote": "OpenAI service_tier={tier} bills at {multiplier}.",
-      "baseService": "Base service",
-      "input": "Input",
-      "output": "Output",
-      "cacheRead": "Cache read",
-      "rateNote": "Multiplier",
-      "cacheNote": "Cache",
-      "total": "Total",
-      "subtotal": "Subtotal",
-      "freeModelNoBilling": "free model, not billed",
-      "perCall": "Per call",
-      "perSecond": "Per second",
-      "callUnit": "call",
-      "secondUnit": "second",
-      "tieredRangeBounded": "Original input range {from}-{upTo}",
-      "tieredRangeOpen": "Original input range {from}+",
-      "table": {
-        "item": "Billing item",
-        "usage": "Usage",
-        "unitPrice": "Unit price",
-        "amount": "Amount"
-      }
-    },
-    "plans": {
-      "title": "Subscription plans",
-      "actions": {
-        "current": "Current plan",
-        "unavailable": "Unavailable",
-        "subscribe": "Subscribe",
-        "switch": "Switch"
-      },
-      "features": {
-        "monthlyCredit": "{credit} monthly credit",
-        "freeModelsNotIncluded": "Free models do not count toward the credit."
-      }
-    },
-    "payment": {
-      "title": "Payment method",
-      "description": "Confirm the payment method to continue.",
-      "method": "Payment method",
-      "card": "Card",
-      "disabled": "Disabled",
-      "continue": "Continue",
-      "epay": {
-        "alipay": "Alipay",
-        "wxpay": "WeChat Pay",
-        "qqpay": "QQ Wallet",
-        "custom": "Custom · {type}"
-      }
-    },
-    "topUp": {
-      "title": "Top up",
-      "description": "Enter a USD amount.",
-      "amount": "Top-up amount",
-      "amountAria": "Top-up amount in USD",
-      "confirm": "Top up"
-    },
-    "toasts": {
-      "retryLater": "Please try again later.",
-      "subscriptionLoadFailed": "Failed to load subscription information",
-      "usageLogLoadFailed": "Failed to load usage logs",
-      "checkoutCreateFailed": "Failed to create payment",
-      "checkoutURLMissing": "The payment provider did not return a checkout URL.",
-      "planUpdated": "Subscription plan updated",
-      "subscribeFailed": "Subscription failed",
-      "invalidTopUpAmount": "Invalid top-up amount",
-      "invalidTopUpAmountDescription": "Enter a USD amount greater than 0.",
-      "planUnavailable": "Plan unavailable",
-      "planUnavailableDescription": "This plan has no available price. Ask an administrator to check the billing configuration.",
-      "paymentDisabled": "Payment provider is disabled",
-      "paymentDisabledDescription": "Configure a payment provider in the admin console before subscribing to a paid plan.",
-      "noPlanSelected": "No plan selected",
-      "noPlanSelectedDescription": "Select a plan before subscribing."
     }
   }
 }

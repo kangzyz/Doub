@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, CornerDownRight } from "lucide-react";
+import { Copy } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -9,11 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -26,29 +21,23 @@ import {
 } from "@/components/ui/table";
 import { AdminDateRangeFilter, ADMIN_DATE_PICKER_TRIGGER_CLASSNAME } from "@/features/admin/components/admin-date-range-filter";
 import { TablePagination, TableToolbar } from "@/components/ui/table-tools";
-import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUsageLogDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
+import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
 import {
   AUDIT_LOG_SORT_OPTIONS,
   SECURITY_LOG_SORT_OPTIONS,
   SYSTEM_EVENT_SORT_OPTIONS,
-  USAGE_LOG_SORT_OPTIONS,
   useAdminLogs,
   useAdminSecurityLogs,
   useAdminSystemEvents,
-  useAdminUsageLogs,
   type AuditLogSortValue,
   type SecurityLogSortValue,
   type SystemEventSortValue,
-  type UsageLogSortValue,
 } from "@/features/admin/hooks/use-admin-logs";
 import { cn } from "@/lib/utils";
-import { billingRateMultiplierNote, cacheWriteBillingLabel, cacheWriteBillingNote, type BillingDisplayLabels } from "@/shared/lib/billing-display";
-import { ModelSelect, type ModelSelectOption } from "@/shared/components/model-select";
 
 type LogDetail =
   | { kind: "audit"; item: AdminAuditLogDTO }
   | { kind: "auth"; item: AdminUserAuthEventDTO }
-  | { kind: "usage"; item: AdminUsageLogDTO }
   | { kind: "system"; item: AdminSystemEventDTO };
 
 const ALL_MODELS_VALUE = "__all__";
@@ -91,474 +80,6 @@ function formatCount(value: number | null | undefined, locale: string): string {
   return new Intl.NumberFormat(locale).format(value ?? 0);
 }
 
-function usageTotalTokens(item: AdminUsageLogDTO): number {
-  return item.inputTokens + item.cacheReadTokens + item.cacheWriteTokens + item.outputTokens + item.reasoningTokens;
-}
-
-type UsagePricingSnapshot = {
-  pricing_mode?: "token" | "call" | "duration" | "tiered" | string;
-  provider_protocol?: string;
-  cache_timeout?: string;
-  fast_mode?: boolean;
-  billing_speed?: string;
-  billing_service_tier?: string;
-  rate_multiplier?: number;
-  cache_write_5m_tokens?: number;
-  cache_write_1h_tokens?: number;
-  input_nanousd_per_m_tokens?: number;
-  cache_read_nanousd_per_m_tokens?: number;
-  cache_write_nanousd_per_m_tokens?: number;
-  output_nanousd_per_m_tokens?: number;
-  call_nanousd_per_call?: number;
-  duration_nanousd_per_second?: number;
-  input_billed_nanousd?: number;
-  cache_read_billed_nanousd?: number;
-  cache_write_billed_nanousd?: number;
-  output_billed_nanousd?: number;
-  call_billed_nanousd?: number;
-  duration_billed_nanousd?: number;
-  tiered_from_tokens?: number;
-  tiered_up_to_tokens?: number | null;
-};
-
-type UsageBillingLabels = {
-  input: string;
-  output: string;
-  cacheRead: string;
-  total: string;
-  freeModelNoBilling: string;
-  perCall: string;
-  perSecond: string;
-  callUnit: string;
-  secondUnit: string;
-  rateNote: string;
-  cacheNote: string;
-  tieredRangeBounded: (from: string, upTo: string) => string;
-  tieredRangeOpen: (from: string) => string;
-  table: {
-    item: string;
-    usage: string;
-    unitPrice: string;
-    amount: string;
-  };
-  billingDisplay: BillingDisplayLabels;
-};
-
-function useUsageBillingLabels(): UsageBillingLabels {
-  const t = useTranslations("adminLogs.usage.billing");
-
-  return React.useMemo(
-    () => ({
-      input: t("input"),
-      output: t("output"),
-      cacheRead: t("cacheRead"),
-      total: t("total"),
-      freeModelNoBilling: t("freeModelNoBilling"),
-      perCall: t("perCall"),
-      perSecond: t("perSecond"),
-      callUnit: t("callUnit"),
-      secondUnit: t("secondUnit"),
-      rateNote: t("rateNote"),
-      cacheNote: t("cacheNote"),
-      tieredRangeBounded: (from: string, upTo: string) => t("tieredRangeBounded", { from, upTo }),
-      tieredRangeOpen: (from: string) => t("tieredRangeOpen", { from }),
-      table: {
-        item: t("table.item"),
-        usage: t("table.usage"),
-        unitPrice: t("table.unitPrice"),
-        amount: t("table.amount"),
-      },
-      billingDisplay: {
-        cacheWrite: t("cacheWrite"),
-        cacheWrite5m: t("cacheWrite5m"),
-        cacheWrite1h: t("cacheWrite1h"),
-        cacheWrite5m1h: t("cacheWrite5m1h"),
-        cacheWritePricingLabel: t("cacheWritePricingLabel"),
-        cacheWritePricingNote: t("cacheWritePricingNote"),
-        claudeCacheWriteMixedNote: (multiplier: string) => t("claudeCacheWriteMixedNote", { multiplier }),
-        claudeCacheWriteNote: (timeout: "5m" | "1h", multiplier: string) => t("claudeCacheWriteNote", { timeout, multiplier }),
-        claudeFastModeNote: (multiplier: string) => t("claudeFastModeNote", { multiplier }),
-        openaiServiceTierNote: (tier: string, multiplier: string) => t("openaiServiceTierNote", { tier, multiplier }),
-      },
-    }),
-    [t],
-  );
-}
-
-function formatUsageCost(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "$0";
-  if (value < 0.000001) return "< $0.000001";
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  })}`;
-}
-
-function formatTooltipUsageCost(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "$0.000000";
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 6,
-    maximumFractionDigits: 6,
-  })}`;
-}
-
-function formatTooltipUnitPrice(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "$0.00";
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function nanousdToUSD(value: number): number {
-  if (!Number.isFinite(value) || value <= 0) return 0;
-  return value / 1_000_000_000;
-}
-
-function parseUsagePricingSnapshot(raw: string): UsagePricingSnapshot {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as UsagePricingSnapshot : {};
-  } catch {
-    return {};
-  }
-}
-
-function readUsageSnapshotNumber(snapshot: UsagePricingSnapshot, key: keyof UsagePricingSnapshot): number {
-  const value = snapshot[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function normalizePricingMode(value: string | null | undefined): "token" | "call" | "duration" | "tiered" {
-  if (value === "call" || value === "duration" || value === "tiered") return value;
-  return "token";
-}
-
-function calcTokenBilledNanousd(tokens: number, rateNanousd: number): number {
-  if (!Number.isFinite(tokens) || !Number.isFinite(rateNanousd) || tokens <= 0 || rateNanousd <= 0) return 0;
-  return Math.round((tokens * rateNanousd) / 1_000_000);
-}
-
-function resolveTokenBilledNanousd(snapshot: UsagePricingSnapshot, billedKey: keyof UsagePricingSnapshot, tokens: number, rateNanousd: number): number {
-  const billed = readUsageSnapshotNumber(snapshot, billedKey);
-  return billed > 0 ? billed : calcTokenBilledNanousd(tokens, rateNanousd);
-}
-
-function resolveCountBilledNanousd(snapshot: UsagePricingSnapshot, billedKey: keyof UsagePricingSnapshot, count: number, rateNanousd: number): number {
-  const billed = readUsageSnapshotNumber(snapshot, billedKey);
-  if (billed > 0) return billed;
-  if (!Number.isFinite(count) || !Number.isFinite(rateNanousd) || count <= 0 || rateNanousd <= 0) return 0;
-  return Math.round(count * rateNanousd);
-}
-
-function formatFormulaTokenCount(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "0";
-  return value.toLocaleString("en-US");
-}
-
-function formatTieredRangeLabel(fromTokens: number | null | undefined, upToTokens: number | null | undefined, labels: UsageBillingLabels): string {
-  const from = Number.isFinite(fromTokens ?? NaN) && (fromTokens ?? 0) > 0 ? fromTokens ?? 0 : 0;
-  const upTo = Number.isFinite(upToTokens ?? NaN) && (upToTokens ?? 0) > 0 ? upToTokens ?? 0 : null;
-  return upTo
-    ? labels.tieredRangeBounded(formatFormulaTokenCount(from), formatFormulaTokenCount(upTo))
-    : labels.tieredRangeOpen(formatFormulaTokenCount(from));
-}
-
-type UsageBillingTooltipLine =
-  | { type: "row"; left: string; right: string }
-  | { type: "divider" }
-  | { type: "tiered-table"; rangeLabel: string; rows: UsageBillingTieredTableRow[]; totalLabel: string; totalAmount: string };
-
-type UsageBillingTieredTableRow = {
-  item: string;
-  tokens: string;
-  unitPrice: string;
-  amount: string;
-};
-
-function UsageBillingTooltipLines({ lines, labels }: { lines: UsageBillingTooltipLine[]; labels: UsageBillingLabels }) {
-  return (
-    <div className="min-w-72 max-w-[min(92vw,44rem)] space-y-1 text-left text-xs leading-relaxed">
-      {lines.map((line, index) =>
-        line.type === "divider" ? (
-          <Separator key={`divider-${index}`} />
-        ) : line.type === "tiered-table" ? (
-          <UsageBillingTieredTable key={`tiered-table-${index}`} line={line} labels={labels} />
-        ) : (
-          <div key={`${line.left}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-8">
-            <span className="min-w-0 text-left">{line.left}</span>
-            <span className="whitespace-nowrap text-right tabular-nums">{line.right}</span>
-          </div>
-        ),
-      )}
-    </div>
-  );
-}
-
-function UsageBillingTieredTable({
-  line,
-  labels,
-}: {
-  line: Extract<UsageBillingTooltipLine, { type: "tiered-table" }>;
-  labels: UsageBillingLabels;
-}) {
-  return (
-    <div className="max-w-[min(92vw,34rem)] overflow-x-auto">
-      <div className="mb-1 text-[11px] font-medium text-background/80">{line.rangeLabel}</div>
-      <table className="w-full border-collapse text-left tabular-nums">
-        <thead>
-          <tr className="border-b border-background/20 text-[11px] text-background/65">
-            <th className="whitespace-nowrap px-2 pb-1 font-medium first:pl-0" aria-label={labels.table.item} />
-            <th className="whitespace-nowrap px-2 pb-1 text-right font-medium">{labels.table.usage}</th>
-            <th className="whitespace-nowrap px-2 pb-1 text-right font-medium">{labels.table.unitPrice}</th>
-            <th className="whitespace-nowrap px-2 pb-1 text-right font-medium last:pr-0">{labels.table.amount}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {line.rows.map((row, rowIndex) => (
-            <tr key={`${row.item}-${rowIndex}`} className="border-b border-background/10 last:border-0">
-              <td className="whitespace-nowrap px-2 py-1 first:pl-0">{row.item}</td>
-              <td className="whitespace-nowrap px-2 py-1 text-right">{row.tokens}</td>
-              <td className="whitespace-nowrap px-2 py-1 text-right">{row.unitPrice}</td>
-              <td className="whitespace-nowrap px-2 py-1 text-right last:pr-0">{row.amount}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="border-t border-background/20">
-            <td className="px-2 pt-1.5 font-medium first:pl-0" colSpan={3}>{line.totalLabel}</td>
-            <td className="whitespace-nowrap px-2 pt-1.5 text-right font-medium last:pr-0">{line.totalAmount}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
-
-function usageFormulaLine(label: string, tokens: number, rateNanousd: number, billedNanousd: number): UsageBillingTooltipLine {
-  return {
-    type: "row",
-    left: label,
-    right: `${formatFormulaTokenCount(tokens)} tokens * ${formatTooltipUnitPrice(nanousdToUSD(rateNanousd))} / 1M = ${formatTooltipUsageCost(nanousdToUSD(billedNanousd))}`,
-  };
-}
-
-function usageCountFormulaLine(label: string, count: number, unit: string, rateUnit: string, rateNanousd: number, billedNanousd: number): UsageBillingTooltipLine {
-  const safeCount = Number.isFinite(count) && count > 0 ? count : 0;
-  return {
-    type: "row",
-    left: label,
-    right: `${safeCount.toLocaleString("en-US")} ${unit} * ${formatTooltipUnitPrice(nanousdToUSD(rateNanousd))} / ${rateUnit} = ${formatTooltipUsageCost(nanousdToUSD(billedNanousd))}`,
-  };
-}
-
-function usageTieredTableRow(item: string, tokens: number, rateNanousd: number, billedNanousd: number): UsageBillingTieredTableRow {
-  const safeTokens = Number.isFinite(tokens) && tokens > 0 ? tokens : 0;
-  const safeBilled = Number.isFinite(billedNanousd) && billedNanousd > 0 ? billedNanousd : 0;
-  return {
-    item,
-    tokens: formatFormulaTokenCount(safeTokens),
-    unitPrice: `${formatTooltipUnitPrice(nanousdToUSD(rateNanousd))} / 1M`,
-    amount: formatTooltipUsageCost(nanousdToUSD(safeBilled)),
-  };
-}
-
-function usageTotalLine(item: AdminUsageLogDTO, labels: UsageBillingLabels): UsageBillingTooltipLine {
-  return {
-    type: "row",
-    left: labels.total,
-    right: item.isFreeModel ? `$0.000000 (${labels.freeModelNoBilling})` : formatTooltipUsageCost(nanousdToUSD(item.billedNanousd)),
-  };
-}
-
-function buildUsageBillingTooltipLines(item: AdminUsageLogDTO, labels: UsageBillingLabels): UsageBillingTooltipLine[] {
-  const snapshot = parseUsagePricingSnapshot(item.pricingSnapshotJSON);
-  const pricingMode = normalizePricingMode(snapshot.pricing_mode);
-  const inputRate = readUsageSnapshotNumber(snapshot, "input_nanousd_per_m_tokens");
-  const outputRate = readUsageSnapshotNumber(snapshot, "output_nanousd_per_m_tokens");
-  const cacheReadRate = readUsageSnapshotNumber(snapshot, "cache_read_nanousd_per_m_tokens");
-  const cacheWriteRate = readUsageSnapshotNumber(snapshot, "cache_write_nanousd_per_m_tokens");
-  const billedOutputTokens = item.outputTokens + item.reasoningTokens;
-  const totalLine = usageTotalLine(item, labels);
-  const cacheWriteLabel = cacheWriteBillingLabel(snapshot, labels.billingDisplay);
-  const cacheWriteNote = cacheWriteBillingNote(snapshot, labels.billingDisplay);
-  const rateMultiplierNote = billingRateMultiplierNote(snapshot, labels.billingDisplay);
-
-  if (pricingMode === "call") {
-    const callRate = readUsageSnapshotNumber(snapshot, "call_nanousd_per_call");
-    const callBilled = resolveCountBilledNanousd(snapshot, "call_billed_nanousd", item.callCount, callRate);
-    return [
-      usageCountFormulaLine(labels.perCall, item.callCount, labels.callUnit, labels.callUnit, callRate, callBilled),
-      { type: "divider" },
-      totalLine,
-    ];
-  }
-
-  if (pricingMode === "duration") {
-    const durationRate = readUsageSnapshotNumber(snapshot, "duration_nanousd_per_second");
-    const durationBilled = resolveCountBilledNanousd(snapshot, "duration_billed_nanousd", item.durationSeconds, durationRate);
-    return [
-      usageCountFormulaLine(labels.perSecond, item.durationSeconds, labels.secondUnit, labels.secondUnit, durationRate, durationBilled),
-      { type: "divider" },
-      totalLine,
-    ];
-  }
-
-  if (pricingMode === "tiered") {
-    const lines: UsageBillingTooltipLine[] = [];
-    if (rateMultiplierNote || cacheWriteNote) {
-      if (rateMultiplierNote) {
-        lines.push({ type: "row", left: labels.rateNote, right: rateMultiplierNote });
-      }
-      if (cacheWriteNote) {
-        lines.push({ type: "row", left: labels.cacheNote, right: cacheWriteNote });
-      }
-      lines.push({ type: "divider" });
-    }
-    lines.push({
-      type: "tiered-table",
-      rangeLabel: formatTieredRangeLabel(snapshot.tiered_from_tokens, snapshot.tiered_up_to_tokens, labels),
-      rows: [
-        usageTieredTableRow(labels.input, item.inputTokens, inputRate, readUsageSnapshotNumber(snapshot, "input_billed_nanousd")),
-        usageTieredTableRow(labels.output, billedOutputTokens, outputRate, readUsageSnapshotNumber(snapshot, "output_billed_nanousd")),
-        usageTieredTableRow(labels.cacheRead, item.cacheReadTokens, cacheReadRate, readUsageSnapshotNumber(snapshot, "cache_read_billed_nanousd")),
-        usageTieredTableRow(cacheWriteLabel, item.cacheWriteTokens, cacheWriteRate, readUsageSnapshotNumber(snapshot, "cache_write_billed_nanousd")),
-      ],
-      totalLabel: labels.total,
-      totalAmount: item.isFreeModel ? `$0.000000 (${labels.freeModelNoBilling})` : formatTooltipUsageCost(nanousdToUSD(item.billedNanousd)),
-    });
-    return lines;
-  }
-
-  const inputBilled = resolveTokenBilledNanousd(snapshot, "input_billed_nanousd", item.inputTokens, inputRate);
-  const cacheReadBilled = resolveTokenBilledNanousd(snapshot, "cache_read_billed_nanousd", item.cacheReadTokens, cacheReadRate);
-  const cacheWriteBilled = resolveTokenBilledNanousd(snapshot, "cache_write_billed_nanousd", item.cacheWriteTokens, cacheWriteRate);
-  const outputBilled = resolveTokenBilledNanousd(snapshot, "output_billed_nanousd", billedOutputTokens, outputRate);
-  const lines: UsageBillingTooltipLine[] = [
-    usageFormulaLine(labels.input, item.inputTokens, inputRate, inputBilled),
-    usageFormulaLine(labels.output, billedOutputTokens, outputRate, outputBilled),
-    usageFormulaLine(labels.cacheRead, item.cacheReadTokens, cacheReadRate, cacheReadBilled),
-    usageFormulaLine(cacheWriteLabel, item.cacheWriteTokens, cacheWriteRate, cacheWriteBilled),
-    { type: "divider" },
-    totalLine,
-  ];
-  const noteLines: UsageBillingTooltipLine[] = [];
-  if (rateMultiplierNote) {
-    noteLines.push({ type: "row", left: labels.rateNote, right: rateMultiplierNote });
-  }
-  if (cacheWriteNote) {
-    noteLines.push({ type: "row", left: labels.cacheNote, right: cacheWriteNote });
-  }
-  if (noteLines.length > 0) {
-    lines.splice(4, 0, ...noteLines);
-  }
-  return lines;
-}
-
-function UsageLogModelCell({ item, labels }: { item: AdminUsageLogDTO; labels: UsageBillingLabels }) {
-  const t = useTranslations("adminLogs.usage.modelTooltip");
-  const lines: UsageBillingTooltipLine[] = [
-    { type: "row", left: t("upstreamName"), right: item.upstreamName || "-" },
-    { type: "row", left: t("upstreamModel"), right: item.upstreamModelName || "-" },
-    { type: "row", left: t("bindingCode"), right: item.routedBindingCode || "-" },
-    { type: "row", left: t("protocol"), right: item.providerProtocol || "-" },
-  ];
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="grid min-w-0 cursor-default gap-px">
-          <div className="max-w-[15rem] truncate font-medium leading-4" title={item.platformModelName || "-"}>
-            {item.platformModelName || "-"}
-          </div>
-          <div className="flex min-w-0 items-center gap-1 font-mono leading-4 text-muted-foreground">
-            <CornerDownRight className="size-3 shrink-0 stroke-1" />
-            <span className="max-w-[14rem] truncate" title={item.upstreamModelName || "-"}>
-              {item.upstreamModelName || "-"}
-            </span>
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        <UsageBillingTooltipLines lines={lines} labels={labels} />
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function UsageLogTokenCell({ item, locale }: { item: AdminUsageLogDTO; locale: string }) {
-  const t = useTranslations("adminLogs.usage.tokens");
-  const tokens = [
-    { label: t("inputShort"), value: item.inputTokens },
-    { label: t("outputShort"), value: item.outputTokens },
-    { label: t("cacheReadShort"), value: item.cacheReadTokens },
-    { label: t("cacheWriteShort"), value: item.cacheWriteTokens },
-  ];
-
-  return (
-    <div className="grid min-w-[10.5rem] grid-cols-2 gap-1">
-      {tokens.map((token) => (
-        <span
-          key={token.label}
-          className="inline-flex h-5 items-center justify-between gap-1 rounded-md bg-muted/45 px-1.5 font-mono text-[11px] leading-none text-muted-foreground"
-        >
-          <span>{token.label}</span>
-          <span className="tabular-nums">{formatCount(token.value, locale)}</span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function UsageLogCostCell({ item, labels }: { item: AdminUsageLogDTO; labels: UsageBillingLabels }) {
-  const lines = buildUsageBillingTooltipLines(item, labels);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className={cn("inline-flex cursor-default items-center font-medium tabular-nums", item.isFreeModel ? "text-muted-foreground" : "text-foreground")}>
-          {item.isFreeModel ? labels.freeModelNoBilling : formatUsageCost(item.billedUSD)}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        <UsageBillingTooltipLines lines={lines} labels={labels} />
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function UsageLogModelFilter({
-  value,
-  options,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  options: ModelSelectOption[];
-  disabled: boolean;
-  onChange: (value: string) => void;
-}) {
-  const t = useTranslations("adminLogs.usage.filters");
-  const allOption = React.useMemo<ModelSelectOption>(() => ({ label: t("allModels"), value: ALL_MODELS_VALUE, iconUrl: null }), [t]);
-  const modelOptions = React.useMemo(() => [allOption, ...options], [allOption, options]);
-
-  return (
-    <ModelSelect
-      value={value.trim() || ALL_MODELS_VALUE}
-      fallbackValue={ALL_MODELS_VALUE}
-      disabled={disabled}
-      options={modelOptions}
-      align="start"
-      valueAlign="start"
-      itemAlign="start"
-      contentClassName="min-w-[320px]"
-      triggerClassName={cn(ADMIN_DATE_PICKER_TRIGGER_CLASSNAME, "h-7 px-2.5 text-[11px]")}
-      valueClassName={!value.trim() ? "text-muted-foreground" : undefined}
-      onChange={(nextValue) => onChange(nextValue === ALL_MODELS_VALUE ? "" : nextValue)}
-    />
-  );
-}
-
 async function copyText(value: string, label: string, copiedMessage: (label: string) => string, failedMessage: string) {
   if (!value.trim()) {
     return;
@@ -592,7 +113,6 @@ function DetailBlock({ title, children }: { title: string; children: React.React
 function LogDetailSheet({ detail, onClose }: { detail: LogDetail | null; onClose: () => void }) {
   const locale = useLocale();
   const t = useTranslations("adminLogs.detail");
-  const usageLabels = useUsageBillingLabels();
   const resultLabel = React.useCallback(
     (value: string) => {
       switch (value) {
@@ -611,21 +131,17 @@ function LogDetailSheet({ detail, onClose }: { detail: LogDetail | null; onClose
   const title =
     detail?.kind === "auth"
       ? t("titles.auth")
-      : detail?.kind === "usage"
-        ? t("titles.usage")
-        : detail?.kind === "system"
-          ? t("titles.system")
-          : t("titles.audit");
+      : detail?.kind === "system"
+        ? t("titles.system")
+        : t("titles.audit");
   const description =
     detail?.kind === "auth"
       ? `${detail.item.eventType || t("fallbacks.authEvent")} · ${formatDateTime(detail.item.occurredAt, locale)}`
-      : detail?.kind === "usage"
-        ? `${detail.item.platformModelName || t("fallbacks.modelCall")} · ${formatDateTime(detail.item.createdAt, locale)}`
       : detail?.kind === "system"
         ? `${detail.item.event || t("fallbacks.systemEvent")} · ${formatDateTime(detail.item.createdAt, locale)}`
         : `${detail?.item.action || t("fallbacks.auditEvent")} · ${formatDateTime(detail?.item.createdAt, locale)}`;
-  const requestID = detail && detail.kind !== "usage" ? detail.item.requestID : "";
-  const detailJSON = detail?.kind === "usage" ? detail.item.pricingSnapshotJSON : detail?.item.detailJSON;
+  const requestID = detail ? detail.item.requestID : "";
+  const detailJSON = detail?.item.detailJSON;
   const formattedJSON = formatJSON(detailJSON);
 
   return (
@@ -696,36 +212,6 @@ function LogDetailSheet({ detail, onClose }: { detail: LogDetail | null; onClose
               <DetailBlock title={t("blocks.request")}>
                 <DetailRow label={t("fields.requestID")} value={detail.item.requestID} mono />
                 <DetailRow label="Trace ID" value={detail.item.traceID} mono />
-              </DetailBlock>
-            </>
-          ) : null}
-
-          {detail?.kind === "usage" ? (
-            <>
-              <DetailBlock title={t("blocks.call")}>
-                <DetailRow label="ID" value={detail.item.id} mono />
-                <DetailRow label={t("fields.caller")} value={resolveUserDisplayName(detail.item.userLabel, detail.item.username, detail.item.userID)} />
-                <DetailRow label={t("fields.userID")} value={detail.item.userID} mono />
-                <DetailRow label={t("fields.conversationID")} value={detail.item.conversationID} mono />
-                <DetailRow label={t("fields.callTime")} value={formatDateTime(detail.item.createdAt, locale)} />
-              </DetailBlock>
-              <DetailBlock title={t("blocks.modelRoute")}>
-                <DetailRow label={t("fields.platformModel")} value={detail.item.platformModelName} mono />
-                <DetailRow label={t("fields.upstreamName")} value={detail.item.upstreamName} />
-                <DetailRow label={t("fields.upstreamModel")} value={detail.item.upstreamModelName} mono />
-                <DetailRow label={t("fields.bindingCode")} value={detail.item.routedBindingCode} mono />
-                <DetailRow label={t("fields.protocol")} value={detail.item.providerProtocol} />
-              </DetailBlock>
-              <DetailBlock title={t("blocks.usageBilling")}>
-                <DetailRow label={t("fields.billing")} value={`${formatTooltipUsageCost(detail.item.billedUSD)} ${detail.item.isFreeModel ? `(${usageLabels.freeModelNoBilling})` : ""}`} />
-                <DetailRow label={t("fields.totalTokens")} value={formatCount(usageTotalTokens(detail.item), locale)} mono />
-                <DetailRow label={usageLabels.input} value={formatCount(detail.item.inputTokens, locale)} mono />
-                <DetailRow label={usageLabels.cacheRead} value={formatCount(detail.item.cacheReadTokens, locale)} mono />
-                <DetailRow label={usageLabels.billingDisplay.cacheWrite} value={formatCount(detail.item.cacheWriteTokens, locale)} mono />
-                <DetailRow label={usageLabels.output} value={formatCount(detail.item.outputTokens, locale)} mono />
-                <DetailRow label={t("fields.reasoning")} value={formatCount(detail.item.reasoningTokens, locale)} mono />
-                <DetailRow label={t("fields.callCount")} value={formatCount(detail.item.callCount, locale)} mono />
-                <DetailRow label={t("fields.latency")} value={`${formatCount(detail.item.latencyMS, locale)} ms`} mono />
               </DetailBlock>
             </>
           ) : null}
@@ -1075,120 +561,6 @@ function SystemEventTable({ onOpenDetail }: { onOpenDetail: (item: AdminSystemEv
   );
 }
 
-function UsageLogTable({ onOpenDetail }: { onOpenDetail: (item: AdminUsageLogDTO) => void }) {
-  const locale = useLocale();
-  const t = useTranslations("adminLogs");
-  const usageLabels = useUsageBillingLabels();
-  const logs = useAdminUsageLogs();
-
-  return (
-    <div className="space-y-3">
-      <TableToolbar
-        query={logs.query}
-        onQueryChange={logs.setQuery}
-        queryPlaceholder={t("usage.searchPlaceholder")}
-        filters={[
-          {
-            key: "billing_mode",
-            label: t("usage.filters.billingMode"),
-            value: logs.billingModeFilter,
-            onValueChange: logs.setBillingModeFilter,
-            options: [
-              { label: t("usage.filters.all"), value: "" },
-              { label: usageLabels.freeModelNoBilling, value: "free" },
-              { label: t("usage.billingModes.token"), value: "token" },
-              { label: t("usage.billingModes.call"), value: "call" },
-              { label: t("usage.billingModes.duration"), value: "duration" },
-              { label: t("usage.billingModes.tiered"), value: "tiered" },
-            ],
-          },
-          {
-            key: "platform_model",
-            label: t("usage.filters.model"),
-            active: Boolean(logs.platformModelFilter),
-            content: (
-              <UsageLogModelFilter
-                value={logs.platformModelFilter}
-                options={logs.platformModelOptions}
-                disabled={logs.loading}
-                onChange={logs.setPlatformModelFilter}
-              />
-            ),
-          },
-          {
-            key: "created_range",
-            label: t("filters.timeRange"),
-            active: Boolean(logs.createdFromFilter || logs.createdToFilter),
-            content: (
-              <AdminDateRangeFilter
-                fromValue={logs.createdFromFilter}
-                toValue={logs.createdToFilter}
-                onFromChange={logs.setCreatedFromFilter}
-                onToChange={logs.setCreatedToFilter}
-                disabled={logs.loading}
-              />
-            ),
-          },
-        ]}
-        sort={{
-          value: logs.sortValue,
-          onValueChange: (value) => logs.setSortValue(value as UsageLogSortValue),
-          options: USAGE_LOG_SORT_OPTIONS.map((item) => ({ label: t(item.labelKey), value: item.value })),
-        }}
-        loading={logs.loading}
-        onRefresh={() => void logs.loadUsageLogs(logs.page, logs.pageSize)}
-      />
-
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[72px]">ID</TableHead>
-            <TableHead>{t("columns.caller")}</TableHead>
-            <TableHead>{t("columns.model")}</TableHead>
-            <TableHead>Token</TableHead>
-            <TableHead>{t("columns.billing")}</TableHead>
-            <TableHead>{t("columns.latency")}</TableHead>
-            <TableHead>{t("columns.time")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {logs.loading && logs.logs.length === 0 ? <TableSkeletonRows colSpan={7} rowCount={10} /> : null}
-          {logs.logs.map((item) => (
-            <TableRow key={item.id} className="cursor-pointer" onClick={() => onOpenDetail(item)}>
-              <TableCell className="font-mono text-xs text-foreground">{item.id}</TableCell>
-              <TableCell>
-                <span className="block max-w-[10rem] truncate whitespace-nowrap text-muted-foreground" title={`${resolveUserDisplayName(item.userLabel, item.username, item.userID)} (#${item.userID})`}>
-                  {resolveUserDisplayName(item.userLabel, item.username, item.userID)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <UsageLogModelCell item={item} labels={usageLabels} />
-              </TableCell>
-              <TableCell>
-                <UsageLogTokenCell item={item} locale={locale} />
-              </TableCell>
-              <TableCell><UsageLogCostCell item={item} labels={usageLabels} /></TableCell>
-              <TableCell className="whitespace-nowrap font-mono text-muted-foreground">{formatCount(item.latencyMS, locale)} ms</TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">{formatDateTime(item.createdAt, locale)}</TableCell>
-            </TableRow>
-          ))}
-          {!logs.loading && logs.logs.length === 0 ? <TableEmptyRow colSpan={7}>{t("usage.empty")}</TableEmptyRow> : null}
-        </TableBody>
-      </Table>
-
-      <TablePagination
-        loading={logs.loading}
-        page={logs.page}
-        pageCount={logs.pageCount}
-        pageSize={logs.pageSize}
-        total={logs.total}
-        onPageChange={(nextPage) => void logs.loadUsageLogs(nextPage, logs.pageSize)}
-        onPageSizeChange={(nextPageSize) => void logs.loadUsageLogs(1, nextPageSize)}
-      />
-    </div>
-  );
-}
-
 export function AdminLogsPage() {
   const t = useTranslations("adminLogs");
   const [detail, setDetail] = React.useState<LogDetail | null>(null);
@@ -1204,7 +576,6 @@ export function AdminLogsPage() {
       <Tabs defaultValue="audit" className="space-y-3">
         <TabsList variant="line">
           <TabsTrigger value="audit">{t("tabs.audit")}</TabsTrigger>
-          <TabsTrigger value="usage">{t("tabs.usage")}</TabsTrigger>
           <TabsTrigger value="auth">{t("tabs.auth")}</TabsTrigger>
           <TabsTrigger value="system">{t("tabs.system")}</TabsTrigger>
         </TabsList>
@@ -1213,9 +584,6 @@ export function AdminLogsPage() {
         </TabsContent>
         <TabsContent value="auth">
           <AuthLogTable onOpenDetail={(item) => setDetail({ kind: "auth", item })} />
-        </TabsContent>
-        <TabsContent value="usage">
-          <UsageLogTable onOpenDetail={(item) => setDetail({ kind: "usage", item })} />
         </TabsContent>
         <TabsContent value="system">
           <SystemEventTable onOpenDetail={(item) => setDetail({ kind: "system", item })} />

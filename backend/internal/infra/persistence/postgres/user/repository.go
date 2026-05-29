@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 	"github.com/kangzyz/Doub/backend/internal/infra/persistence/models"
 	"github.com/kangzyz/Doub/backend/internal/repository"
@@ -56,8 +55,6 @@ func translateUniqueConstraint(err error) error {
 		return repository.ErrDuplicate
 	}
 }
-
-const defaultFreePlanCode = "free"
 
 // Repo 封装用户数据访问。
 type Repo struct {
@@ -298,28 +295,6 @@ func (r *Repo) CountSuperAdmins(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// GetActivePlanByCode 按编码查询启用套餐。
-func (r *Repo) GetActivePlanByCode(ctx context.Context, code string) (*domainbilling.Plan, error) {
-	var item model.BillingPlan
-	if err := r.db.WithContext(ctx).
-		Where("code = ? AND is_active = ?", code, true).
-		First(&item).Error; err != nil {
-		return nil, translateError(err)
-	}
-	return toDomainPlan(item), nil
-}
-
-// GetActiveDefaultPriceByPlanID 查询套餐默认启用价格。
-func (r *Repo) GetActiveDefaultPriceByPlanID(ctx context.Context, planID uint) (*domainbilling.Price, error) {
-	var item model.BillingPrice
-	if err := r.db.WithContext(ctx).
-		Where("plan_id = ? AND is_active = ? AND is_default = ?", planID, true, true).
-		First(&item).Error; err != nil {
-		return nil, translateError(err)
-	}
-	return toDomainPrice(item), nil
-}
-
 // CreateWithCredential 在同一事务中创建用户与凭据。
 func (r *Repo) CreateWithCredential(
 	ctx context.Context,
@@ -403,25 +378,6 @@ func (r *Repo) createWithCredentialTx(
 	}
 	if err := tx.Create(dbCredential).Error; err != nil {
 		return translateError(err)
-	}
-
-	if user.Role == domainuser.RoleUser && subscriptionPlanID > 0 && subscriptionPriceID > 0 {
-		now := time.Now()
-		subscription := &model.Subscription{
-			UserID:               dbUser.ID,
-			PlanID:               subscriptionPlanID,
-			PriceID:              subscriptionPriceID,
-			Status:               "active",
-			StartAt:              now,
-			CurrentPeriodStartAt: now,
-			CurrentPeriodEndAt:   subscriptionEndAt,
-			CancelAtPeriodEnd:    false,
-			CanceledAt:           nil,
-			AutoRenew:            autoRenew,
-		}
-		if err := tx.Create(subscription).Error; err != nil {
-			return translateError(err)
-		}
 	}
 
 	return nil
@@ -785,21 +741,6 @@ func (r *Repo) DeleteAccountHard(ctx context.Context, userID uint) error {
 				label: "user_settings",
 				run: func(db *gorm.DB) error {
 					return db.Unscoped().Where("user_id = ?", userID).Delete(&model.UserSetting{}).Error
-				},
-			},
-			// 财务审计事实不在账号硬删除中清理：
-			// billing_usage_ledgers、billing_balance_transactions、billing_payment_orders
-			// 保留调用、余额和支付追溯快照。
-			{
-				label: "billing_subscriptions",
-				run: func(db *gorm.DB) error {
-					return db.Unscoped().Where("user_id = ?", userID).Delete(&model.Subscription{}).Error
-				},
-			},
-			{
-				label: "billing_accounts",
-				run: func(db *gorm.DB) error {
-					return db.Unscoped().Where("user_id = ?", userID).Delete(&model.BillingAccount{}).Error
 				},
 			},
 			{
@@ -1586,38 +1527,6 @@ func toModelUser(item *domainuser.User) *model.User {
 		PhoneVerifiedAt:       item.PhoneVerifiedAt,
 		UsernameChangedAt:     item.UsernameChangedAt,
 		LastLoginAt:           item.LastLoginAt,
-	}
-}
-
-func toDomainPlan(item model.BillingPlan) *domainbilling.Plan {
-	return &domainbilling.Plan{
-		ID:                  item.ID,
-		Code:                item.Code,
-		Name:                item.Name,
-		Description:         item.Description,
-		FeatureJSON:         item.FeatureJSON,
-		PeriodCreditNanousd: item.PeriodCreditNanousd,
-		DiscountPercent:     item.DiscountPercent,
-		SortOrder:           item.SortOrder,
-		IsActive:            item.IsActive,
-		CreatedAt:           item.CreatedAt,
-		UpdatedAt:           item.UpdatedAt,
-	}
-}
-
-func toDomainPrice(item model.BillingPrice) *domainbilling.Price {
-	return &domainbilling.Price{
-		ID:               item.ID,
-		PlanID:           item.PlanID,
-		Code:             item.Code,
-		BillingInterval:  item.BillingInterval,
-		Currency:         item.Currency,
-		AmountCents:      item.AmountCents,
-		IsActive:         item.IsActive,
-		IsDefault:        item.IsDefault,
-		ExternalPriceRef: item.ExternalPriceRef,
-		CreatedAt:        item.CreatedAt,
-		UpdatedAt:        item.UpdatedAt,
 	}
 }
 

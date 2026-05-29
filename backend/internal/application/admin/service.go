@@ -11,12 +11,10 @@ import (
 
 	auditapp "github.com/kangzyz/Doub/backend/internal/application/audit"
 	authapp "github.com/kangzyz/Doub/backend/internal/application/auth"
-	"github.com/kangzyz/Doub/backend/internal/application/billing"
 	systemeventapp "github.com/kangzyz/Doub/backend/internal/application/systemevent"
 	userapp "github.com/kangzyz/Doub/backend/internal/application/user"
 	"github.com/kangzyz/Doub/backend/internal/application/userview"
 	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
 	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 	"github.com/kangzyz/Doub/backend/internal/repository"
@@ -35,9 +33,6 @@ type userService interface {
 		phone string,
 		timezone string,
 		locale string,
-		billingMode string,
-		subscriptionTier string,
-		subscriptionExpiresAt *time.Time,
 	) (*domainuser.User, error)
 	GetByID(ctx context.Context, userID uint) (*domainuser.User, error)
 	RevokeAllSessions(ctx context.Context, userID uint, reason string) error
@@ -86,10 +81,6 @@ type systemEventService interface {
 	List(ctx context.Context, page int, pageSize int, filter systemeventapp.ListFilter) ([]domainsystemevent.Event, int64, error)
 }
 
-type usageLogService interface {
-	ListUsageLogs(ctx context.Context, page int, pageSize int, filter billing.UsageLogListFilter) ([]domainbilling.UsageLedger, int64, error)
-}
-
 type authSecurityService interface {
 	GetCurrentTwoFactorStatus(ctx context.Context, userID uint) (*authapp.TwoFactorStatusResult, error)
 	ResetUserTwoFactorByAdmin(ctx context.Context, userID uint) error
@@ -97,33 +88,10 @@ type authSecurityService interface {
 
 // Service 聚合后台域服务依赖。
 type Service struct {
-	userService          userService
-	auditService         auditService
-	systemEventService   systemEventService
-	usageLogService      usageLogService
-	authSecurityService  authSecurityService
-	subscriptionResolver subscriptionResolver
-}
-
-type subscriptionResolver interface {
-	ListCurrentSubscriptionSnapshots(
-		ctx context.Context,
-		userIDs []uint,
-		now time.Time,
-	) (map[uint]billing.UserSubscriptionSnapshot, error)
-	GetCurrentSubscriptionSnapshot(
-		ctx context.Context,
-		userID uint,
-		now time.Time,
-	) (*billing.UserSubscriptionSnapshot, error)
-	GetBillingMode(ctx context.Context) (string, error)
-	ListBillingAccountSnapshots(ctx context.Context, userIDs []uint) (map[uint]billing.UserBillingAccountSnapshot, error)
-	SetUserSubscriptionByPlanCode(
-		ctx context.Context,
-		userID uint,
-		planCode string,
-		expiresAt *time.Time,
-	) (*billing.UserSubscriptionSnapshot, error)
+	userService         userService
+	auditService        auditService
+	systemEventService  systemEventService
+	authSecurityService authSecurityService
 }
 
 // UserLabel 是后台日志里展示用户身份的轻量信息。
@@ -152,16 +120,6 @@ func (s *Service) SetSystemEventService(service systemEventService) {
 	s.systemEventService = service
 }
 
-// SetUsageLogService 注入调用日志查询能力。
-func (s *Service) SetUsageLogService(service usageLogService) {
-	s.usageLogService = service
-}
-
-// SetSubscriptionResolver 注入订阅派生解析能力。
-func (s *Service) SetSubscriptionResolver(resolver subscriptionResolver) {
-	s.subscriptionResolver = resolver
-}
-
 // ListUsers 查询用户分页列表。
 func (s *Service) ListUsers(ctx context.Context, page int, pageSize int) ([]userview.UserView, int64, error) {
 	items, total, err := s.userService.ListUsers(ctx, page, pageSize)
@@ -178,124 +136,19 @@ func (s *Service) ListUsers(ctx context.Context, page int, pageSize int) ([]user
 
 // BuildUserView 构建单个用户的前端展示视图。
 func (s *Service) BuildUserView(ctx context.Context, item domainuser.User) (userview.UserView, error) {
-	if s.subscriptionResolver == nil {
-		return s.applyTwoFactorView(ctx, userview.FromUser(item, nil))
-	}
-
-	mode, err := s.subscriptionResolver.GetBillingMode(ctx)
-	if err != nil {
-		return userview.UserView{}, err
-	}
-	if mode == "usage" {
-		accounts, accountErr := s.subscriptionResolver.ListBillingAccountSnapshots(ctx, []uint{item.ID})
-		if accountErr != nil {
-			return userview.UserView{}, accountErr
-		}
-		account, ok := accounts[item.ID]
-		view := userview.FromUser(item, nil)
-		if ok {
-			view = userview.WithBillingAccount(view, &userview.BillingAccountState{
-				Currency:       account.Currency,
-				BalanceNanousd: account.BalanceNanousd,
-				Status:         account.Status,
-			})
-		}
-		return s.applyTwoFactorView(ctx, view)
-	}
-
-	subscription, err := s.subscriptionResolver.GetCurrentSubscriptionSnapshot(ctx, item.ID, time.Now())
-	if err != nil {
-		return userview.UserView{}, err
-	}
-	if subscription == nil {
-		return s.applyTwoFactorView(ctx, userview.FromUser(item, nil))
-	}
-
-	return s.applyTwoFactorView(ctx, userview.FromUser(item, &userview.SubscriptionState{
-		PlanID:    subscription.PlanID,
-		PlanName:  subscription.PlanName,
-		Tier:      subscription.Tier,
-		Status:    subscription.Status,
-		ExpiresAt: subscription.ExpiresAt,
-	}))
+	return s.applyTwoFactorView(ctx, userview.FromUser(item))
 }
 
 // BuildUserViews 批量构建用户展示视图。
 func (s *Service) BuildUserViews(ctx context.Context, items []domainuser.User) ([]userview.UserView, error) {
 	results := make([]userview.UserView, 0, len(items))
-	if len(items) == 0 {
-		return results, nil
-	}
-
-	if s.subscriptionResolver == nil {
-		for _, item := range items {
-			view, err := s.applyTwoFactorView(ctx, userview.FromUser(item, nil))
-			if err != nil {
-				return nil, err
-			}
-			results = append(results, view)
-		}
-		return results, nil
-	}
-
-	userIDs := make([]uint, 0, len(items))
 	for _, item := range items {
-		userIDs = append(userIDs, item.ID)
-	}
-
-	mode, err := s.subscriptionResolver.GetBillingMode(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if mode == "usage" {
-		accounts, accountErr := s.subscriptionResolver.ListBillingAccountSnapshots(ctx, userIDs)
-		if accountErr != nil {
-			return nil, accountErr
-		}
-		for _, item := range items {
-			account := accounts[item.ID]
-			view, viewErr := s.applyTwoFactorView(ctx, userview.WithBillingAccount(userview.FromUser(item, nil), &userview.BillingAccountState{
-				Currency:       account.Currency,
-				BalanceNanousd: account.BalanceNanousd,
-				Status:         account.Status,
-			}))
-			if viewErr != nil {
-				return nil, viewErr
-			}
-			results = append(results, view)
-		}
-		return results, nil
-	}
-
-	subscriptions, err := s.subscriptionResolver.ListCurrentSubscriptionSnapshots(ctx, userIDs, time.Now())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range items {
-		subscription, ok := subscriptions[item.ID]
-		if !ok {
-			view, viewErr := s.applyTwoFactorView(ctx, userview.FromUser(item, nil))
-			if viewErr != nil {
-				return nil, viewErr
-			}
-			results = append(results, view)
-			continue
-		}
-
-		view, viewErr := s.applyTwoFactorView(ctx, userview.FromUser(item, &userview.SubscriptionState{
-			PlanID:    subscription.PlanID,
-			PlanName:  subscription.PlanName,
-			Tier:      subscription.Tier,
-			Status:    subscription.Status,
-			ExpiresAt: subscription.ExpiresAt,
-		}))
-		if viewErr != nil {
-			return nil, viewErr
+		view, err := s.applyTwoFactorView(ctx, userview.FromUser(item))
+		if err != nil {
+			return nil, err
 		}
 		results = append(results, view)
 	}
-
 	return results, nil
 }
 
@@ -325,17 +178,7 @@ func (s *Service) CreateUser(
 	phone string,
 	timezone string,
 	locale string,
-	subscriptionTier string,
-	subscriptionExpiresAt *time.Time,
 ) (*domainuser.User, error) {
-	billingMode := "self"
-	if s.subscriptionResolver != nil {
-		mode, err := s.subscriptionResolver.GetBillingMode(ctx)
-		if err != nil {
-			return nil, err
-		}
-		billingMode = mode
-	}
 	return s.userService.CreateUser(
 		ctx,
 		username,
@@ -346,23 +189,12 @@ func (s *Service) CreateUser(
 		phone,
 		timezone,
 		locale,
-		billingMode,
-		subscriptionTier,
-		subscriptionExpiresAt,
 	)
 }
 
 // ListAuditLogs 查询审计日志分页列表。
 func (s *Service) ListAuditLogs(ctx context.Context, page int, pageSize int, filter auditapp.ListFilter) ([]domainaudit.Log, int64, error) {
 	return s.auditService.List(ctx, page, pageSize, filter)
-}
-
-// ListUsageLogs 查询管理员调用日志。
-func (s *Service) ListUsageLogs(ctx context.Context, page int, pageSize int, filter billing.UsageLogListFilter) ([]domainbilling.UsageLedger, int64, error) {
-	if s.usageLogService == nil {
-		return []domainbilling.UsageLedger{}, 0, nil
-	}
-	return s.usageLogService.ListUsageLogs(ctx, page, pageSize, filter)
 }
 
 // ListSystemEvents 查询系统事件分页列表。
@@ -727,73 +559,6 @@ func (s *Service) PatchUserByAdmin(
 			auditDetail["from_profile_preferences"] = targetUser.ProfilePreferences
 			auditDetail["to_profile_preferences"] = nextProfilePreferences
 			targetUser.ProfilePreferences = nextProfilePreferences
-		}
-	}
-
-	if req.SubscriptionTier != nil || req.SubscriptionExpiresAt != nil {
-		if s.subscriptionResolver == nil {
-			return nil, billing.ErrPaymentRequired
-		}
-		billingMode, modeErr := s.subscriptionResolver.GetBillingMode(ctx)
-		if modeErr != nil {
-			return nil, modeErr
-		}
-		if billingMode != "period" {
-			return nil, billing.ErrPaymentRequired
-		}
-
-		now := time.Now()
-		currentSubscription, snapshotErr := s.subscriptionResolver.GetCurrentSubscriptionSnapshot(ctx, targetUserID, now)
-		if snapshotErr != nil {
-			return nil, snapshotErr
-		}
-
-		nextTier := ""
-		if currentSubscription != nil {
-			nextTier = currentSubscription.Tier
-		}
-		if req.SubscriptionTier != nil {
-			nextTier = strings.ToLower(strings.TrimSpace(*req.SubscriptionTier))
-		}
-		if nextTier == "" {
-			nextTier = "free"
-		}
-
-		nextExpiresAt := req.SubscriptionExpiresAt
-		if req.SubscriptionExpiresAt == nil && currentSubscription != nil {
-			nextExpiresAt = currentSubscription.ExpiresAt
-		}
-
-		fromTier := "free"
-		var fromExpiresAt string
-		if currentSubscription != nil {
-			fromTier = strings.TrimSpace(currentSubscription.Tier)
-			if fromTier == "" {
-				fromTier = "free"
-			}
-			if currentSubscription.ExpiresAt != nil {
-				fromExpiresAt = currentSubscription.ExpiresAt.UTC().Format(time.RFC3339Nano)
-			}
-		}
-		toExpiresAt := ""
-		if nextExpiresAt != nil {
-			toExpiresAt = nextExpiresAt.UTC().Format(time.RFC3339Nano)
-		}
-
-		if fromTier != nextTier || fromExpiresAt != toExpiresAt {
-			updatedSubscription, updateErr := s.subscriptionResolver.SetUserSubscriptionByPlanCode(ctx, targetUserID, nextTier, nextExpiresAt)
-			if updateErr != nil {
-				return nil, updateErr
-			}
-
-			auditDetail["from_subscription_tier"] = fromTier
-			auditDetail["to_subscription_tier"] = nextTier
-			auditDetail["from_subscription_expires_at"] = fromExpiresAt
-			if updatedSubscription != nil && updatedSubscription.ExpiresAt != nil {
-				auditDetail["to_subscription_expires_at"] = updatedSubscription.ExpiresAt.UTC().Format(time.RFC3339Nano)
-			} else {
-				auditDetail["to_subscription_expires_at"] = ""
-			}
 		}
 	}
 

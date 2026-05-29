@@ -1144,7 +1144,6 @@ func (s *Service) sendMessageInternal(
 		go func() {
 			asyncCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
-			asyncCtx = withBasicServiceBillingContext(asyncCtx, input.UserID, input.ConversationID)
 			if compactErr := s.compactSvc.MaybeCompactConversation(asyncCtx, input.ConversationID, runID, messageCount, compactPlatformModelName); compactErr == nil {
 				// 压缩后清空 LastResponseID：Responses API 有状态会话链已失效，需重传
 				if compactSnapshot, _ := s.compactSvc.GetSnapshotByRunID(asyncCtx, runID); compactSnapshot != nil {
@@ -1166,7 +1165,7 @@ func (s *Service) sendMessageInternal(
 		}
 	} else {
 		compactPlatformModelName := s.resolveTextTaskModel(ctx, compactCfg.CompactTaskModel, conversation.Model, input.UserID, input.ConversationID, strings.TrimSpace(input.RequestID))
-		compactCtx := withBasicServiceBillingContext(ctx, input.UserID, input.ConversationID)
+		compactCtx := ctx
 		_ = s.compactSvc.MaybeCompactConversation(compactCtx, input.ConversationID, runID, messageCount, compactPlatformModelName)
 		if snapshot, snapshotErr := s.compactSvc.GetSnapshotByRunID(compactCtx, runID); snapshotErr == nil && snapshot != nil {
 			// 压缩后清空 LastResponseID：Responses API 有状态会话链已失效，需重传

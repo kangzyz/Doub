@@ -14,7 +14,6 @@ import (
 	"github.com/kangzyz/Doub/backend/internal/application/admin"
 	"github.com/kangzyz/Doub/backend/internal/application/audit"
 	"github.com/kangzyz/Doub/backend/internal/application/auth"
-	"github.com/kangzyz/Doub/backend/internal/application/billing"
 	"github.com/kangzyz/Doub/backend/internal/application/channel"
 	"github.com/kangzyz/Doub/backend/internal/application/compact"
 	"github.com/kangzyz/Doub/backend/internal/application/conversation"
@@ -40,7 +39,6 @@ import (
 	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 	platformdb "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres"
 	auditrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/audit"
-	billingrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/billing"
 	channelrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/channel"
 	conversationrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/conversation"
 	mcprepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/mcp"
@@ -53,7 +51,6 @@ import (
 	platformhttp "github.com/kangzyz/Doub/backend/internal/transport/http"
 	adminhttp "github.com/kangzyz/Doub/backend/internal/transport/http/admin"
 	authhttp "github.com/kangzyz/Doub/backend/internal/transport/http/auth"
-	billinghttp "github.com/kangzyz/Doub/backend/internal/transport/http/billing"
 	channelhttp "github.com/kangzyz/Doub/backend/internal/transport/http/channel"
 	conversationhttp "github.com/kangzyz/Doub/backend/internal/transport/http/conversation"
 	mcphttp "github.com/kangzyz/Doub/backend/internal/transport/http/mcp"
@@ -143,11 +140,6 @@ func NewApp() (*App, error) {
 
 	userRepo := userrepo.NewRepo(db)
 	userService := user.NewService(userRepo)
-	billingRepo := billingrepo.NewRepo(db)
-	billingService := billing.NewService(billingRepo)
-	billingService.SetAuditWriter(auditService)
-	billingHandler := billinghttp.NewHandler(billingService, settingsService, runtimeCfg)
-	billingModule := billinghttp.NewModule(billingHandler)
 	objectStoreProvider := appstorage.NewRuntimeProvider(runtimeCfg, nil)
 	geoResolver := geoip.New(runtimeCfg.Snapshot())
 	authService := auth.NewServiceWithRuntime(runtimeCfg, userRepo, geoResolver)
@@ -155,7 +147,6 @@ func NewApp() (*App, error) {
 	authService.SetObjectStoreProvider(objectStoreProvider)
 	authService.SetAuditWriter(auditService)
 	settingsService.SetAuthSafetyService(authService)
-	authService.SetSubscriptionResolver(billingService)
 	if err = authService.EnsureBootstrapSuperAdmin(context.Background()); err != nil {
 		return nil, err
 	}
@@ -172,10 +163,6 @@ func NewApp() (*App, error) {
 	mcpClient := mcp.NewClientWithEnv(cfg.Env, cfg.SSRFProtectionEnabled)
 	channelService := channel.NewServiceWithRuntime(runtimeCfg, channelRepo, channelCache, llmClient)
 	channelService.SetLogger(log)
-	channelService.SetBillingModelPricingFilter(billingService)
-	billingService.SetModelPricingInvalidator(channelService.InvalidateModelCatalog)
-	billingService.SetPlatformModelIdentityResolver(channelService)
-	billingService.SetModelPricingCatalogProvider(channelService)
 	channelHandler := channelhttp.NewHandler(channelService)
 	channelModule := channelhttp.NewModule(channelHandler)
 	conversationRepo := conversationrepo.NewRepo(db)
@@ -207,7 +194,6 @@ func NewApp() (*App, error) {
 		ragService,
 		log,
 	)
-	conversationService.SetBillingService(billingService)
 	conversationService.SetAuditWriter(auditService)
 	conversationService.SetObjectStoreProvider(objectStoreProvider)
 	conversationService.SetMCPRepository(mcpRepo)
@@ -221,8 +207,6 @@ func NewApp() (*App, error) {
 	adminService := admin.NewService(userService, auditService)
 	adminService.SetAuthSecurityService(authService)
 	adminService.SetSystemEventService(systemEventService)
-	adminService.SetUsageLogService(billingService)
-	adminService.SetSubscriptionResolver(billingService)
 	adminHandler := adminhttp.NewHandler(adminService)
 	adminModule := adminhttp.NewModule(adminHandler)
 	userSettingsRepo := usersettingsrepo.NewRepo(db)
@@ -239,7 +223,6 @@ func NewApp() (*App, error) {
 		Conversation: conversationModule,
 		MCP:          mcpModule,
 		Memory:       memoryModule,
-		Billing:      billingModule,
 		Admin:        adminModule,
 		Settings:     settingsModule,
 		UserSettings: userSettingsModule,

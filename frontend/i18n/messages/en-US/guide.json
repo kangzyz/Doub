@@ -73,14 +73,14 @@
     "dark": "Dark"
   },
   "themePreset": {
-    "default": "Default",
+    "default": "Warm Sand",
     "azure": "Azure",
-    "cobalt": "Cobalt",
+    "cobalt": "Midnight",
     "graphite": "Graphite",
-    "lagoon": "Lagoon",
+    "lagoon": "Aurora",
     "ink": "Ink",
-    "ochre": "Ochre",
-    "sepia": "Sepia"
+    "ochre": "Vivid",
+    "sepia": "Dusk"
   },
   "states": {
     "twoFactorUnavailable": "Two-factor authentication is not enabled in this environment.",
@@ -117,7 +117,6 @@
     "files": "Cover uploads, previews, downloads, text extraction, OCR, RAG retrieval, and original image context injection.",
     "context": "Combine long-term memory, historical evidence, semantic recall, context truncation, and summary compression for stable continuity.",
     "trace": "Render processing traces, model thinking, tool calls, inline errors, Markdown, formulas, tables, code blocks, and file cards.",
-    "billing": "Support subscriptions, balances, usage, per-call, per-second, and tiered billing with aggregated multi-tool run costs.",
     "admin": "Provide unified admin entry points for accounts, identity providers, upstreams, models, billing, logs, chats, files, MCP, and audit logs.",
     "ops": "Include structured logs, request IDs, Swagger docs, Docker builds, static asset hosting, GeoIP audit, and OpenTelemetry traces."
   },

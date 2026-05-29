@@ -13,8 +13,6 @@ export type CreateAdminUserRequest = {
   phone?: string;
   timezone?: string;
   locale?: string;
-  subscriptionTier?: string;
-  subscriptionExpiresAt?: string;
 };
 
 export type UpdateAdminUserStatusRequest = {
@@ -32,8 +30,6 @@ export type PatchAdminUserRequest = {
   timezone?: string;
   locale?: string;
   profilePreferences?: string;
-  subscriptionTier?: string;
-  subscriptionExpiresAt?: string;
   reason?: string;
 };
 
@@ -112,45 +108,10 @@ export type AdminSystemEventDTO = {
   updatedAt: string;
 };
 
-export type AdminUsageLogDTO = {
-  id: number;
-  userID: number;
-  username: string;
-  userDisplayName: string;
-  userLabel: string;
-  conversationID: number;
-  providerProtocol: string;
-  upstreamName: string;
-  platformModelName: string;
-  routedBindingCode: string;
-  upstreamModelName: string;
-  isFreeModel: boolean;
-  usageDate: string;
-  inputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-  cacheWrite5mTokens: number;
-  cacheWrite1hTokens: number;
-  outputTokens: number;
-  reasoningTokens: number;
-  callCount: number;
-  durationSeconds: number;
-  latencyMS: number;
-  usageSpeed: string;
-  serviceTier: string;
-  billedCurrency: string;
-  billedNanousd: number;
-  billedUSD: number;
-  pricingSnapshotJSON: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type ListAdminUsersResult = PagePayload<UserDTO>;
 export type ListAdminUserAuthEventsResult = PagePayload<AdminUserAuthEventDTO>;
 export type ListAdminAuditLogsResult = PagePayload<AdminAuditLogDTO>;
 export type ListAdminSystemEventsResult = PagePayload<AdminSystemEventDTO>;
-export type ListAdminUsageLogsResult = PagePayload<AdminUsageLogDTO>;
 
 export type TikaRuntimeStatus =
   | "running"

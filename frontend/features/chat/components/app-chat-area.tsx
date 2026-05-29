@@ -165,7 +165,6 @@ export function AppChatArea() {
     showModelInfo,
     showLatency,
     showTokenUsage,
-    showBillingCost,
     modelOptionPolicy,
     selectedPlatformModelName,
     setSelectedPlatformModelName,
@@ -596,7 +595,6 @@ export function AppChatArea() {
                 showModelInfo={showModelInfo}
                 showLatency={showLatency}
                 showTokenUsage={showTokenUsage}
-                showBillingCost={showBillingCost}
               />
             )}
           </>

@@ -6,7 +6,6 @@ import (
 	appadmin "github.com/kangzyz/Doub/backend/internal/application/admin"
 	"github.com/kangzyz/Doub/backend/internal/application/userview"
 	domainaudit "github.com/kangzyz/Doub/backend/internal/domain/audit"
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	domainsystemevent "github.com/kangzyz/Doub/backend/internal/domain/systemevent"
 	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
@@ -15,16 +14,14 @@ import (
 
 // CreateUserRequest 管理员创建用户请求。
 type CreateUserRequest struct {
-	Username              string     `json:"username" binding:"required,min=3,max=16"`
-	Password              string     `json:"password" binding:"required,min=8,max=128"`
-	AvatarURL             string     `json:"avatarURL" binding:"max=2048"`
-	DisplayName           string     `json:"displayName" binding:"omitempty,min=3,max=16"`
-	Email                 string     `json:"email" binding:"omitempty,max=128,email"`
-	Phone                 string     `json:"phone" binding:"max=32"`
-	Timezone              string     `json:"timezone" binding:"max=64"`
-	Locale                string     `json:"locale" binding:"max=16"`
-	SubscriptionTier      string     `json:"subscriptionTier" binding:"max=32"`
-	SubscriptionExpiresAt *time.Time `json:"subscriptionExpiresAt"`
+	Username    string `json:"username" binding:"required,min=3,max=16"`
+	Password    string `json:"password" binding:"required,min=8,max=128"`
+	AvatarURL   string `json:"avatarURL" binding:"max=2048"`
+	DisplayName string `json:"displayName" binding:"omitempty,min=3,max=16"`
+	Email       string `json:"email" binding:"omitempty,max=128,email"`
+	Phone       string `json:"phone" binding:"max=32"`
+	Timezone    string `json:"timezone" binding:"max=64"`
+	Locale      string `json:"locale" binding:"max=16"`
 }
 
 // UpdateUserStatusRequest 管理员更新用户状态请求。
@@ -35,18 +32,16 @@ type UpdateUserStatusRequest struct {
 
 // PatchUserRequest 管理员局部更新用户请求。
 type PatchUserRequest struct {
-	AvatarURL             *string    `json:"avatarURL" binding:"omitempty,max=2048"`
-	DisplayName           *string    `json:"displayName" binding:"omitempty,min=3,max=16"`
-	Email                 *string    `json:"email" binding:"omitempty,max=128"`
-	Phone                 *string    `json:"phone" binding:"omitempty,max=32"`
-	Role                  *string    `json:"role" binding:"omitempty,max=32"`
-	Status                *string    `json:"status" binding:"omitempty,max=32"`
-	Timezone              *string    `json:"timezone" binding:"omitempty,max=64"`
-	Locale                *string    `json:"locale" binding:"omitempty,max=16"`
-	ProfilePreferences    *string    `json:"profilePreferences" binding:"omitempty,max=1024"`
-	SubscriptionTier      *string    `json:"subscriptionTier" binding:"omitempty,max=32"`
-	SubscriptionExpiresAt *time.Time `json:"subscriptionExpiresAt"`
-	Reason                string     `json:"reason" binding:"max=255"`
+	AvatarURL          *string `json:"avatarURL" binding:"omitempty,max=2048"`
+	DisplayName        *string `json:"displayName" binding:"omitempty,min=3,max=16"`
+	Email              *string `json:"email" binding:"omitempty,max=128"`
+	Phone              *string `json:"phone" binding:"omitempty,max=32"`
+	Role               *string `json:"role" binding:"omitempty,max=32"`
+	Status             *string `json:"status" binding:"omitempty,max=32"`
+	Timezone           *string `json:"timezone" binding:"omitempty,max=64"`
+	Locale             *string `json:"locale" binding:"omitempty,max=16"`
+	ProfilePreferences *string `json:"profilePreferences" binding:"omitempty,max=1024"`
+	Reason             string  `json:"reason" binding:"max=255"`
 }
 
 // ResetUserPasswordRequest 管理员重置用户密码请求。
@@ -81,15 +76,6 @@ type UserResponse struct {
 	LastLoginAt            *time.Time `json:"lastLoginAt"`
 	CreatedAt              time.Time  `json:"createdAt"`
 	UpdatedAt              time.Time  `json:"updatedAt"`
-	SubscriptionTier       string     `json:"subscriptionTier"`
-	SubscriptionPlanID     *uint      `json:"subscriptionPlanID"`
-	SubscriptionPlanName   string     `json:"subscriptionPlanName"`
-	SubscriptionStatus     string     `json:"subscriptionStatus"`
-	SubscriptionExpiresAt  *time.Time `json:"subscriptionExpiresAt"`
-	BillingAccountCurrency string     `json:"billingAccountCurrency"`
-	BillingBalanceNanousd  int64      `json:"billingBalanceNanousd"`
-	BillingBalanceUSD      float64    `json:"billingBalanceUSD"`
-	BillingAccountStatus   string     `json:"billingAccountStatus"`
 }
 
 // UserDataResponse 用户操作响应。
@@ -169,41 +155,6 @@ type SystemEventResponse struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
-// UsageLogResponse 调用日志响应。
-type UsageLogResponse struct {
-	ID                  uint      `json:"id"`
-	UserID              uint      `json:"userID"`
-	Username            string    `json:"username"`
-	UserDisplayName     string    `json:"userDisplayName"`
-	UserLabel           string    `json:"userLabel"`
-	ConversationID      uint      `json:"conversationID"`
-	ProviderProtocol    string    `json:"providerProtocol"`
-	UpstreamName        string    `json:"upstreamName"`
-	PlatformModelName   string    `json:"platformModelName"`
-	RoutedBindingCode   string    `json:"routedBindingCode"`
-	UpstreamModelName   string    `json:"upstreamModelName"`
-	IsFreeModel         bool      `json:"isFreeModel"`
-	UsageDate           time.Time `json:"usageDate"`
-	InputTokens         int64     `json:"inputTokens"`
-	CacheReadTokens     int64     `json:"cacheReadTokens"`
-	CacheWriteTokens    int64     `json:"cacheWriteTokens"`
-	CacheWrite5mTokens  int64     `json:"cacheWrite5mTokens"`
-	CacheWrite1hTokens  int64     `json:"cacheWrite1hTokens"`
-	OutputTokens        int64     `json:"outputTokens"`
-	ReasoningTokens     int64     `json:"reasoningTokens"`
-	CallCount           int64     `json:"callCount"`
-	DurationSeconds     int64     `json:"durationSeconds"`
-	LatencyMS           int64     `json:"latencyMS"`
-	UsageSpeed          string    `json:"usageSpeed"`
-	ServiceTier         string    `json:"serviceTier"`
-	BilledCurrency      string    `json:"billedCurrency"`
-	BilledNanousd       int64     `json:"billedNanousd"`
-	BilledUSD           float64   `json:"billedUSD"`
-	PricingSnapshotJSON string    `json:"pricingSnapshotJSON"`
-	CreatedAt           time.Time `json:"createdAt"`
-	UpdatedAt           time.Time `json:"updatedAt"`
-}
-
 // ── Swagger 文档 DTO ────────────────────────────────────────────────────────
 
 // UserListResponseDoc 用户分页响应。
@@ -272,15 +223,6 @@ type SystemEventListResponseDoc struct {
 	} `json:"data"`
 }
 
-// UsageLogListResponseDoc 调用日志分页响应。
-type UsageLogListResponseDoc struct {
-	ErrorMsg string `json:"errorMsg"`
-	Data     struct {
-		Total   int64              `json:"total"`
-		Results []UsageLogResponse `json:"results"`
-	} `json:"data"`
-}
-
 // ErrorDoc 错误响应。
 type ErrorDoc struct {
 	ErrorMsg  string      `json:"errorMsg"`
@@ -316,15 +258,6 @@ func toUserResponse(v userview.UserView) UserResponse {
 		LastLoginAt:            v.LastLoginAt,
 		CreatedAt:              v.CreatedAt,
 		UpdatedAt:              v.UpdatedAt,
-		SubscriptionTier:       v.SubscriptionTier,
-		SubscriptionPlanID:     v.SubscriptionPlanID,
-		SubscriptionPlanName:   v.SubscriptionPlanName,
-		SubscriptionStatus:     v.SubscriptionStatus,
-		SubscriptionExpiresAt:  v.SubscriptionExpiresAt,
-		BillingAccountCurrency: v.BillingAccountCurrency,
-		BillingBalanceNanousd:  v.BillingBalanceNanousd,
-		BillingBalanceUSD:      float64(v.BillingBalanceNanousd) / 1000000000.0,
-		BillingAccountStatus:   v.BillingAccountStatus,
 	}
 }
 
@@ -384,55 +317,17 @@ func toSystemEventResponse(item domainsystemevent.Event) SystemEventResponse {
 	}
 }
 
-func toUsageLogResponse(item domainbilling.UsageLedger, label appadmin.UserLabel) UsageLogResponse {
-	return UsageLogResponse{
-		ID:                  item.ID,
-		UserID:              item.UserID,
-		Username:            label.Username,
-		UserDisplayName:     label.DisplayName,
-		UserLabel:           label.Label,
-		ConversationID:      item.ConversationID,
-		ProviderProtocol:    item.ProviderProtocol,
-		UpstreamName:        item.UpstreamName,
-		PlatformModelName:   item.PlatformModelName,
-		RoutedBindingCode:   item.RoutedBindingCode,
-		UpstreamModelName:   item.UpstreamModelName,
-		IsFreeModel:         item.IsFreeModel,
-		UsageDate:           item.UsageDate,
-		InputTokens:         item.InputTokens,
-		CacheReadTokens:     item.CacheReadTokens,
-		CacheWriteTokens:    item.CacheWriteTokens,
-		CacheWrite5mTokens:  item.CacheWrite5mTokens,
-		CacheWrite1hTokens:  item.CacheWrite1hTokens,
-		OutputTokens:        item.OutputTokens,
-		ReasoningTokens:     item.ReasoningTokens,
-		CallCount:           item.CallCount,
-		DurationSeconds:     item.DurationSeconds,
-		LatencyMS:           item.LatencyMS,
-		UsageSpeed:          item.UsageSpeed,
-		ServiceTier:         item.ServiceTier,
-		BilledCurrency:      item.BilledCurrency,
-		BilledNanousd:       item.BilledNanousd,
-		BilledUSD:           float64(item.BilledNanousd) / 1_000_000_000,
-		PricingSnapshotJSON: item.PricingSnapshotJSON,
-		CreatedAt:           item.CreatedAt,
-		UpdatedAt:           item.UpdatedAt,
-	}
-}
-
 func toAppPatchUserInput(req PatchUserRequest) appadmin.PatchUserInput {
 	return appadmin.PatchUserInput{
-		AvatarURL:             req.AvatarURL,
-		DisplayName:           req.DisplayName,
-		Email:                 req.Email,
-		Phone:                 req.Phone,
-		Role:                  req.Role,
-		Status:                req.Status,
-		Timezone:              req.Timezone,
-		Locale:                req.Locale,
-		ProfilePreferences:    req.ProfilePreferences,
-		SubscriptionTier:      req.SubscriptionTier,
-		SubscriptionExpiresAt: req.SubscriptionExpiresAt,
-		Reason:                req.Reason,
+		AvatarURL:          req.AvatarURL,
+		DisplayName:        req.DisplayName,
+		Email:              req.Email,
+		Phone:              req.Phone,
+		Role:               req.Role,
+		Status:             req.Status,
+		Timezone:           req.Timezone,
+		Locale:             req.Locale,
+		ProfilePreferences: req.ProfilePreferences,
+		Reason:             req.Reason,
 	}
 }

@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/kangzyz/Doub/backend/internal/application/billing"
 	appstorage "github.com/kangzyz/Doub/backend/internal/application/objectstorage"
 	userapp "github.com/kangzyz/Doub/backend/internal/application/user"
 	"github.com/kangzyz/Doub/backend/internal/application/userview"
@@ -41,19 +40,10 @@ type Service struct {
 	cfg                  *config.Runtime
 	repo                 repository.AuthRepository
 	geoResolver          *geoip.Client
-	subscriptionResolver subscriptionResolver
 	providerHTTPClient   *http.Client
 	logger               *zap.Logger
 	storeProvider        appstorage.Provider
 	auditWriter          auditWriter
-}
-
-type subscriptionResolver interface {
-	GetCurrentSubscriptionSnapshot(
-		ctx context.Context,
-		userID uint,
-		now time.Time,
-	) (*billing.UserSubscriptionSnapshot, error)
 }
 
 type auditWriter interface {
@@ -85,11 +75,6 @@ func NewServiceWithRuntime(cfg *config.Runtime, repo repository.AuthRepository, 
 		},
 		storeProvider: appstorage.NewRuntimeProvider(cfg, nil),
 	}
-}
-
-// SetSubscriptionResolver 注入订阅派生解析能力。
-func (s *Service) SetSubscriptionResolver(resolver subscriptionResolver) {
-	s.subscriptionResolver = resolver
 }
 
 // SetLogger 注入结构化日志记录器。
@@ -466,35 +451,7 @@ func (s *Service) buildUserView(ctx context.Context, item domainuser.User) (user
 	if credentialErr != nil && !errors.Is(credentialErr, repository.ErrNotFound) {
 		return userview.UserView{}, credentialErr
 	}
-	if s.subscriptionResolver == nil {
-		view := userview.FromUser(item, nil)
-		s.applyCredentialView(&view, item, credential)
-		if err := s.applyTwoFactorView(ctx, &view); err != nil {
-			return userview.UserView{}, err
-		}
-		return view, nil
-	}
-
-	subscription, err := s.subscriptionResolver.GetCurrentSubscriptionSnapshot(ctx, item.ID, time.Now())
-	if err != nil {
-		return userview.UserView{}, err
-	}
-	if subscription == nil {
-		view := userview.FromUser(item, nil)
-		s.applyCredentialView(&view, item, credential)
-		if err := s.applyTwoFactorView(ctx, &view); err != nil {
-			return userview.UserView{}, err
-		}
-		return view, nil
-	}
-
-	view := userview.FromUser(item, &userview.SubscriptionState{
-		PlanID:    subscription.PlanID,
-		PlanName:  subscription.PlanName,
-		Tier:      subscription.Tier,
-		Status:    subscription.Status,
-		ExpiresAt: subscription.ExpiresAt,
-	})
+	view := userview.FromUser(item)
 	s.applyCredentialView(&view, item, credential)
 	if err := s.applyTwoFactorView(ctx, &view); err != nil {
 		return userview.UserView{}, err

@@ -56,8 +56,8 @@ export function normalizeThemePreset(value: string | null | undefined): ThemePre
 
 function applyTheme(theme: Theme, systemTheme: "light" | "dark", preset: ThemePreset) {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
-  const backgroundColor = resolvedTheme === "dark" ? "#171717" : "#faf9f4";
-  const color = resolvedTheme === "dark" ? "#dedbd2" : "#5a5347";
+  const backgroundColor = resolvedTheme === "dark" ? "#191714" : "#f9f5f0";
+  const color = resolvedTheme === "dark" ? "#e7e2da" : "#29241f";
   const root = document.documentElement;
   root.classList.remove("light", "dark");
   root.classList.add(resolvedTheme);

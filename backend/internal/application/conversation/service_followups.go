@@ -94,7 +94,6 @@ func (s *Service) generateAssistantFollowUps(ctx context.Context, conversation m
 	if err != nil {
 		return nil, fmt.Errorf("follow-ups llm generate: %w", err)
 	}
-	s.recordBasicServiceUsage(ctx, conversation.UserID, conversation.ID, "follow_ups", "追问建议", out.PlatformModelName, out.RoutedBindingCode, out.ProviderProtocol, out.UpstreamName, out.UpstreamModel, "5m", out.Usage, out.Messages, out.Text, out.LatencyMS)
 	return sanitizeGeneratedFollowUps(parseGeneratedFollowUps(out.Text)), nil
 }
 

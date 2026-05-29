@@ -1,10 +1,7 @@
 package model
 
 import (
-	"sync"
 	"testing"
-
-	"gorm.io/gorm/schema"
 )
 
 type tableNamer interface {
@@ -26,14 +23,6 @@ func TestTableNamesUseRestructuredDomains(t *testing.T) {
 		LLMUpstreamModel{},
 		LLMPlatformModel{},
 		LLMPlatformModelRoute{},
-		BillingPlan{},
-		BillingPrice{},
-		Subscription{},
-		PaymentOrder{},
-		BillingAccount{},
-		BalanceTransaction{},
-		ModelPricing{},
-		UsageLedger{},
 		Conversation{},
 		ConversationShare{},
 		Message{},
@@ -68,7 +57,6 @@ func TestTableNamesUseRestructuredDomains(t *testing.T) {
 		"user_api_keys":                     {},
 		"llm_configs":                       {},
 		"llm_platform_model_routes":         {},
-		"billing_platform_model_prices":     {},
 		"conversations":                     {},
 		"messages":                          {},
 		"conversation_message_feedbacks":    {},
@@ -88,27 +76,6 @@ func TestTableNamesUseRestructuredDomains(t *testing.T) {
 		tableName := item.TableName()
 		if _, exists := deprecated[tableName]; exists {
 			t.Fatalf("model still uses deprecated table name %q", tableName)
-		}
-	}
-}
-
-func TestUsageLedgerColumnNames(t *testing.T) {
-	parsed, err := schema.Parse(&UsageLedger{}, &sync.Map{}, schema.NamingStrategy{})
-	if err != nil {
-		t.Fatalf("parse usage ledger schema: %v", err)
-	}
-
-	tests := map[string]string{
-		"CacheWrite5mTokens": "cache_write_5m_tokens",
-		"CacheWrite1hTokens": "cache_write_1h_tokens",
-	}
-	for fieldName, wantColumn := range tests {
-		field := parsed.LookUpField(fieldName)
-		if field == nil {
-			t.Fatalf("field %s not found", fieldName)
-		}
-		if field.DBName != wantColumn {
-			t.Fatalf("field %s column = %q, want %q", fieldName, field.DBName, wantColumn)
 		}
 	}
 }

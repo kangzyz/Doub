@@ -31,10 +31,6 @@ func New(cfg config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	if err = seedBillingCatalog(db); err != nil {
-		return nil, err
-	}
-
 	return db, nil
 }
 
@@ -129,14 +125,6 @@ func migrate(db *gorm.DB, cfg config.Config) error {
 		"chat_run_events":                "会话运行轨迹与工具事件表",
 		"chat_context_records":           "会话上下文快照与证据表",
 		"user_memories":                  "用户长期个性化记忆表",
-		"billing_plans":                  "订阅套餐定义表",
-		"billing_prices":                 "订阅价格版本表",
-		"billing_subscriptions":          "用户订阅表",
-		"billing_payment_orders":         "支付订单表",
-		"billing_accounts":               "按量计费余额账户表",
-		"billing_balance_transactions":   "按量计费余额流水表",
-		"billing_model_prices":           "平台模型按量单价配置表",
-		"billing_usage_ledgers":          "按量用量账本表",
 		"audit_logs":                     "可追溯审计日志表",
 		"system_events":                  "后台系统事件表",
 		"system_settings":                "系统动态配置表",
@@ -159,9 +147,6 @@ func migrate(db *gorm.DB, cfg config.Config) error {
 		return err
 	}
 	if err := applyLLMBaselineIndexes(db); err != nil {
-		return err
-	}
-	if err := applyBillingBaselineIndexes(db); err != nil {
 		return err
 	}
 	if err := applyVectorBaseline(db, vectorBaselineRequired(cfg)); err != nil {
@@ -203,14 +188,6 @@ func applySchemaBaseline(db *gorm.DB) error {
 		&model.ChatRunEvent{},
 		&model.ChatContextRecord{},
 		&model.UserMemory{},
-		&model.BillingPlan{},
-		&model.BillingPrice{},
-		&model.Subscription{},
-		&model.PaymentOrder{},
-		&model.BillingAccount{},
-		&model.BalanceTransaction{},
-		&model.ModelPricing{},
-		&model.UsageLedger{},
 		&model.AuditLog{},
 		&model.SystemEvent{},
 		&model.SystemSetting{},
@@ -253,26 +230,6 @@ func applyLLMBaselineIndexes(db *gorm.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_llm_model_routes_routing
 			ON "llm_model_routes" ("platform_model_id", "status", "priority", "weight")
 			WHERE status = 'active'`,
-	}
-
-	for _, statement := range statements {
-		if err := db.Exec(statement).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func applyBillingBaselineIndexes(db *gorm.DB) error {
-	statements := []string{
-		`CREATE INDEX IF NOT EXISTS idx_billing_usage_ledgers_user_date_model
-		ON "billing_usage_ledgers" ("user_id", "usage_date", "platform_model_name")`,
-		`CREATE INDEX IF NOT EXISTS idx_billing_usage_ledgers_user_created_billable
-		ON "billing_usage_ledgers" ("user_id", "created_at")
-		WHERE is_free_model = FALSE`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_balance_transactions_usage_ref
-		ON "billing_balance_transactions" ("user_id", "type", "ref_no")
-		WHERE ref_no <> '' AND type IN ('usage_reserve', 'usage_refund')`,
 	}
 
 	for _, statement := range statements {
@@ -444,113 +401,4 @@ func seedLLMSettings(db *gorm.DB) error {
 		}
 	}
 	return nil
-}
-
-func seedBillingCatalog(db *gorm.DB) error {
-	var planCount int64
-	if err := db.Model(&model.BillingPlan{}).Count(&planCount).Error; err != nil {
-		return err
-	}
-	var priceCount int64
-	if err := db.Model(&model.BillingPrice{}).Count(&priceCount).Error; err != nil {
-		return err
-	}
-	if planCount > 0 || priceCount > 0 {
-		return nil
-	}
-
-	plans := []model.BillingPlan{
-		{
-			Code:                "free",
-			Name:                "Free",
-			Description:         "默认免费套餐",
-			FeatureJSON:         `{"priority":"shared"}`,
-			PeriodCreditNanousd: 1000000000,
-			DiscountPercent:     0,
-			SortOrder:           10,
-			IsActive:            true,
-		},
-		{
-			Code:                "pro",
-			Name:                "Pro",
-			Description:         "轻度使用套餐",
-			FeatureJSON:         `{"priority":"standard"}`,
-			PeriodCreditNanousd: 30000000000,
-			DiscountPercent:     0,
-			SortOrder:           20,
-			IsActive:            true,
-		},
-		{
-			Code:                "max",
-			Name:                "Max",
-			Description:         "中度使用套餐",
-			FeatureJSON:         `{"priority":"advanced"}`,
-			PeriodCreditNanousd: 75000000000,
-			DiscountPercent:     0,
-			SortOrder:           30,
-			IsActive:            true,
-		},
-		{
-			Code:                "ultra",
-			Name:                "Ultra",
-			Description:         "重度使用套餐",
-			FeatureJSON:         `{"priority":"premium"}`,
-			PeriodCreditNanousd: 300000000000,
-			DiscountPercent:     0,
-			SortOrder:           40,
-			IsActive:            true,
-		},
-	}
-
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&plans).Error; err != nil {
-			return err
-		}
-
-		planIDByCode := make(map[string]uint, len(plans))
-		for _, item := range plans {
-			planIDByCode[item.Code] = item.ID
-		}
-
-		prices := []model.BillingPrice{
-			{
-				PlanID:          planIDByCode["free"],
-				Code:            "free-default",
-				BillingInterval: model.BillingIntervalLifetime,
-				Currency:        "USD",
-				AmountCents:     0,
-				IsActive:        true,
-				IsDefault:       true,
-			},
-			{
-				PlanID:          planIDByCode["pro"],
-				Code:            "pro-monthly",
-				BillingInterval: model.BillingIntervalMonth,
-				Currency:        "USD",
-				AmountCents:     2000,
-				IsActive:        true,
-				IsDefault:       true,
-			},
-			{
-				PlanID:          planIDByCode["max"],
-				Code:            "max-monthly",
-				BillingInterval: model.BillingIntervalMonth,
-				Currency:        "USD",
-				AmountCents:     5000,
-				IsActive:        true,
-				IsDefault:       true,
-			},
-			{
-				PlanID:          planIDByCode["ultra"],
-				Code:            "ultra-monthly",
-				BillingInterval: model.BillingIntervalMonth,
-				Currency:        "USD",
-				AmountCents:     20000,
-				IsActive:        true,
-				IsDefault:       true,
-			},
-		}
-
-		return tx.Create(&prices).Error
-	})
 }

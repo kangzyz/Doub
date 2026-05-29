@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
 	domainchannel "github.com/kangzyz/Doub/backend/internal/domain/channel"
 	"github.com/kangzyz/Doub/backend/internal/repository"
 )
@@ -52,24 +51,6 @@ func (s *Service) ListModels(ctx context.Context, page int, pageSize int, onlyAc
 // ListActiveModels 查询全部启用模型目录（用于公开接口）。
 func (s *Service) ListActiveModels(ctx context.Context) ([]ModelView, error) {
 	now := time.Now()
-	if s.modelPricingFilter == nil {
-		items, err := s.listAllActiveModelRows(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return filterRoutableModels(items), nil
-	}
-	mode, err := s.modelPricingFilter.GetBillingMode(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if mode == "self" {
-		items, err := s.listAllActiveModelRows(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return filterRoutableModels(items), nil
-	}
 
 	s.modelCatalogMu.RLock()
 	if s.modelCatalog != nil && now.Before(s.modelCatalogValidUntil) {
@@ -84,11 +65,6 @@ func (s *Service) ListActiveModels(ctx context.Context) ([]ModelView, error) {
 		return nil, err
 	}
 	views := filterRoutableModels(items)
-	pricingByPlatformModelName, err := s.modelPricingFilter.ListPublicModelPricing(ctx)
-	if err != nil {
-		return nil, err
-	}
-	views = filterPricedModelViews(views, pricingByPlatformModelName)
 	s.storeModelCatalog(now, views)
 	return cloneModelViews(views), nil
 }
@@ -128,16 +104,7 @@ func cloneModelViews(items []ModelView) []ModelView {
 		return []ModelView{}
 	}
 	results := make([]ModelView, 0, len(items))
-	for _, item := range items {
-		if item.Pricing != nil {
-			pricing := *item.Pricing
-			if len(pricing.Tiers) > 0 {
-				pricing.Tiers = append([]appbilling.PublicModelPricingTier(nil), pricing.Tiers...)
-			}
-			item.Pricing = &pricing
-		}
-		results = append(results, item)
-	}
+	results = append(results, items...)
 	return results
 }
 
@@ -151,36 +118,6 @@ func filterRoutableModels(items []repository.ChannelModelListRow) []ModelView {
 		results = append(results, toModelView(item))
 	}
 	return results
-}
-
-func filterPricedModelViews(items []ModelView, pricingByPlatformModelName map[string]appbilling.PublicModelPricing) []ModelView {
-	results := make([]ModelView, 0, len(items))
-	for _, item := range items {
-		pricing, ok := pricingByPlatformModelName[strings.TrimSpace(item.PlatformModelName)]
-		if !ok {
-			continue
-		}
-		item.Pricing = &pricing
-		results = append(results, item)
-	}
-	return results
-}
-
-// ResolvePlatformModelIdentity 将平台模型名解析为统一平台身份。
-func (s *Service) ResolvePlatformModelIdentity(ctx context.Context, platformModelName string) (appbilling.PlatformModelIdentity, error) {
-	name, err := normalizePlatformModelName(platformModelName)
-	if err != nil {
-		return appbilling.PlatformModelIdentity{}, ErrModelNotFound
-	}
-	item, err := s.repo.GetModelByName(ctx, name)
-	if err != nil {
-		return appbilling.PlatformModelIdentity{}, err
-	}
-	return appbilling.PlatformModelIdentity{
-		PlatformModelName: item.PlatformModelName,
-		ModelVendor:       strings.TrimSpace(item.Vendor),
-		ModelIcon:         strings.TrimSpace(item.Icon),
-	}, nil
 }
 
 // ListActivePlatformModelNames 返回当前真实可路由的平台模型名集合。

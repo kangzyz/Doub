@@ -9,7 +9,6 @@ import { parseProtocolsJSON } from "@/features/chat/model/chat-adapter-options";
 import { sanitizeConversationOptions } from "@/features/chat/model/conversation-options";
 import { listConversationRuns } from "@/shared/api/conversation";
 import { listPublicModels } from "@/shared/api/model";
-import { getBillingConfig } from "@/shared/api/billing";
 import { getModelOptionPolicy } from "@/shared/api/settings";
 import { getUserSettings } from "@/shared/api/user-settings";
 import type { PublicModelDTO } from "@/shared/api/model.types";
@@ -68,7 +67,6 @@ export function useChatModelOptions({
   const [showModelInfo, setShowModelInfo] = React.useState(true);
   const [showLatency, setShowLatency] = React.useState(true);
   const [showTokenUsage, setShowTokenUsage] = React.useState(true);
-  const [showBillingCost, setShowBillingCost] = React.useState(false);
   const [modelOptionPolicy, setModelOptionPolicy] = React.useState<ModelOptionPolicy | null>(null);
   const activeConversationRef = React.useRef<string | null>(null);
   const userSelectedModelRef = React.useRef(false);
@@ -91,10 +89,9 @@ export function useChatModelOptions({
           setModelsErrorMsg(t("signInRequired"));
           return;
         }
-        const [nextModels, settings, billingConfig, nextModelOptionPolicy] = await Promise.all([
+        const [nextModels, settings, nextModelOptionPolicy] = await Promise.all([
           listPublicModels(token),
           getUserSettings(token).catch(() => ({} as Record<string, string>)),
-          getBillingConfig(token).catch(() => null),
           getModelOptionPolicy(token).catch(() => null),
         ]);
         if (cancelled) {
@@ -110,7 +107,6 @@ export function useChatModelOptions({
         setShowModelInfo(settings["chat.show_model_info"] !== "false");
         setShowLatency(settings["chat.show_latency"] !== "false");
         setShowTokenUsage(settings["chat.show_token_usage"] !== "false");
-        setShowBillingCost((billingConfig?.config.mode ?? "self") !== "self" && settings["chat.show_billing_cost"] !== "false");
         setInputHeight(
           settings["chat.input_height"] === "compact" || settings["chat.input_height"] === "loose"
             ? settings["chat.input_height"]
@@ -210,7 +206,6 @@ export function useChatModelOptions({
           kinds: parseKindsJSON(item.kindsJSON),
           protocols: parseProtocolsJSON(item.protocolsJSON),
           defaultOptions: resolveDefaultOptions(item.capabilitiesJSON),
-          pricing: item.pricing,
         };
       }),
     [availableModels],
@@ -228,7 +223,6 @@ export function useChatModelOptions({
     showModelInfo,
     showLatency,
     showTokenUsage,
-    showBillingCost,
     modelOptionPolicy,
     selectedPlatformModelName,
     setSelectedPlatformModelName: selectPlatformModelName,

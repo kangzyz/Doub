@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	appadmin "github.com/kangzyz/Doub/backend/internal/application/admin"
@@ -75,9 +74,6 @@ func (s *handlerUserServiceFake) CreateUser(
 	string,
 	string,
 	string,
-	string,
-	string,
-	*time.Time,
 ) (*domainuser.User, error) {
 	return nil, nil
 }

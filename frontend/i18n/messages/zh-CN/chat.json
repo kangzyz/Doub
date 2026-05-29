@@ -296,40 +296,7 @@
     "cacheWriteTokens": "缓存(写) tokens",
     "generationDuration": "生成用时",
     "totalDuration": "总用时",
-    "model": "模型",
-    "billingCost": "本次调用费用",
-    "billing": {
-      "cacheWrite": "缓存(写)",
-      "cacheWrite5m": "缓存(写 5m)",
-      "cacheWrite1h": "缓存(写 1h)",
-      "cacheWrite5m1h": "缓存(写 5m/1h)",
-      "cacheWritePricingLabel": "缓存(写 5m)",
-      "cacheWritePricingNote": "Claude 缓存读按后台配置；缓存写 5m 按后台配置价 1.25x，1h 按 2x；Fast Mode 会整体再乘 6。",
-      "claudeCacheWriteMixedNote": "Claude 缓存写按后台配置价 {multiplier} 计费。",
-      "claudeCacheWriteNote": "Claude {timeout} 缓存写按后台配置价 {multiplier} 计费。",
-      "claudeFastModeNote": "Claude Fast Mode：输入、输出和缓存费用按 {multiplier} 计费。",
-      "openaiServiceTierNote": "OpenAI service_tier={tier}：按 {multiplier} 计费。",
-      "input": "输入",
-      "output": "输出",
-      "cacheRead": "缓存(读)",
-      "rateNote": "倍率说明",
-      "cacheNote": "缓存说明",
-      "total": "总计",
-      "freeModelNoBilling": "免费模型，不计费",
-      "perCall": "每次",
-      "perSecond": "每秒",
-      "callUnit": "次",
-      "secondUnit": "秒",
-      "tieredRangeBounded": "原始输入区间 {from}-{upTo}",
-      "tieredRangeOpen": "原始输入区间 {from}+",
-      "table": {
-        "item": "计费项目",
-        "usage": "用量",
-        "unitPrice": "单价",
-        "amount": "金额",
-        "total": "总计"
-      }
-    }
+    "model": "模型"
   },
   "composer": {
     "uploadFile": "上传文件",

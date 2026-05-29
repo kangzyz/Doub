@@ -63,19 +63,6 @@
     "verificationCodeInvalid": "验证码无效或已过期。",
     "verificationCodeRecent": "验证码刚刚已发送，请稍后再试。"
   },
-  "billing": {
-    "insufficientBalance": "余额不足。",
-    "insufficientFunds": "余额不足。",
-    "invalidDailyUsageDateRange": "用量日期范围无效。",
-    "invalidDailyUsageDays": "用量天数无效。",
-    "invalidModelPricing": "模型定价无效。",
-    "invalidSubscriptionExpiry": "订阅到期时间无效。",
-    "invalidSubscriptionTier": "订阅等级无效。",
-    "paymentRequired": "需要先完成支付。",
-    "periodCreditExceeded": "周期额度已用尽。",
-    "pricingRequired": "需要先配置模型定价。",
-    "subscriptionExpiryRequired": "需要设置订阅到期时间。"
-  },
   "config": {
     "invalidJson": "配置 JSON 无效。"
   },
@@ -183,20 +170,6 @@
     "notFound": "消息不存在。",
     "tooManyFiles": "单条消息包含的文件过多。"
   },
-  "payment": {
-    "checkoutFailed": "创建支付订单失败。",
-    "epayTypeUnsupported": "该易支付类型不受支持。",
-    "invalidEvent": "支付事件无效。",
-    "invalidSignature": "支付签名无效。",
-    "invalidWebhookBody": "支付回调内容无效。",
-    "notificationMismatch": "支付回调与订单不匹配。",
-    "orderNoRequired": "订单号不能为空。",
-    "providerUnavailable": "支付服务不可用。",
-    "returnUrlCrossOrigin": "支付返回地址必须使用已配置的公开站点域名。",
-    "returnUrlInvalid": "支付返回地址无效。",
-    "webhookBodyTooLarge": "支付回调内容过大。",
-    "webhookNotConfigured": "支付回调尚未配置。"
-  },
   "quota": {
     "exceeded": "额度已用尽。"
   },
@@ -231,7 +204,6 @@
     "unavailable": "服务暂不可用，请稍后重试。"
   },
   "settings": {
-    "billingPaymentInvalid": "计费支付设置无效。",
     "embeddingInvalid": "向量设置无效。",
     "extractInvalid": "文件解析设置无效。",
     "invalidKey": "设置项无效。",

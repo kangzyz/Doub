@@ -4,7 +4,6 @@ import type {
   ChatMessageProcessTrace,
 } from "@/features/chat/types/messages";
 import type { ConversationOptions } from "@/shared/api/conversation.types";
-import type { PublicModelPricingDTO } from "@/shared/api/model.types";
 
 export type ViewerProfile = {
   name: string;
@@ -18,7 +17,6 @@ export type ChatModelOption = {
   kinds: string[];
   protocols: string[];
   defaultOptions: ConversationOptions;
-  pricing: PublicModelPricingDTO | null;
 };
 
 export type PendingAttachment = {

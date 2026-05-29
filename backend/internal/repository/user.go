@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	domainbilling "github.com/kangzyz/Doub/backend/internal/domain/billing"
 	domainuser "github.com/kangzyz/Doub/backend/internal/domain/user"
 )
 
@@ -173,8 +172,6 @@ type UserRepository interface {
 	UpdateFields(ctx context.Context, userID uint, input UpdateUserFieldsInput) (*domainuser.User, error)
 	ListUsers(ctx context.Context, offset int, limit int) ([]domainuser.User, int64, error)
 	CountSuperAdmins(ctx context.Context) (int64, error)
-	GetActivePlanByCode(ctx context.Context, code string) (*domainbilling.Plan, error)
-	GetActiveDefaultPriceByPlanID(ctx context.Context, planID uint) (*domainbilling.Price, error)
 	CreateWithCredential(
 		ctx context.Context,
 		user *domainuser.User,

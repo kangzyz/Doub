@@ -112,7 +112,6 @@ function mapPublicSharedMessage(item: PublicSharedMessageDTO, fallbackModel: str
   return {
     ...message,
     platformModelName,
-    billingCost: undefined,
     branchNavigator: undefined,
   };
 }
@@ -174,7 +173,6 @@ function PublicSharedMessage({
         showModelInfo
         showLatency
         showTokenUsage
-        showBillingCost={false}
         readOnly
         attachmentContentLoader={loadContent}
         showBranchNavigator

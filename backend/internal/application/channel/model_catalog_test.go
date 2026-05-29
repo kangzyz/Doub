@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
-
-	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
 )
 
 func TestProtocolDefaultsForCompatibleOnlyIncludesSupportedPrimaryKinds(t *testing.T) {
@@ -570,27 +568,6 @@ func TestDisplayProtocolDefaultsJSONHidesLegacyInvalidDefaults(t *testing.T) {
 	if _, ok := defaults[modelKindImageGen]; ok {
 		t.Fatalf("expected invalid image_gen default hidden, got %s", display)
 	}
-}
-
-func TestFilterPricedModelViewsUsesPlatformModelNameKey(t *testing.T) {
-	items := []ModelView{{
-		PlatformModelName: "gpt-5.5",
-	}}
-	pricing := map[string]appbilling.PublicModelPricing{
-		"gpt-5.5": {
-			Currency: "USD",
-			Mode:     "token",
-		},
-	}
-
-	results := filterPricedModelViews(items, pricing)
-	if len(results) != 1 {
-		t.Fatalf("expected model to match pricing by platform model name, got %d", len(results))
-	}
-	if results[0].Pricing == nil || results[0].Pricing.Currency != "USD" {
-		t.Fatalf("expected pricing attached by platform model name, got %#v", results[0].Pricing)
-	}
-
 }
 
 func TestNormalizePlatformModelNameAllowsDisplaySpaces(t *testing.T) {

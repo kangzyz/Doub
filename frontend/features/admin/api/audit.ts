@@ -1,5 +1,5 @@
 import { authedRequest } from "@/shared/api/authed-client";
-import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUsageLogDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
+import type { AdminAuditLogDTO, AdminSystemEventDTO, AdminUserAuthEventDTO } from "@/features/admin/api/admin.types";
 import type { PagePayload } from "@/shared/api/common.types";
 
 import { normalizeAdminPagePayload, resolveAdminPage, type AdminPageOptions } from "./shared";
@@ -25,16 +25,6 @@ type ListAdminSystemEventsOptions = AdminPageOptions & {
   level?: string;
   source?: string;
   event?: string;
-  createdFrom?: string;
-  createdTo?: string;
-  sort?: string;
-};
-
-type ListAdminUsageLogsOptions = AdminPageOptions & {
-  query?: string;
-  platformModelName?: string;
-  billingMode?: string;
-  userID?: number;
   createdFrom?: string;
   createdTo?: string;
   sort?: string;
@@ -131,27 +121,3 @@ export async function listAdminSystemEvents(
   return normalizeAdminPagePayload(data);
 }
 
-export async function listAdminUsageLogs(
-  accessToken: string,
-  options: ListAdminUsageLogsOptions = {},
-): Promise<PagePayload<AdminUsageLogDTO>> {
-  const { page, pageSize } = resolveAdminPage(options);
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("page_size", String(pageSize));
-  if (options.query?.trim()) params.set("query", options.query.trim());
-  if (options.platformModelName?.trim()) params.set("platform_model_name", options.platformModelName.trim());
-  if (options.billingMode?.trim()) params.set("billing_mode", options.billingMode.trim());
-  if (options.userID && options.userID > 0) params.set("user_id", String(options.userID));
-  if (options.createdFrom?.trim()) params.set("created_from", options.createdFrom.trim());
-  if (options.createdTo?.trim()) params.set("created_to", options.createdTo.trim());
-  if (options.sort?.trim()) params.set("sort", options.sort.trim());
-
-  const data = await authedRequest<PagePayload<AdminUsageLogDTO>>(
-    `/api/v1/admin/call-logs?${params.toString()}`,
-    { accessToken },
-    true,
-  );
-
-  return normalizeAdminPagePayload(data);
-}

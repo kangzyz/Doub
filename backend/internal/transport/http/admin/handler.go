@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	appadmin "github.com/kangzyz/Doub/backend/internal/application/admin"
 	auditapp "github.com/kangzyz/Doub/backend/internal/application/audit"
-	appbilling "github.com/kangzyz/Doub/backend/internal/application/billing"
 	systemeventapp "github.com/kangzyz/Doub/backend/internal/application/systemevent"
 	"github.com/kangzyz/Doub/backend/internal/application/user"
 	"github.com/kangzyz/Doub/backend/internal/shared/response"
@@ -86,8 +85,6 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		req.Phone,
 		req.Timezone,
 		req.Locale,
-		req.SubscriptionTier,
-		req.SubscriptionExpiresAt,
 	)
 	if err != nil {
 		switch {
@@ -103,10 +100,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 			errors.Is(err, user.ErrInvalidEmail),
 			errors.Is(err, user.ErrInvalidPhone),
 			errors.Is(err, user.ErrInvalidTimeZone),
-			errors.Is(err, user.ErrInvalidLocale),
-			errors.Is(err, user.ErrInvalidSubscriptionTier),
-			errors.Is(err, user.ErrSubscriptionExpiryRequired),
-			errors.Is(err, user.ErrInvalidSubscriptionExpiry):
+			errors.Is(err, user.ErrInvalidLocale):
 			response.ErrorFrom(c, http.StatusBadRequest, err)
 			return
 		default:
@@ -182,15 +176,9 @@ func (h *Handler) PatchUser(c *gin.Context) {
 			errors.Is(err, appadmin.ErrInvalidUserStatus),
 			errors.Is(err, appadmin.ErrInvalidUserRole),
 			errors.Is(err, appadmin.ErrInvalidUserTimeZone),
-			errors.Is(err, appbilling.ErrInvalidSubscriptionTier),
-			errors.Is(err, appbilling.ErrSubscriptionExpiryRequired),
-			errors.Is(err, appbilling.ErrInvalidSubscriptionExpiry),
 			errors.Is(err, user.ErrInvalidDisplayName),
 			errors.Is(err, appadmin.ErrEmptyAdminUserPatch):
 			response.ErrorFrom(c, http.StatusBadRequest, err)
-			return
-		case errors.Is(err, appbilling.ErrPaymentRequired):
-			response.ErrorFrom(c, http.StatusConflict, err)
 			return
 		case errors.Is(err, user.ErrUserNotFound):
 			response.Error(c, http.StatusNotFound, "user not found")
@@ -275,66 +263,6 @@ func (h *Handler) ListAuditLogs(c *gin.Context) {
 	logs := make([]AuditLogResponse, 0, len(items))
 	for _, l := range items {
 		logs = append(logs, toAuditLogResponse(l, userLabels[l.ActorUserID]))
-	}
-	response.SuccessPage(c, total, logs)
-}
-
-// ListUsageLogs godoc
-// @Summary 管理员查询模型调用日志
-// @Description 管理员分页查看全量模型调用与计费用量账本
-// @Tags admin
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param page query int false "页码"
-// @Param page_size query int false "每页数量"
-// @Param query query string false "搜索模型、上游、绑定编码、协议"
-// @Param platform_model_name query string false "平台模型名筛选"
-// @Param billing_mode query string false "计费模式筛选：free/token/call/duration/tiered"
-// @Param user_id query int false "调用人用户ID"
-// @Param created_from query string false "创建时间起点(RFC3339)"
-// @Param created_to query string false "创建时间终点(RFC3339)"
-// @Param sort query string false "排序方式"
-// @Success 200 {object} UsageLogListResponseDoc
-// @Failure 400 {object} ErrorDoc
-// @Failure 500 {object} ErrorDoc
-// @Router /admin/call-logs [get]
-// ListUsageLogs 查询模型调用日志。
-func (h *Handler) ListUsageLogs(c *gin.Context) {
-	page, pageSize := pageParams(c)
-	userID, ok := parseOptionalUintQuery(c, "user_id")
-	if !ok {
-		return
-	}
-	createdFrom, ok := parseOptionalTimeQuery(c, "created_from")
-	if !ok {
-		return
-	}
-	createdTo, ok := parseOptionalTimeQuery(c, "created_to")
-	if !ok {
-		return
-	}
-	items, total, err := h.service.ListUsageLogs(c.Request.Context(), page, pageSize, appbilling.UsageLogListFilter{
-		Query:             c.Query("query"),
-		PlatformModelName: c.Query("platform_model_name"),
-		BillingMode:       c.Query("billing_mode"),
-		UserID:            userID,
-		CreatedFrom:       createdFrom,
-		CreatedTo:         createdTo,
-		Sort:              c.Query("sort"),
-	})
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "list call logs failed")
-		return
-	}
-	userIDs := make([]uint, 0, len(items))
-	for _, item := range items {
-		userIDs = append(userIDs, item.UserID)
-	}
-	userLabels := h.service.ResolveUserLabels(c.Request.Context(), userIDs)
-	logs := make([]UsageLogResponse, 0, len(items))
-	for _, item := range items {
-		logs = append(logs, toUsageLogResponse(item, userLabels[item.UserID]))
 	}
 	response.SuccessPage(c, total, logs)
 }

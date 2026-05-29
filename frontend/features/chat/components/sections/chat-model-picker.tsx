@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, ChevronLeft, CircleDollarSign } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +18,6 @@ import { InputGroupButton } from "@/components/ui/input-group";
 import type { ChatModelOption } from "@/features/chat/types/chat-runtime";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { LobeHubIcon } from "@/shared/components/lobehub-icon";
-import { cacheWritePricingLabel, cacheWritePricingNote, resolveCacheWritePricingUSD } from "@/shared/lib/billing-display";
-import type { BillingDisplayLabels } from "@/shared/lib/billing-display";
 import { resolveLobeHubIconURL, resolveModelIdentity } from "@/shared/lib/model-identity";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +28,6 @@ const MODEL_MENU_MODEL_HEADER_HEIGHT = 28;
 const MODEL_MENU_TEXT_WIDTH_UNIT = 7;
 const MODEL_MENU_CONTENT_GAP_WIDTH = 56;
 const MODEL_MENU_VIEWPORT_GUTTER = 24;
-const PRICING_TOOLTIP_TITLE_CLASS = "font-sans text-xs font-medium leading-4 text-background";
-const PRICING_TOOLTIP_BODY_CLASS = "font-sans text-[11px] leading-4 text-background/80";
 
 type ChatModelPickerProps = {
   modelOptions: ChatModelOption[];
@@ -156,207 +151,14 @@ function ModelMenuScrollContainer({
   );
 }
 
-function ModelPricingTooltipContent({
-  platformModelName,
-  protocols,
-  pricing,
-  labels,
-}: {
-  platformModelName: string;
-  protocols: readonly string[];
-  pricing: NonNullable<ChatModelOption["pricing"]>;
-  labels: {
-    freeModel: string;
-    freeModelDescription: string;
-    tieredPricing: string;
-    callPricing: string;
-    durationPricing: string;
-    tokenPricing: string;
-    input: string;
-    output: string;
-    cacheRead: string;
-    perCall: string;
-    perSecond: string;
-    callUnit: string;
-    secondUnit: string;
-    billingDisplay: BillingDisplayLabels;
-  };
-}) {
-  const cacheWriteLabel = cacheWritePricingLabel(protocols, labels.billingDisplay);
-  const cacheWriteNote = cacheWritePricingNote(protocols, labels.billingDisplay);
-  if (pricing.isFree) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className={PRICING_TOOLTIP_TITLE_CLASS}>{labels.freeModel}</span>
-        <span className={PRICING_TOOLTIP_BODY_CLASS}>{labels.freeModelDescription}</span>
-      </div>
-    );
-  }
-
-  if (pricing.mode === "tiered") {
-    return (
-      <PricingTable
-        platformModelName={platformModelName}
-        title={labels.tieredPricing}
-        footerNote={cacheWriteNote}
-        headerRow={["", ...pricing.tiers.map((tier) => formatTokenRange(tier.fromTokens, tier.upToTokens))]}
-        bodyRows={[
-          [labels.input, ...pricing.tiers.map((tier) => formatPricingUnitUSD(tier.inputUSDPerMTokens))],
-          [labels.output, ...pricing.tiers.map((tier) => formatPricingUnitUSD(tier.outputUSDPerMTokens))],
-          [labels.cacheRead, ...pricing.tiers.map((tier) => formatPricingUnitUSD(tier.cacheReadUSDPerMTokens))],
-          [cacheWriteLabel, ...pricing.tiers.map((tier) => formatPricingUnitUSD(resolveCacheWritePricingUSD(protocols, tier.cacheWriteUSDPerMTokens)))],
-        ]}
-      />
-    );
-  }
-
-  if (pricing.mode === "call") {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className={PRICING_TOOLTIP_TITLE_CLASS}>{labels.callPricing}</span>
-        <PricingTooltipRow label={labels.perCall} value={`${formatPricingUnitUSD(pricing.callUSDPerCall)} / ${labels.callUnit}`} />
-      </div>
-    );
-  }
-
-  if (pricing.mode === "duration") {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className={PRICING_TOOLTIP_TITLE_CLASS}>{labels.durationPricing}</span>
-        <PricingTooltipRow label={labels.perSecond} value={`${formatPricingUnitUSD(pricing.durationUSDPerSecond)} / ${labels.secondUnit}`} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <span className={PRICING_TOOLTIP_TITLE_CLASS}>{labels.tokenPricing}</span>
-      <PricingTooltipRow label={labels.input} value={`${formatPricingUnitUSD(pricing.inputUSDPerMTokens)} / 1M tokens`} />
-      <PricingTooltipRow label={labels.output} value={`${formatPricingUnitUSD(pricing.outputUSDPerMTokens)} / 1M tokens`} />
-      <PricingTooltipRow label={labels.cacheRead} value={`${formatPricingUnitUSD(pricing.cacheReadUSDPerMTokens)} / 1M tokens`} />
-      <PricingTooltipRow label={cacheWriteLabel} value={`${formatPricingUnitUSD(resolveCacheWritePricingUSD(protocols, pricing.cacheWriteUSDPerMTokens))} / 1M tokens`} />
-      {cacheWriteNote ? <span className={cn(PRICING_TOOLTIP_BODY_CLASS, "block max-w-72 text-background/70")}>{cacheWriteNote}</span> : null}
-    </div>
-  );
-}
-
-function PricingTooltipRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={cn("grid grid-cols-[3rem_auto] items-baseline gap-5", PRICING_TOOLTIP_BODY_CLASS)}>
-      <span className="text-left">{label}</span>
-      <span className="whitespace-nowrap text-right tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function PricingTable({
-  platformModelName,
-  title,
-  footerNote,
-  headerRow,
-  bodyRows,
-}: {
-  platformModelName: string;
-  title: string;
-  footerNote?: string | null;
-  headerRow: string[];
-  bodyRows: string[][];
-}) {
-  return (
-    <div className="flex max-w-[560px] flex-col gap-2 overflow-x-auto">
-      <span className={PRICING_TOOLTIP_TITLE_CLASS}>{title}</span>
-      <table className={cn("border-collapse text-left tabular-nums", PRICING_TOOLTIP_BODY_CLASS)}>
-        <thead>
-          <tr className="border-b border-background/20">
-            {headerRow.map((cell, index) => (
-              <th
-                key={`${platformModelName}-pricing-head-${index}`}
-                scope="col"
-                className={cn(
-                  "whitespace-nowrap px-2 pb-1 font-medium text-background/70 first:pl-0 last:pr-0",
-                  index > 0 ? "text-right" : null,
-                )}
-              >
-                {cell}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {bodyRows.map((row, rowIndex) => (
-            <tr key={`${platformModelName}-pricing-row-${rowIndex}`} className="border-b border-background/10 last:border-0">
-              {row.map((cell, cellIndex) => (
-                <td
-                  key={`${platformModelName}-pricing-cell-${rowIndex}-${cellIndex}`}
-                  className={cn(
-                    "whitespace-nowrap px-2 py-1 first:pl-0 last:pr-0",
-                    cellIndex === 0 ? "font-medium text-background/90" : "text-right",
-                  )}
-                >
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {footerNote ? <span className={cn(PRICING_TOOLTIP_BODY_CLASS, "block text-background/70")}>{footerNote}</span> : null}
-    </div>
-  );
-}
-
-function formatPricingUSD(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "$0";
-  }
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  })}`;
-}
-
-function formatPricingUnitUSD(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "$0.00";
-  }
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function formatTokenRange(fromTokens: number, upToTokens: number | null): string {
-  if (!upToTokens || upToTokens <= 0) {
-    return `${formatTokenQuantity(fromTokens)}～∞`;
-  }
-  return `${formatTokenQuantity(fromTokens)}～${formatTokenQuantity(upToTokens)}`;
-}
-
-function formatTokenQuantity(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "0";
-  }
-  if (value >= 1000000 && value % 1000000 === 0) {
-    return `${value / 1000000}M`;
-  }
-  if (value >= 1000 && value % 1000 === 0) {
-    return `${value / 1000}K`;
-  }
-  return String(value);
-}
-
 function ChatModelMenuItem({
   model,
   selected,
   onSelect,
-  pricingLabels,
-  viewPricingLabel,
 }: {
   model: ChatModelOption;
   selected: boolean;
   onSelect: () => void;
-  pricingLabels: React.ComponentProps<typeof ModelPricingTooltipContent>["labels"];
-  viewPricingLabel: string;
 }) {
   const platformModelName = model.platformModelName.trim();
   const identity = React.useMemo(
@@ -383,31 +185,6 @@ function ChatModelMenuItem({
       <span className="flex size-3 shrink-0 items-center justify-center">
         {selected ? <Check className="size-3 text-current" strokeWidth={1.7} /> : null}
       </span>
-      {model.pricing ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              className="flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground/70 transition-colors group-focus:text-current group-data-[selected=true]:text-current"
-              aria-label={viewPricingLabel}
-            >
-              <CircleDollarSign className="size-3.5" strokeWidth={1.8} />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent
-            side="right"
-            align="center"
-            sideOffset={8}
-            className="max-w-[560px] text-left font-medium tabular-nums"
-          >
-            <ModelPricingTooltipContent
-              platformModelName={model.platformModelName}
-              protocols={model.protocols}
-              pricing={model.pricing}
-              labels={pricingLabels}
-            />
-          </TooltipContent>
-        </Tooltip>
-      ) : null}
     </DropdownMenuItem>
   );
 }
@@ -495,36 +272,6 @@ export function ChatModelPicker({
       ),
     [mobileVendorGroup, vendorGroups.length],
   );
-  const pricingLabels = React.useMemo(
-    () => ({
-      freeModel: t("freeModel"),
-      freeModelDescription: t("freeModelDescription"),
-      tieredPricing: t("tieredPricing"),
-      callPricing: t("callPricing"),
-      durationPricing: t("durationPricing"),
-      tokenPricing: t("tokenPricing"),
-      input: t("input"),
-      output: t("output"),
-      cacheRead: t("cacheRead"),
-      perCall: t("perCall"),
-      perSecond: t("perSecond"),
-      callUnit: t("callUnit"),
-      secondUnit: t("secondUnit"),
-      billingDisplay: {
-        cacheWrite: t("cacheWrite"),
-        cacheWrite5m: t("cacheWrite5m"),
-        cacheWrite1h: t("cacheWrite1h"),
-        cacheWrite5m1h: t("cacheWrite5m1h"),
-        claudeCacheWriteMixedNote: (multiplier: string) => t("claudeCacheWriteMixedNote", { multiplier }),
-        claudeCacheWriteNote: (timeout: "5m" | "1h", multiplier: string) => t("claudeCacheWriteNote", { timeout, multiplier }),
-        claudeFastModeNote: (multiplier: string) => t("claudeFastModeNote", { multiplier }),
-        openaiServiceTierNote: (tier: string, multiplier: string) => t("openaiServiceTierNote", { tier, multiplier }),
-        cacheWritePricingLabel: t("cacheWritePricingLabel"),
-        cacheWritePricingNote: t("cacheWritePricingNote"),
-      },
-    }),
-    [t],
-  );
 
   React.useEffect(() => {
     if (!open || !isMobile) {
@@ -597,8 +344,6 @@ export function ChatModelPicker({
                         onModelChange(item.platformModelName);
                         setOpen(false);
                       }}
-                      pricingLabels={pricingLabels}
-                      viewPricingLabel={t("viewPricing")}
                     />
                   ))}
                 </div>
@@ -704,8 +449,6 @@ export function ChatModelPicker({
                                 onModelChange(item.platformModelName);
                                 setOpen(false);
                               }}
-                              pricingLabels={pricingLabels}
-                              viewPricingLabel={t("viewPricing")}
                             />
                             ))}
                           </div>

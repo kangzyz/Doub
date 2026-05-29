@@ -20,8 +20,6 @@ export function AppSettingsPanel({
             className={
               activeSection === "account"
                 ? "mx-auto w-full max-w-[1080px] min-w-0 xl:pt-20"
-                : activeSection === "subscription"
-                  ? "mx-auto w-full max-w-[1080px] min-w-0 xl:pt-20"
                 : "mx-auto w-full max-w-[960px] min-w-0 xl:pt-20"
             }
           >

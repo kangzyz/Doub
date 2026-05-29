@@ -220,12 +220,7 @@ export function AdminFilesSettingsPage() {
         listAdminSettings(token),
         getAdminReferenceData(token).catch(() => null),
       ]);
-      const billingEnabled = (referenceData?.billingConfig.config.mode ?? "self") !== "self";
-      const pricedPlatformModelNames = new Set((referenceData?.modelPricing ?? []).map((item) => item.platformModelName.trim()).filter(Boolean));
-      const models = (referenceData?.models ?? []).filter((item) => {
-        const platformModelName = item.platformModelName.trim();
-        return isRoutableChatPlatformModel(item) && (!billingEnabled || pricedPlatformModelNames.has(platformModelName));
-      });
+      const models = (referenceData?.models ?? []).filter((item) => isRoutableChatPlatformModel(item));
       const nextModelOptions = [
         { label: "Follow current model", value: TASK_MODEL_FOLLOW, iconUrl: null },
         ...(models

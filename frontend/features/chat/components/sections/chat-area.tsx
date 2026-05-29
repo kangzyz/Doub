@@ -85,7 +85,6 @@ type ChatAreaProps = {
   showModelInfo?: boolean;
   showLatency?: boolean;
   showTokenUsage?: boolean;
-  showBillingCost?: boolean;
 };
 
 function useStableEvent<Args extends unknown[], Return>(callback: (...args: Args) => Return) {
@@ -112,7 +111,6 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   showModelInfo,
   showLatency,
   showTokenUsage,
-  showBillingCost,
   showFollowUps,
 }: {
   item: ChatAreaMessage;
@@ -129,7 +127,6 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   showModelInfo: boolean;
   showLatency: boolean;
   showTokenUsage: boolean;
-  showBillingCost: boolean;
   showFollowUps: boolean;
 }) {
   const t = useTranslations("chat.messages");
@@ -174,7 +171,6 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
         showModelInfo={showModelInfo}
         showLatency={showLatency}
         showTokenUsage={showTokenUsage}
-        showBillingCost={showBillingCost}
         showFollowUps={showFollowUps && Boolean(item.followUps?.length) && !item.isPending && !item.isStreaming}
         onSendSuggestion={onSendSuggestion}
       />
@@ -200,7 +196,6 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
   previous.showModelInfo === next.showModelInfo &&
   previous.showLatency === next.showLatency &&
   previous.showTokenUsage === next.showTokenUsage &&
-  previous.showBillingCost === next.showBillingCost &&
   previous.showFollowUps === next.showFollowUps &&
   previous.onEditImageAttachment === next.onEditImageAttachment &&
   areChatAreaMessagesRenderEqual(previous.item, next.item)
@@ -233,7 +228,6 @@ export function ChatArea({
   showModelInfo = true,
   showLatency = true,
   showTokenUsage = true,
-  showBillingCost = false,
 }: ChatAreaProps) {
   const t = useTranslations("chat");
   const { getReaction, onReactAssistantMessage } = useMessageFeedback(messages);
@@ -329,7 +323,6 @@ export function ChatArea({
                   showModelInfo={showModelInfo}
                   showLatency={showLatency}
                   showTokenUsage={showTokenUsage}
-                  showBillingCost={showBillingCost}
                   showFollowUps={item.publicID === latestAssistantPublicID}
                 />
               );

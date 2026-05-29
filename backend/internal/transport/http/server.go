@@ -17,7 +17,6 @@ import (
 	"github.com/kangzyz/Doub/backend/internal/shared/response"
 	adminhttp "github.com/kangzyz/Doub/backend/internal/transport/http/admin"
 	authhttp "github.com/kangzyz/Doub/backend/internal/transport/http/auth"
-	billinghttp "github.com/kangzyz/Doub/backend/internal/transport/http/billing"
 	channelhttp "github.com/kangzyz/Doub/backend/internal/transport/http/channel"
 	conversationhttp "github.com/kangzyz/Doub/backend/internal/transport/http/conversation"
 	mcphttp "github.com/kangzyz/Doub/backend/internal/transport/http/mcp"
@@ -52,7 +51,6 @@ type Modules struct {
 	Conversation *conversationhttp.Module
 	MCP          *mcphttp.Module
 	Memory       *memoryhttp.Module
-	Billing      *billinghttp.Module
 	Admin        *adminhttp.Module
 	Settings     *settingshttp.Module
 	UserSettings *usersettingshttp.Module
@@ -101,7 +99,7 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 	api.GET("/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, buildinfo.Snapshot())
 	})
-	if modules.Auth != nil || modules.Settings != nil || modules.Billing != nil || modules.Conversation != nil {
+	if modules.Auth != nil || modules.Settings != nil || modules.Conversation != nil {
 		publicAuth := api.Group("")
 		publicAuth.Use(middleware.PublicAuthRateLimit(limiter, cfg))
 		if modules.Auth != nil {
@@ -112,9 +110,6 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 		}
 		if modules.Settings != nil {
 			modules.Settings.RegisterPublicRoutes(publicAuth)
-		}
-		if modules.Billing != nil {
-			modules.Billing.RegisterPublicRoutes(publicAuth)
 		}
 	}
 
@@ -137,16 +132,13 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 	if modules.MCP != nil {
 		modules.MCP.RegisterRoutes(authRequired)
 	}
-	if modules.Billing != nil {
-		modules.Billing.RegisterRoutes(authRequired)
-	}
 	if modules.UserSettings != nil {
 		modules.UserSettings.RegisterRoutes(authRequired)
 	}
 	if modules.Settings != nil {
 		modules.Settings.RegisterRoutes(authRequired)
 	}
-	if modules.Admin != nil || modules.Auth != nil || modules.Billing != nil || modules.Channel != nil || modules.MCP != nil || modules.Settings != nil {
+	if modules.Admin != nil || modules.Auth != nil || modules.Channel != nil || modules.MCP != nil || modules.Settings != nil {
 		adminGroup := authRequired.Group("/admin")
 		adminGroup.Use(middleware.AdminOnly())
 		if modules.Auth != nil {
@@ -154,9 +146,6 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 		}
 		if modules.Admin != nil {
 			modules.Admin.RegisterRoutes(adminGroup)
-		}
-		if modules.Billing != nil {
-			modules.Billing.RegisterAdminRoutes(adminGroup)
 		}
 		if modules.Channel != nil {
 			modules.Channel.RegisterAdminRoutes(adminGroup)
