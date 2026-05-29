@@ -24,9 +24,6 @@ const (
 	CodeAuthSessionInvalid       = "auth.session_invalid"
 	CodeResourceNotFound         = "resource.not_found"
 	CodeResourceConflict         = "resource.conflict"
-	CodeBillingPaymentRequired   = "billing.payment_required"
-	CodeBillingInsufficientFunds = "billing.insufficient_funds"
-	CodeBillingPricingRequired   = "billing.pricing_required"
 	CodeRateLimitExceeded        = "rate_limit.exceeded"
 	CodeQuotaExceeded            = "quota.exceeded"
 	CodeFileTooLarge             = "file.too_large"
@@ -198,8 +195,6 @@ var exactErrorSpecs = map[string]errorSpec{
 	"route not found":                             {Code: "route.not_found", Message: "route not found"},
 	"api_keys is required":                        {Code: "llm.api_keys_required", Message: "api_keys is required"},
 
-	"usage balance is insufficient":                                {Code: CodeBillingInsufficientFunds, Message: "insufficient balance"},
-	"model pricing is required":                                    {Code: CodeBillingPricingRequired, Message: "model pricing is required"},
 	"period usage credit exceeded":                                 {Code: "billing.period_credit_exceeded", Message: "period usage credit exceeded"},
 	"invalid subscription tier":                                    {Code: "billing.invalid_subscription_tier", Message: "invalid subscription tier"},
 	"subscription expiry required":                                 {Code: "billing.subscription_expiry_required", Message: "subscription expiry required"},
@@ -207,7 +202,6 @@ var exactErrorSpecs = map[string]errorSpec{
 	"invalid model pricing":                                        {Code: "billing.invalid_model_pricing", Message: "invalid model pricing"},
 	"invalid daily usage date range":                               {Code: "billing.invalid_daily_usage_date_range", Message: "invalid daily usage date range"},
 	"invalid daily usage days":                                     {Code: "billing.invalid_daily_usage_days", Message: "invalid daily usage days"},
-	"payment is required":                                          {Code: CodeBillingPaymentRequired, Message: "payment is required"},
 	"payment provider is unavailable":                              {Code: "payment.provider_unavailable", Message: "payment provider is unavailable"},
 	"create checkout failed":                                       {Code: "payment.checkout_failed", Message: "create checkout failed"},
 	"provider mismatch":                                            {Code: "payment.notification_mismatch", Message: "payment notification does not match the order"},
@@ -285,12 +279,6 @@ func InferErrorCode(status int, msg string) string {
 		return CodeResourceConflict
 	case strings.Contains(text, "quota exceeded") || strings.Contains(text, "exceeded"):
 		return CodeQuotaExceeded
-	case strings.Contains(text, "insufficient"):
-		return CodeBillingInsufficientFunds
-	case strings.Contains(text, "pricing"):
-		return CodeBillingPricingRequired
-	case strings.Contains(text, "payment required"):
-		return CodeBillingPaymentRequired
 	case strings.Contains(text, "file too large"):
 		return CodeFileTooLarge
 	case strings.Contains(text, "file processing not ready") || strings.Contains(text, "file extract not ready"):
@@ -314,8 +302,6 @@ func InferErrorCode(status int, msg string) string {
 		return CodeResourceNotFound
 	case http.StatusConflict:
 		return CodeResourceConflict
-	case http.StatusPaymentRequired:
-		return CodeBillingPaymentRequired
 	case http.StatusTooManyRequests:
 		return CodeRateLimitExceeded
 	case http.StatusBadGateway:
@@ -400,12 +386,6 @@ func fallbackMessage(status int, code string) string {
 		return "resource not found"
 	case CodeResourceConflict:
 		return "resource conflict"
-	case CodeBillingInsufficientFunds:
-		return "insufficient balance"
-	case CodeBillingPricingRequired:
-		return "model pricing is required"
-	case CodeBillingPaymentRequired:
-		return "payment required"
 	case CodeQuotaExceeded:
 		return "quota exceeded"
 	case CodeFileTooLarge:
@@ -430,8 +410,6 @@ func fallbackMessage(status int, code string) string {
 		return "resource not found"
 	case http.StatusConflict:
 		return "resource conflict"
-	case http.StatusPaymentRequired:
-		return "payment required"
 	case http.StatusTooManyRequests:
 		return "rate limit exceeded"
 	case http.StatusBadGateway:
@@ -557,7 +535,6 @@ var fallbackMessages = map[string]string{
 	"settings.not_found":                              "setting not found",
 	"settings.invalid_value":                          "invalid setting value",
 	"settings.smtp_invalid":                           "invalid smtp settings",
-	"settings.billing_payment_invalid":                "invalid billing payment settings",
 	"settings.model_option_policy_invalid":            "invalid model option policy settings",
 	"settings.embedding_invalid":                      "invalid embedding settings",
 	"settings.extract_invalid":                        "invalid file extraction settings",
@@ -587,8 +564,6 @@ func resolveErrorSpec(status int, msg string) (errorSpec, bool) {
 			return errorSpec{Code: "settings.invalid_key", Message: detail}, true
 		case strings.Contains(detail, "smtp"):
 			return errorSpec{Code: "settings.smtp_invalid", Message: detail}, true
-		case strings.Contains(detail, "payment_providers"):
-			return errorSpec{Code: "settings.billing_payment_invalid", Message: detail}, true
 		case strings.Contains(detail, "model_option_"):
 			return errorSpec{Code: "settings.model_option_policy_invalid", Message: detail}, true
 		case strings.Contains(detail, "embedding") || strings.Contains(detail, "rag") || strings.Contains(detail, "semantic"):
@@ -646,9 +621,6 @@ func resolveErrorSpec(status int, msg string) (errorSpec, bool) {
 	}
 	if strings.Contains(text, "smtp") {
 		return errorSpec{Code: "settings.smtp_invalid", Message: text}, true
-	}
-	if strings.Contains(text, "payment") || strings.Contains(text, "stripe") || strings.Contains(text, "checkout") {
-		return errorSpec{Code: CodeBillingPaymentRequired, Message: fallbackMessage(status, CodeBillingPaymentRequired)}, true
 	}
 	if strings.Contains(text, "required") {
 		return errorSpec{Code: CodeRequestRequired, Message: text}, true

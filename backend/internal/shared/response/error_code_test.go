@@ -17,7 +17,6 @@ func TestInferErrorCode(t *testing.T) {
 	}{
 		{name: "invalid id", status: http.StatusBadRequest, msg: "invalid conversation id", want: "conversation.invalid_id"},
 		{name: "two factor", status: http.StatusUnauthorized, msg: "invalid two factor code", want: CodeAuthInvalidTwoFactorCode},
-		{name: "pricing", status: http.StatusPaymentRequired, msg: "model pricing is required", want: CodeBillingPricingRequired},
 		{name: "quota", status: http.StatusConflict, msg: "storage quota exceeded", want: CodeQuotaExceeded},
 		{name: "upstream", status: http.StatusBadGateway, msg: "remote models unavailable", want: "llm.remote_models_unavailable"},
 		{name: "generation canceled", status: http.StatusBadRequest, msg: "message generation canceled", want: "conversation_run.canceled"},
@@ -35,7 +34,6 @@ func TestInferErrorCode(t *testing.T) {
 		{name: "user phone", status: http.StatusBadRequest, msg: "invalid user phone", want: "user.invalid_phone"},
 		{name: "auth email", status: http.StatusBadRequest, msg: "invalid email", want: "auth.invalid_email"},
 		{name: "superadmin delete protected", status: http.StatusConflict, msg: "superadmin delete not allowed", want: "user.superadmin_delete_protected"},
-		{name: "billing pricing invalid", status: http.StatusBadRequest, msg: "invalid model pricing", want: "billing.invalid_model_pricing"},
 		{name: "settings nested namespace", status: http.StatusBadRequest, msg: "invalid setting: invalid namespace: foo", want: "settings.invalid_namespace"},
 		{name: "settings nested smtp", status: http.StatusBadRequest, msg: "invalid setting: auth:smtp_port must be an integer between 1 and 65535", want: "settings.smtp_invalid"},
 		{name: "mcp server id", status: http.StatusBadRequest, msg: "invalid mcp server id", want: "mcp.server.invalid_id"},
@@ -103,7 +101,6 @@ func TestPublicErrorMessage(t *testing.T) {
 		{name: "hides internal details", status: http.StatusInternalServerError, code: CodeInternal, msg: "update settings failed: pq: bad column", want: "internal server error"},
 		{name: "hides upstream details", status: http.StatusBadGateway, code: CodeUpstreamUnavailable, msg: "provider said secret", want: "upstream service unavailable"},
 		{name: "normalizes service unavailable", status: http.StatusServiceUnavailable, code: CodeServiceUnavailable, msg: "embedding host down", want: "service unavailable"},
-		{name: "normalizes billing", status: http.StatusPaymentRequired, code: CodeBillingInsufficientFunds, msg: "usage balance is insufficient", want: "insufficient balance"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
