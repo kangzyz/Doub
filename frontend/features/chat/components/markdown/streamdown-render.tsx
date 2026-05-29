@@ -458,6 +458,33 @@ function isSafeHTMLStyleValue(value: string | number): boolean {
   const normalizedValue = value.trim();
   return Boolean(normalizedValue) && normalizedValue.length <= 120 && !UNSAFE_STYLE_VALUE_RE.test(normalizedValue);
 }
+
+// 把 CSS 自定义属性名 (`--x`) 之外的连字符属性名转换为 React 识别的 camelCase。
+function cssPropertyToCamelCase(property: string): string {
+  if (property.startsWith("--")) {
+    return property;
+  }
+  return property.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase());
+}
+
+// parseInlineStyleString 把原始 `style="..."` 字符串解析为对象，以便复用对象路径的
+// 白名单与取值校验。无法安全解析的声明会被忽略，最终仍由 SAFE_HTML_STYLE_PROPERTIES 兜底。
+function parseInlineStyleString(style: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const declaration of style.split(";")) {
+    const separatorIndex = declaration.indexOf(":");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const rawProperty = declaration.slice(0, separatorIndex).trim();
+    const rawValue = declaration.slice(separatorIndex + 1).trim();
+    if (!rawProperty || !rawValue) {
+      continue;
+    }
+    result[cssPropertyToCamelCase(rawProperty)] = rawValue;
+  }
+  return result;
+}
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
 const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[a-z*]+\}/i;
@@ -642,13 +669,25 @@ function normalizeHtmlVisualStyleWithTone(
   style: React.CSSProperties | string | undefined,
   inheritedDarkSurfaceNormalized = false,
 ): HtmlVisualStyleNormalization {
-  if (!style || typeof style !== "object") {
+  if (!style) {
     return { darkSurfaceNormalized: false };
   }
 
-  let changed = false;
+  // 原始字符串样式 (`style="..."`) 必须先解析成对象再走白名单校验，
+  // 否则会绕过 SAFE_HTML_STYLE_PROPERTIES 与取值清洗。无法解析则丢弃整段样式。
+  const styleObject: React.CSSProperties | Record<string, string> =
+    typeof style === "string" ? parseInlineStyleString(style) : style;
+  if (typeof styleObject !== "object") {
+    return { darkSurfaceNormalized: false };
+  }
+  // 字符串解析后若声明全部无效，则视为无样式直接丢弃。
+  if (typeof style === "string" && Object.keys(styleObject).length === 0) {
+    return { darkSurfaceNormalized: false };
+  }
+
+  let changed = typeof style === "string";
   let darkSurfaceNormalized = false;
-  const next: Record<string, unknown> = { ...style };
+  const next: Record<string, unknown> = { ...styleObject };
 
   for (const key of HTML_VISUAL_SURFACE_STYLE_KEYS) {
     const value = normalizeHtmlVisualSurfaceColor(next[key]);
@@ -724,9 +763,10 @@ function normalizeHtmlVisualStyleWithTone(
     };
   }
 
+  // changed 在字符串入参时恒为 true，因此回退分支只会命中对象入参。
   return {
     darkSurfaceNormalized,
-    style: changed ? (next as React.CSSProperties) : style,
+    style: changed ? (next as React.CSSProperties) : (styleObject as React.CSSProperties),
   };
 }
 
