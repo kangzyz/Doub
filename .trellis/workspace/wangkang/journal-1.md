@@ -71,3 +71,36 @@ Implemented empty-chat prompt suggestions, assistant follow-up suggestion genera
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Perplexity source citations
+
+**Date**: 2026-05-29
+**Task**: Perplexity source citations
+**Branch**: `main`
+
+### Summary
+
+Normalized Perplexity-style Chat Completions root sources into citations and rendered inline source chips with external-link safety.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a782e4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
