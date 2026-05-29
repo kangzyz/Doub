@@ -169,9 +169,6 @@ type Message struct {
 	CacheWriteTokens int64
 	ReasoningTokens  int64
 	LatencyMS        int64
-	BilledCurrency   string
-	BilledNanousd    int64
-	PricingSnapshot  string
 	Status           string
 	ErrorCode        string
 	ErrorMessage     string

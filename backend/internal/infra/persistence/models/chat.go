@@ -87,9 +87,6 @@ type Message struct {
 	CacheWriteTokens int64  `gorm:"not null;default:0;comment:缓存写入Token"`
 	ReasoningTokens  int64  `gorm:"not null;default:0;comment:推理Token"`
 	LatencyMS        int64  `gorm:"not null;default:0;comment:消息处理时长毫秒"`
-	BilledCurrency   string `gorm:"size:16;not null;default:'USD';comment:消息计费币种"`
-	BilledNanousd    int64  `gorm:"not null;default:0;comment:消息计费金额(纳美元)"`
-	PricingSnapshot  string `gorm:"type:text;not null;default:'';comment:消息计费快照JSON"`
 	Status           string `gorm:"size:32;not null;default:'';index:idx_chat_messages_status;comment:消息处理状态"`
 	ErrorCode        string `gorm:"size:64;not null;default:'';comment:错误码"`
 	ErrorMessage     string `gorm:"size:255;not null;default:'';comment:错误信息"`
