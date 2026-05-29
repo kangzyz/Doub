@@ -265,10 +265,15 @@ func (s *Service) probeRoute(ctx context.Context, row repository.ChannelUpstream
 			{Role: "user", Content: "Reply with OK."},
 		},
 		DisableTools: true,
+		// 仅设置各适配器认可的输出上限键：
+		//   - OpenAI Responses / xAI Responses 使用 max_output_tokens
+		//   - OpenAI Chat Completions 使用 max_completion_tokens（回退 max_output_tokens）
+		//   - Anthropic Messages / Gemini 均能从 max_output_tokens 推导出上限
+		// 这两个键已覆盖全部探测协议，因此不再发送 max_tokens——该键会被
+		// applyProviderOptions 原样透传给 OpenAI Responses / Gemini 形成非法参数。
 		Options: map[string]interface{}{
 			"max_output_tokens":     1,
 			"max_completion_tokens": 1,
-			"max_tokens":            1,
 			"temperature":           0,
 		},
 	}
