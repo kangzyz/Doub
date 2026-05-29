@@ -5,7 +5,6 @@
     "channels": "上游",
     "models": "模型",
     "toolSettings": "工具",
-    "billing": "计费",
     "logs": "日志",
     "loginSettings": "登录认证",
     "conversationSettings": "会话配置",
@@ -64,8 +63,6 @@
     "info": "信息",
     "role": "角色",
     "status": "状态",
-    "subscription": "订阅",
-    "balance": "余额",
     "timezone": "时区",
     "lastLogin": "最近登录"
   },
@@ -92,27 +89,10 @@
     "suspended": "已暂停",
     "deactivated": "已停用"
   },
-  "subscriptionStatus": {
-    "active": "生效中",
-    "trialing": "试用中",
-    "pastDue": "逾期",
-    "canceled": "已取消",
-    "unpaid": "未支付",
-    "incomplete": "未完成",
-    "incompleteExpired": "未完成",
-    "paused": "已暂停"
-  },
-  "billingAccountStatus": {
-    "active": "正常",
-    "frozen": "已冻结",
-    "closed": "已关闭",
-    "suspended": "已暂停"
-  },
   "table": {
     "searchPlaceholder": "搜索用户名、昵称、邮箱、Public ID",
     "allRoles": "全部",
     "allStatus": "全部",
-    "allSubscriptions": "全部",
     "selectRole": "选择角色",
     "selectStatus": "选择状态",
     "noMatchingRoles": "没有匹配的角色",
@@ -181,19 +161,11 @@
     "preferencesPlaceholder": "例如回复风格、语言习惯、输出格式、常用工作方式。",
     "profileSection": "基础资料",
     "accessSection": "权限与区域",
-    "billingSection": "计费信息",
     "securitySection": "安全信息",
     "systemSection": "系统信息",
-    "subscriptionPlan": "订阅方案",
-    "selectSubscriptionPlan": "选择订阅方案",
-    "noMatchingSubscriptionPlans": "没有匹配的订阅方案",
-    "expiryTime": "到期时间",
-    "selectExpiryDate": "选择到期日期",
     "language": "语言",
     "reason": "原因",
     "reasonPlaceholder": "记录本次状态修改原因（可选）",
-    "accountBalance": "账号余额",
-    "billingStatus": "计费状态",
     "twoFactor": "两步验证",
     "twoFactorEnabled": "已开启（恢复码 {count}）",
     "twoFactorDisabled": "未开启",
@@ -207,10 +179,6 @@
     "createUser": "创建"
   },
   "validation": {
-    "nonFreeRequiresExpiry": "非 Free 订阅必须指定到期时间。",
-    "invalidSubscriptionExpiry": "请输入有效的订阅到期时间。",
-    "selectSubscriptionPlan": "请选择订阅方案。",
-    "invalidUsageBalance": "请输入有效的按量余额。",
     "passwordMinLength": "新密码至少 8 位，且不能为纯数字。",
     "usernameLength": "用户名需为 3-16 位。",
     "displayNameLength": "昵称需为 3-16 位。"
@@ -226,7 +194,6 @@
     "avatarUpdated": "头像已更新",
     "avatarUpdateFailed": "头像更新失败",
     "editFailed": "编辑用户失败",
-    "balanceAdjustmentDescription": "管理员在用户管理中设置余额",
     "userUpdated": "用户已更新",
     "resetPasswordFailed": "重置密码失败",
     "passwordReset": "密码已重置",
@@ -251,11 +218,6 @@
     "timezoneAlreadyApplied": "所选用户已是该时区",
     "bulkTimezonePartialFailed": "批量设置时区部分失败",
     "bulkTimezoneFailed": "批量设置时区失败",
-    "bulkTimezoneUpdated": "已为 {count} 个用户更新时区",
-    "bulkBalanceAlreadyApplied": "所选用户已是该余额",
-    "bulkBalancePartialFailed": "批量设置余额部分失败",
-    "bulkBalanceFailed": "批量设置余额失败",
-    "bulkBalanceUpdated": "已为 {count} 个用户更新余额",
-    "bulkBalanceAdjustmentDescription": "管理员在用户管理中批量设置余额"
+    "bulkTimezoneUpdated": "已为 {count} 个用户更新时区"
   }
 }
