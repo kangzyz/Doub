@@ -40,19 +40,6 @@ func defaultSettings() []domainsettings.SystemSetting {
 		{Namespace: "auth", Key: "turnstile_site_key", Value: "", ValueType: "string", Description: "Cloudflare Turnstile Site Key"},
 		{Namespace: "auth", Key: "turnstile_secret_key", Value: "", ValueType: "string", Description: "Cloudflare Turnstile Secret Key"},
 
-		// 计费配置
-		{Namespace: "billing", Key: "mode", Value: "self", ValueType: "string", Description: "计费方式：self=自用模式，period=周期计费，usage=按量计费"},
-		{Namespace: "billing", Key: "prepaid_amount_usd", Value: "0", ValueType: "string", Description: "按量调用前要求账户保留的最低预付余额(美元)"},
-		{Namespace: "billing", Key: "usd_to_cny_rate", Value: "7.2", ValueType: "string", Description: "美元换人民币支付汇率"},
-		{Namespace: "billing", Key: "payment_providers", Value: "disabled", ValueType: "string", Description: "启用支付渠道，多个用英文逗号分隔：stripe,epay"},
-		{Namespace: "billing", Key: "stripe_publishable_key", Value: "", ValueType: "string", Description: "Stripe Publishable Key"},
-		{Namespace: "billing", Key: "stripe_secret_key", Value: "", ValueType: "string", Description: "Stripe Secret Key"},
-		{Namespace: "billing", Key: "stripe_webhook_secret", Value: "", ValueType: "string", Description: "Stripe Webhook Secret"},
-		{Namespace: "billing", Key: "epay_gateway_url", Value: "", ValueType: "string", Description: "易支付网关地址"},
-		{Namespace: "billing", Key: "epay_types", Value: `[{"name":"支付宝","type":"alipay"},{"name":"微信支付","type":"wxpay"}]`, ValueType: "string", Description: "易支付启用的支付类型 JSON"},
-		{Namespace: "billing", Key: "epay_pid", Value: "", ValueType: "string", Description: "易支付商户 ID"},
-		{Namespace: "billing", Key: "epay_key", Value: "", ValueType: "string", Description: "易支付商户密钥"},
-
 		// 对话配置
 		{Namespace: "chat", Key: "max_context_messages", Value: "20", ValueType: "int", Description: "上下文消息数"},
 		{Namespace: "chat", Key: "context_max_turns", Value: "48", ValueType: "int", Description: "最大对话轮次"},
