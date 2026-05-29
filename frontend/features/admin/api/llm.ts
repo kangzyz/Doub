@@ -389,17 +389,6 @@ export async function batchDeleteAdminLLMModels(
   );
 }
 
-export async function testAdminLLMModel(
-  accessToken: string,
-  modelID: number,
-): Promise<AdminLLMModelProbeData> {
-  return authedRequest<AdminLLMModelProbeData>(
-    `/api/v1/admin/llm/models/${modelID}/test`,
-    { method: "POST", accessToken, body: {} },
-    true,
-  );
-}
-
 export async function testAdminLLMModelAll(
   accessToken: string,
   modelID: number,
