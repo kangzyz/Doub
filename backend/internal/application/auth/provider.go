@@ -1173,7 +1173,7 @@ func (s *Service) resolveProviderUser(ctx context.Context, provider domainuser.I
 		PasswordEnabled:   false,
 		PasswordUpdatedAt: &now,
 		PasswordOrigin:    domainuser.PasswordOriginSSOPlaceholder,
-	}, providerIdentity, 0, 0, nil, false); err != nil {
+	}, providerIdentity); err != nil {
 		return nil, err
 	}
 	return userItem, nil
@@ -1216,16 +1216,12 @@ func (s *Service) createWithCredentialAndIdentityUsingAvailableUsername(
 	userItem *domainuser.User,
 	credential domainuser.Credential,
 	identity *domainuser.UserIdentity,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	baseUsername := userItem.Username
 	for attempt := 0; attempt < 20; attempt++ {
 		userItem.ID = 0
 		userItem.Username = generatedUsernameWithSuffix(baseUsername, attempt)
-		err := s.repo.CreateWithCredentialAndIdentity(ctx, userItem, credential, identity, subscriptionPlanID, subscriptionPriceID, subscriptionEndAt, autoRenew)
+		err := s.repo.CreateWithCredentialAndIdentity(ctx, userItem, credential, identity)
 		if errors.Is(err, repository.ErrDuplicateUsername) {
 			continue
 		}

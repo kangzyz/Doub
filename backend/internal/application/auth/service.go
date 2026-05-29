@@ -196,7 +196,7 @@ func (s *Service) EnsureBootstrapSuperAdmin(ctx context.Context) error {
 		PasswordSetAt:     &now,
 		PasswordOrigin:    domainuser.PasswordOriginAdminCreated,
 		MustResetPassword: true,
-	}, 0, 0, nil, false); err != nil {
+	}); err != nil {
 		return err
 	}
 	s.info("bootstrap superadmin created", zap.String("username", username), zap.String("password", bootstrapPassword))

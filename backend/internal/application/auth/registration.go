@@ -221,7 +221,7 @@ func (s *Service) RegisterWithEmail(ctx context.Context, email string, password 
 		PasswordUpdatedAt: &now,
 		PasswordSetAt:     &now,
 		PasswordOrigin:    domainuser.PasswordOriginLocalRegister,
-	}, 0, 0, nil, false); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 	if verification != nil {
@@ -747,16 +747,12 @@ func (s *Service) createWithCredentialUsingAvailableUsername(
 	ctx context.Context,
 	userItem *domainuser.User,
 	credential domainuser.Credential,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	baseUsername := userItem.Username
 	for attempt := 0; attempt < 20; attempt++ {
 		userItem.ID = 0
 		userItem.Username = generatedUsernameWithSuffix(baseUsername, attempt)
-		err := s.repo.CreateWithCredential(ctx, userItem, credential, subscriptionPlanID, subscriptionPriceID, subscriptionEndAt, autoRenew)
+		err := s.repo.CreateWithCredential(ctx, userItem, credential)
 		if errors.Is(err, repository.ErrDuplicateUsername) {
 			continue
 		}

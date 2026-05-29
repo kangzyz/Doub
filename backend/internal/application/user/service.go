@@ -167,10 +167,6 @@ func (s *Service) CreateUser(
 			PasswordSetAt:     &now,
 			PasswordOrigin:    domainuser.PasswordOriginAdminCreated,
 		},
-		0,
-		0,
-		nil,
-		false,
 	); err != nil {
 		return nil, err
 	}

@@ -176,20 +176,12 @@ type UserRepository interface {
 		ctx context.Context,
 		user *domainuser.User,
 		credential domainuser.Credential,
-		subscriptionPlanID uint,
-		subscriptionPriceID uint,
-		subscriptionEndAt *time.Time,
-		autoRenew bool,
 	) error
 	CreateWithCredentialAndIdentity(
 		ctx context.Context,
 		user *domainuser.User,
 		credential domainuser.Credential,
 		identity *domainuser.UserIdentity,
-		subscriptionPlanID uint,
-		subscriptionPriceID uint,
-		subscriptionEndAt *time.Time,
-		autoRenew bool,
 	) error
 	GetCredentialByUserID(ctx context.Context, userID uint) (*domainuser.Credential, error)
 	GetUserTwoFactorByUserID(ctx context.Context, userID uint) (*domainuser.UserTwoFactor, error)

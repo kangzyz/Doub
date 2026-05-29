@@ -300,13 +300,9 @@ func (r *Repo) CreateWithCredential(
 	ctx context.Context,
 	user *domainuser.User,
 	credential domainuser.Credential,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	return translateError(r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return r.createWithCredentialTx(tx, user, credential, subscriptionPlanID, subscriptionPriceID, subscriptionEndAt, autoRenew)
+		return r.createWithCredentialTx(tx, user, credential)
 	}))
 }
 
@@ -316,13 +312,9 @@ func (r *Repo) CreateWithCredentialAndIdentity(
 	user *domainuser.User,
 	credential domainuser.Credential,
 	identity *domainuser.UserIdentity,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	return translateError(r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := r.createWithCredentialTx(tx, user, credential, subscriptionPlanID, subscriptionPriceID, subscriptionEndAt, autoRenew); err != nil {
+		if err := r.createWithCredentialTx(tx, user, credential); err != nil {
 			return err
 		}
 		if identity == nil {
@@ -344,10 +336,6 @@ func (r *Repo) createWithCredentialTx(
 	tx *gorm.DB,
 	user *domainuser.User,
 	credential domainuser.Credential,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	dbUser := toModelUser(user)
 	if err := tx.Create(dbUser).Error; err != nil {

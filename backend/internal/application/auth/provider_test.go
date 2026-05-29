@@ -552,10 +552,6 @@ func (r *providerLoginRepo) CreateWithCredential(
 	ctx context.Context,
 	item *domainuser.User,
 	credential domainuser.Credential,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	r.createUserCount++
 	if r.nextUserID == 0 {
@@ -571,10 +567,6 @@ func (r *providerLoginRepo) CreateWithCredentialAndIdentity(
 	item *domainuser.User,
 	credential domainuser.Credential,
 	identity *domainuser.UserIdentity,
-	subscriptionPlanID uint,
-	subscriptionPriceID uint,
-	subscriptionEndAt *time.Time,
-	autoRenew bool,
 ) error {
 	if r.createIdentityErr != nil {
 		return r.createIdentityErr

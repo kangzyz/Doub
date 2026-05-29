@@ -14,20 +14,12 @@ type AuthRepository interface {
 		ctx context.Context,
 		item *domainuser.User,
 		credential domainuser.Credential,
-		subscriptionPlanID uint,
-		subscriptionPriceID uint,
-		subscriptionEndAt *time.Time,
-		autoRenew bool,
 	) error
 	CreateWithCredentialAndIdentity(
 		ctx context.Context,
 		user *domainuser.User,
 		credential domainuser.Credential,
 		identity *domainuser.UserIdentity,
-		subscriptionPlanID uint,
-		subscriptionPriceID uint,
-		subscriptionEndAt *time.Time,
-		autoRenew bool,
 	) error
 	GetByUsername(ctx context.Context, username string) (*domainuser.User, error)
 	GetByEmail(ctx context.Context, email string) (*domainuser.User, error)
