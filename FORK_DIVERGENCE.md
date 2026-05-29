@@ -71,16 +71,41 @@ types, admin sidebar/sections, chat model picker + message-meta (price/cost UI),
 `shared/api/{auth,model,conversation}.types.ts` (billing fields), and billing
 i18n keys across settings/common/guide/errors/chat json.
 
-**Database:** GORM auto-migrate never DROPs, so the removal leaves dormant,
-unused, unexposed columns on `chat_messages` (`billed_currency`, `billed_nanousd`,
-`pricing_snapshot`) and the old billing tables. Run **`backend/drop_billing.sql`**
-(optional, destructive) for a fully clean schema.
+**Residuals scrubbed (second pass):** the billing settings namespace
+(`settings/seed.go`, `service.go`, `sensitive.go`), the billing/payment error
+codes (`shared/response/error_code.go`), the dead user-creation subscription
+params (`repository/user.go`, `repository/auth.go`, auth registration/provider),
+the `chat.show_billing_cost` user setting, and the per-message billing columns on
+the GORM/domain models (`UpdateMessageBilling`, `BilledCurrency`/`BilledNanousd`/
+`PricingSnapshot`) were all removed.
+
+**Database:** GORM auto-migrate never DROPs, so dormant, unused columns remain on
+`chat_messages` (`billed_currency`, `billed_nanousd`, `pricing_snapshot`) plus the
+old billing tables. Run **`backend/drop_billing.sql`** (optional, destructive) for
+a fully clean schema.
+
+**Docs-only residue (harmless):** generated `backend/docs/` (swagger) still lists
+old billing endpoints (not regenerated — `swag` is not installed) and `README*`
+still describe billing features. These are documentation only; regenerate swagger
+via `make -C backend swagger` and trim the README prose when convenient.
 
 **Merge guidance:** any upstream billing changes are moot here — do NOT re-add
 billing files or fields. Expect conflicts in `app.go`, `server.go`, the
 conversation send/stream handlers, admin user DTOs, user creation, and
 `postgres.go`. Resolution rule: take upstream's *non-billing* changes, drop the
 billing accounting. After any upstream merge, run the verification below.
+
+---
+
+## 3. Upstream features synced in
+
+Selected NON-billing upstream features have been merged into this fork (so the
+divergence is smaller than the raw commit gap): Release Note skill, HTML-visual
+system-prompt guidance + CSS sanitizer (our richer inline-HTML renderer kept),
+Anthropic tool-trace fix, artifact preview, system-prompt refactor, conversation
+file-cleanup on delete, model connectivity test, MCP tool grouping/search, KaTeX
+math rendering, and Turnstile registration. Upstream **billing** commits were
+deliberately skipped — keep skipping them on future merges.
 
 ---
 
