@@ -17,46 +17,46 @@ const (
 
 const htmlVisualPromptInstruction = `<format>
   <rule>标题从 ## 起，子层级使用 ###；禁用 #</rule>
-  <rule>遵循用户语言</rule>
+  <rule>遵循用户语言 / Respond in the user's language.</rule>
   <rule>保持高信息密度和紧凑的行文</rule>
   <rule>保持紧凑的回复格式，避免松散的内容给用户带来阅读障碍</rule>
   <rule>代码块标注语言，优先完整可运行，复杂逻辑添加注释</rule>
   <html-visual>
     <rationale>
-      纯 Markdown 的固定垂直流式结构在表达复杂逻辑时存在先天缺陷（阅读疲劳、重点不突出、缺乏真正的图表与横向排版能力）。你必须主动评估内容结构复杂度，当纯 Markdown 无法清晰、紧凑地传达信息时，强制使用 HTML 实时渲染作为核心表达手段，而非退而求其次的辅助。
+      纯 Markdown 的固定垂直流式结构在表达复杂逻辑时存在先天缺陷（阅读疲劳、重点不突出、缺乏横向排版能力）。当纯 Markdown 无法清晰、紧凑地传达信息时，使用内联 HTML 片段作为核心表达手段提升结构清晰度。
+      Plain Markdown's vertical flow is weak for complex structures; emit inline HTML fragments when they make layout clearer.
     </rationale>
     <css-constraint>
-绝对禁止使用` + "`" + `<style>` + "`" + `标签、` + "`" + `class` + "`" + `属性及伪类/伪元素。
-可视化必须100%采用纯内联样式（` + "`" + `style="..."` + "`" + `），仅依赖 Flexbox 与基础盒子模型（padding/margin/border/box-shadow/背景色差）构建视觉层级。
+仅允许在安全的布局标签（div/span/section/table/ul/ol/li/details 等）上使用内联 ` + "`" + `style="..."` + "`" + ` 属性来构建视觉层级，依赖 Flexbox / Grid 与基础盒模型（padding/margin/border/border-radius/box-shadow/背景色差）。
+Only inline ` + "`" + `style="..."` + "`" + ` attributes are permitted, on safe layout tags.
+明确禁止 / Strictly forbidden:
+  1. ` + "`" + `<style>` + "`" + ` 标签与 ` + "`" + `<script>` + "`" + ` 标签（The ` + "`" + `<style>` + "`" + ` and ` + "`" + `<script>` + "`" + ` tags）。
+  2. ` + "`" + `class` + "`" + ` 属性、id 选择器、伪类/伪元素（class/id/pseudo selectors）。
+  3. 外部资源与不安全取值：` + "`" + `url()` + "`" + `、` + "`" + `@import` + "`" + `、` + "`" + `javascript:` + "`" + ` 等（external resources / unsafe values）。
+  4. 事件处理器（` + "`" + `onclick` + "`" + ` 等所有 ` + "`" + `on*` + "`" + ` 属性）。
+不符合以上约束的样式会被前端清洗器丢弃，因此请勿依赖它们。Styles violating these rules are stripped by the renderer.
     </css-constraint>
     <default-trigger>
-      遇到以下情形，必须放弃纯 Markdown 列表或表格的敷衍表达，主动切入 HTML 内嵌排版：
-      <case type="logic-graph">逻辑与结构图：流程图、架构图、状态机、树状层级、思维导图等任何包含节点与连线关系的逻辑（用 HTML/CSS 的 DOM 结构与箭头符号构建）。</case>
-      <case type="horizontal-layout">横向与对比排版：多维对比矩阵、优劣势对照、参数矩阵、并排展示（利用 Flex/Grid 布局实现真正的横向空间利用）。</case>
+      遇到以下情形，主动切入 HTML 内嵌排版以提升清晰度：
+      <case type="logic-graph">逻辑与结构图：流程图、架构图、状态机、树状层级（用 div/span 的盒模型与箭头符号构建，或使用内联 SVG）。</case>
+      <case type="horizontal-layout">横向与对比排版：多维对比矩阵、优劣势对照、参数矩阵、并排展示（利用 Flex/Grid 实现横向空间利用）。</case>
       <case type="info-card">数据与信息卡片：多字段聚合展示、需要视觉分组与边框隔离的密集信息。</case>
-      <case type="space-optimize">空间节省：内容较多且纯垂直排列会导致严重割裂和冗长感时，利用折叠（details）、标签页等组件收拢信息。</case>
+      <case type="space-optimize">空间节省：内容较多且纯垂直排列会导致割裂冗长时，利用折叠（details）等组件收拢信息。</case>
     </default-trigger>
-    <vision-plus>
-      Vision+ 指令是视觉表达能力的升维，仅当用户显式声明时启用。
-      <capability>可用内联 HTML 绘制矢量逻辑图、结构连线、几何图形与数据图表，但仍须遵守下方红线。</capability>
-      <capability>可用更复杂的 CSS 特效和高级交互组件，但不得用于纯装饰目的。</capability>
-      <red-line>
-        1. HTML 片段占比不得喧宾夺主
-        2. 每个可视化片段必须服务于具体的信息表达需求。
-        3. 绝对禁止输出 !DOCTYPE/html/head/body 全量页面框架；禁止将整段回复包裹于单一 HTML 块。
-        4. 图形仅限：流程图、架构图、状态机、树状层级、对比矩阵、数据图表。禁止：装饰性插画、氛围图、风景、图标装饰。
-        5. 在采用html表达时，请同时考虑Token效率与效果的取舍，及渲染难度和错误率，不要过度设计造成效果失衡。
-        6. 过于复杂的html可视化内容需慎重考虑。
-      </red-line>
-    </vision-plus>
+    <red-line>
+      1. HTML 片段占比不得喧宾夺主，每个可视化片段必须服务于具体的信息表达需求。
+      2. 绝对禁止输出 !DOCTYPE/html/head/body 全量页面框架；禁止将整段回复包裹于单一 HTML 块。
+      3. 图形仅限：流程图、架构图、状态机、树状层级、对比矩阵、数据图表。禁止：装饰性插画、氛围图、风景、图标装饰。
+      4. 兼顾 Token 效率与渲染稳定性，不要过度设计；过于复杂的可视化需慎重考虑。
+    </red-line>
     <boundary>
-      <constraint>永远仅输出自包含片段：只输出 div, style, script 等局部渲染标签，绝对禁止输出 !DOCTYPE, html, head, body 等全量页面框架结构，本末倒置将导致直接判错。</constraint>
+      <constraint>永远仅输出自包含片段：仅输出 div/span/table 等局部布局标签，绝对禁止输出 !DOCTYPE/html/head/body 等全量页面框架结构，也禁止 ` + "`" + `<style>` + "`" + ` 与 ` + "`" + `<script>` + "`" + ` 标签。</constraint>
       <constraint>无缝嵌入正文流：HTML 片段必须像一段加粗或列表一样，自然穿插在 Markdown 文本之间，文字解释与可视化元素相互配合，禁止整段回复全量包裹于一个巨大 HTML 块中。</constraint>
     </boundary>
   </html-visual>
 </format>
 <require>
-  更积极的使用html-visual为用户提供更好的回复质量和效果。
+  在合适时积极使用 html-visual 为用户提供更好的回复质量和效果。
 </require>`
 
 type systemPromptInjection struct {
