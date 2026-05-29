@@ -319,6 +319,133 @@ const HTML_VISUAL_BORDER_STYLE_KEYS = [
   "columnRule",
   "outline",
 ] as const;
+// SAFE_HTML_STYLE_PROPERTIES 限定内联样式允许出现的属性，基于上游布局/盒模型白名单，
+// 并补充 SVG 与主题归一化管线实际写入/读取的属性，避免裁剪掉我们更完整的渲染能力。
+const SAFE_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set([
+  "alignContent",
+  "alignItems",
+  "alignSelf",
+  "background",
+  "backgroundColor",
+  "border",
+  "borderBlock",
+  "borderBlockColor",
+  "borderBlockEnd",
+  "borderBlockStart",
+  "borderBottom",
+  "borderBottomColor",
+  "borderColor",
+  "borderInline",
+  "borderInlineColor",
+  "borderInlineEnd",
+  "borderInlineStart",
+  "borderLeft",
+  "borderLeftColor",
+  "borderRadius",
+  "borderRight",
+  "borderRightColor",
+  "borderStyle",
+  "borderTop",
+  "borderTopColor",
+  "borderWidth",
+  "boxShadow",
+  "boxSizing",
+  "color",
+  "columnGap",
+  "columnRule",
+  "columnRuleColor",
+  "display",
+  "fill",
+  "fillOpacity",
+  "flex",
+  "flexBasis",
+  "flexDirection",
+  "flexGrow",
+  "flexShrink",
+  "flexWrap",
+  "fontFamily",
+  "fontSize",
+  "fontStyle",
+  "fontWeight",
+  "gap",
+  "gridAutoColumns",
+  "gridAutoFlow",
+  "gridAutoRows",
+  "gridColumn",
+  "gridColumnEnd",
+  "gridColumnStart",
+  "gridRow",
+  "gridRowEnd",
+  "gridRowStart",
+  "gridTemplateColumns",
+  "gridTemplateRows",
+  "height",
+  "justifyContent",
+  "justifyItems",
+  "justifySelf",
+  "letterSpacing",
+  "lineHeight",
+  "margin",
+  "marginBlock",
+  "marginBlockEnd",
+  "marginBlockStart",
+  "marginBottom",
+  "marginInline",
+  "marginInlineEnd",
+  "marginInlineStart",
+  "marginLeft",
+  "marginRight",
+  "marginTop",
+  "maxHeight",
+  "maxWidth",
+  "minHeight",
+  "minWidth",
+  "opacity",
+  "order",
+  "outline",
+  "outlineColor",
+  "overflow",
+  "overflowX",
+  "overflowY",
+  "padding",
+  "paddingBlock",
+  "paddingBlockEnd",
+  "paddingBlockStart",
+  "paddingBottom",
+  "paddingInline",
+  "paddingInlineEnd",
+  "paddingInlineStart",
+  "paddingLeft",
+  "paddingRight",
+  "paddingTop",
+  "placeContent",
+  "placeItems",
+  "placeSelf",
+  "rowGap",
+  "stroke",
+  "strokeDasharray",
+  "strokeLinecap",
+  "strokeLinejoin",
+  "strokeOpacity",
+  "strokeWidth",
+  "textAlign",
+  "textDecoration",
+  "textDecorationColor",
+  "transform",
+  "transformOrigin",
+  "verticalAlign",
+  "whiteSpace",
+  "width",
+]);
+const UNSAFE_STYLE_VALUE_RE = /(?:url\s*\(|expression\s*\(|javascript:|@import|[<>{}])/i;
+
+function isSafeHTMLStyleValue(value: string | number): boolean {
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  const normalizedValue = value.trim();
+  return Boolean(normalizedValue) && normalizedValue.length <= 120 && !UNSAFE_STYLE_VALUE_RE.test(normalizedValue);
+}
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
 const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[a-z*]+\}/i;
@@ -549,6 +676,40 @@ function normalizeHtmlVisualStyleWithTone(
       next[key] = normalizedValue;
       changed = true;
     }
+  }
+
+  // 折叠上游的属性白名单与取值校验：丢弃未列入白名单的属性，以及含 url()/expression()/javascript:/@import
+  // 或尖括号花括号、超长的取值。CSS var(--token) 是主题归一化的产物，必须放行。
+  const sanitized: Record<string, unknown> = {};
+  let sanitizedChanged = false;
+  for (const [key, value] of Object.entries(next)) {
+    if (value == null) {
+      continue;
+    }
+    if (typeof value !== "string" && typeof value !== "number") {
+      sanitized[key] = value;
+      continue;
+    }
+    if (!SAFE_HTML_STYLE_PROPERTIES.has(key)) {
+      sanitizedChanged = true;
+      continue;
+    }
+    if (typeof value === "string" && value.startsWith("var(")) {
+      sanitized[key] = value;
+      continue;
+    }
+    if (!isSafeHTMLStyleValue(value)) {
+      sanitizedChanged = true;
+      continue;
+    }
+    sanitized[key] = value;
+  }
+
+  if (sanitizedChanged) {
+    return {
+      darkSurfaceNormalized,
+      style: Object.keys(sanitized).length > 0 ? (sanitized as React.CSSProperties) : undefined,
+    };
   }
 
   return {
