@@ -12,7 +12,6 @@ defines its `TableName`, and tables are grouped by domain prefix:
 - `chat_*` for conversations, messages, runs, traces, shares, and context.
 - `file_*` for file objects and RAG chunks.
 - `llm_*` for upstreams, platform models, routes, and model catalog data.
-- `billing_*` for plans, prices, subscriptions, balances, payments, and usage.
 - `system_settings`, `user_settings`, `audit_logs`, and `system_events` for
   operational state.
 

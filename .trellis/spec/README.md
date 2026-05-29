@@ -8,7 +8,7 @@ Read the spec layer that matches the files you will change:
 
 | Layer | Use For |
 | --- | --- |
-| [backend](./backend/index.md) | Go API, Gin routes, application services, repositories, persistence, auth, billing, LLM routing, file/RAG, observability |
+| [backend](./backend/index.md) | Go API, Gin routes, application services, repositories, persistence, auth, LLM routing, file/RAG, observability |
 | [frontend](./frontend/index.md) | Next.js App Router pages, feature components, hooks, API wrappers, auth session UI, i18n, styling |
 | [android-webview](./android-webview/index.md) | Capacitor Android shell, native WebView configuration, Android manifest/security, APK download handling |
 | [shared](./shared/index.md) | Cross-stack contracts, dependency policy, TypeScript style, generated artifacts |

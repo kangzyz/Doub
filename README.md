@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  An enterprise AI workspace for model routing, multimodal chat, files, tools, billing, identity, and operations.
+  An enterprise AI workspace for model routing, multimodal chat, files, tools, identity, and operations.
 </p>
 
 <p align="center">
@@ -23,9 +23,9 @@
 
 ## Overview
 
-DOUB Chat gives teams a unified workspace for working with multiple AI models and providers. It combines multimodal chat, model routing, file and RAG workflows, MCP tools, usage billing, identity, audit logs, and operational controls in one product.
+DOUB Chat gives teams a unified workspace for working with multiple AI models and providers. It combines multimodal chat, model routing, file and RAG workflows, MCP tools, identity, audit logs, and operational controls in one product.
 
-The architecture is designed for simple deployment, efficient static delivery, and a predictable Go runtime footprint. The admin console centralizes upstream channels, platform model names, routing priority, pricing, subscriptions, users, and security policies, while the conversation workspace keeps the user experience stable and focused.
+The architecture is designed for simple deployment, efficient static delivery, and a predictable Go runtime footprint. The admin console centralizes upstream channels, platform model names, routing priority, users, and security policies, while the conversation workspace keeps the user experience stable and focused.
 
 ![DOUB Chat workspace](./frontend/public/DOUB-Chat.png)
 
@@ -41,9 +41,8 @@ The architecture is designed for simple deployment, efficient static delivery, a
 | Files and RAG | File upload, preview, download, deletion, quota control, MIME detection, text extraction, OCR, full-context injection, image context, chunking, embeddings, and semantic retrieval. |
 | Memory and context | Message-window truncation, token-budget truncation, context compression, conversation memory, long-term user memory, RAG evidence records, and prompt trace inspection. |
 | Tools | Admin-managed MCP servers, tool discovery, per-tool enablement, user-side tool selection, execution limits, retries, trace rendering, and tool result handling. |
-| Billing and payments | Subscription plans, top-ups, balances, token/call/duration/tiered model pricing, free models, prepaid thresholds, usage ledgers, billing snapshots, Stripe Checkout, EPay, and webhook validation. |
 | Identity and security | Local login, registration, session management, HttpOnly refresh cookies, 2FA/TOTP, recovery codes, trusted devices, SSO/OIDC/OAuth providers, contact verification, timezone, and locale. |
-| Administration | Users, roles, auth providers, upstreams, platform models, route bindings, model pricing, subscriptions, balances, usage logs, audit logs, auth events, system events, and runtime settings. |
+| Administration | Users, roles, auth providers, upstreams, platform models, route bindings, audit logs, auth events, system events, and runtime settings. |
 | Operations | Efficient static delivery, predictable Go runtime footprint, Docker builds, single-runtime frontend/API serving, Swagger docs, structured logs, request IDs, Redis caching, PostgreSQL pgvector, optional GeoIP, optional OpenTelemetry, and S3-compatible storage. |
 
 
@@ -64,7 +63,7 @@ domain -> shared domain types and constants
 pkg -> dependency-free technical helpers
 ```
 
-The database uses domain-prefixed tables for identity, LLM routing, billing, conversations, files, RAG, settings, tools, audit logs, and system events. Financial records, audit trails, system events, and high-growth vector data are kept as separate sources of truth.
+The database uses domain-prefixed tables for identity, LLM routing, conversations, files, RAG, settings, tools, audit logs, and system events. Audit trails, system events, and high-growth vector data are kept as separate sources of truth.
 
 ## Tech Stack
 
@@ -173,23 +172,13 @@ Use this mode when the frontend and backend are served from different public ori
 
    If the CDN serves `frontend/out` from object storage, enable route fallback so clean URLs resolve to their exported `index.html` files, for example `/chat` -> `/chat/index.html`.
 
-4. Configure Stripe Webhook if Stripe is enabled.
-
-   Add this endpoint in Stripe Dashboard:
-
-   ```text
-   https://api.example.com/api/v1/billing/payments/stripe/webhook
-   ```
-
-   Enable the `checkout.session.completed` event and paste the generated `whsec_...` signing secret into Admin -> Billing -> Payment settings -> Stripe Webhook Secret. This endpoint must bypass CDN cache and preserve the raw request body plus the `Stripe-Signature` header.
-
 ## Main Routes
 
 - `/chat` - conversation workspace
 - `/share` - public conversation snapshot page
 - `/recent` - recent conversations, share status, starred and archived states
 - `/files` - file manager
-- `/setting` - user account, subscription, preferences, security settings, and product information
+- `/setting` - user account, preferences, security settings, and product information
 - `/admin` - administration console
 
 ## Common Commands

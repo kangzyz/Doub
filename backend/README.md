@@ -120,14 +120,6 @@ observability:
 - `APP_ENV=prod` 时，`DATA_ENCRYPTION_KEY` 不能为空、不能过短、不能使用默认开发值。
 - `APP_ENV=prod` 时，`CORS_ALLOW_ORIGIN` 不能为空或 `*`，`PUBLIC_API_BASE_URL` / `PUBLIC_WEB_BASE_URL` 必须是 HTTPS。
 
-Stripe Webhook 使用公开 API 地址：
-
-```text
-https://api.example.com/api/v1/billing/payments/stripe/webhook
-```
-
-在 Stripe Dashboard 中监听 `checkout.session.completed`，并把生成的 `whsec_...` 填入后台「计费 / 支付配置 / Stripe Webhook Secret」。
-
 ## 本地启动
 
 先确保 PostgreSQL 和 Redis 可用。若本机已有依赖，可以只启动默认应用容器；若需要完整本地栈，使用 `docker-compose.full.yml`：
