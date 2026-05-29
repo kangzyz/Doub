@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
+- **Total Sessions**: 4
 - **Last Active**: 2026-05-29
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~106 | Active |
+| `journal-1.md` | ~139 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-05-29 | Clean leftover local files | `72827ef` | `main` |
 | 3 | 2026-05-29 | Perplexity source citations | `2a782e4` | `main` |
 | 2 | 2026-05-27 | Chat suggestions | `691ac7e` | `main` |
 | 1 | 2026-05-22 | Rename product branding to DOUB Chat | `733acdd` | `main` |

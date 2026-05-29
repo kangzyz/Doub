@@ -104,3 +104,36 @@ Normalized Perplexity-style Chat Completions root sources into citations and ren
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Clean leftover local files
+
+**Date**: 2026-05-29
+**Task**: Clean leftover local files
+**Branch**: `main`
+
+### Summary
+
+Reviewed leftover local changes, removed unneeded generated/local files, and restored accidental site file modifications.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `72827ef` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
