@@ -167,6 +167,7 @@ export function useChatMessageSubmit({
   selectedPlatformModelName,
   modelOptions,
   selectedToolIDs,
+  htmlVisualPromptEnabled,
   options,
   draft,
   attachments,
@@ -202,6 +203,7 @@ export function useChatMessageSubmit({
   selectedPlatformModelName: string;
   modelOptions: ChatModelOption[];
   selectedToolIDs: number[];
+  htmlVisualPromptEnabled: boolean;
   options: ConversationOptions;
   draft: string;
   attachments: PendingAttachment[];
@@ -513,6 +515,7 @@ export function useChatMessageSubmit({
             contentType: effectiveAttachments.length > 0 ? "mixed" : "text",
             content: payloadContent,
             selectedToolIDs: selectedToolIDs.length > 0 ? selectedToolIDs : undefined,
+            htmlVisualPrompt: htmlVisualPromptEnabled || undefined,
           };
           completed = await streamConversationMessage(token, targetConversationID, chatPayload, streamOptions);
         } else {
@@ -671,6 +674,7 @@ export function useChatMessageSubmit({
       restoreDraftOnFailure,
       modelOptions,
       selectedToolIDs,
+      htmlVisualPromptEnabled,
       selectedPlatformModelName,
       sending,
       setAttachments,
