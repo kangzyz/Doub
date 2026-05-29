@@ -170,3 +170,39 @@ Reworked the 8 theme presets into a custom WCAG-AA identity family (Warm Sand/Du
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: Sync upstream non-billing features + finish billing removal
+
+**Date**: 2026-05-30
+**Task**: Sync upstream non-billing features + finish billing removal
+**Branch**: `main`
+
+### Summary
+
+Merged selected non-billing upstream features (artifact preview, MCP tool grouping/search, model connectivity test, conversation file cleanup, Anthropic tool-trace fix, KaTeX math, Turnstile registration, HTML-visual prompt+sanitizer) while keeping our richer inline-HTML renderer; deliberately skipped all upstream billing. Cross-reviewed the merge with Claude + Codex and fixed both sets of findings: restored the missing HTML-visual frontend toggle, dropped a leaking probe max_tokens, made the HTML system prompt sanitizer-consistent, hardened string-style sanitization. Completed billing removal by scrubbing residuals (settings billing namespace, billing/payment error codes, dead user-creation subscription params, chat.show_billing_cost, per-message billing columns, orphaned i18n) and cleaned the doc layer (READMEs en/zh, regenerated Swagger via swag v1.16.4, PR template, contributor/spec guidelines). All go build/vet/test and pnpm lint/build green.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b802c7f` | (see git log) |
+| `428015e` | (see git log) |
+| `ee376de` | (see git log) |
+| `b2399c3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 5
-- **Last Active**: 2026-05-29
+- **Total Sessions**: 6
+- **Last Active**: 2026-05-30
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~172 | Active |
+| `journal-1.md` | ~208 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 6 | 2026-05-30 | Sync upstream non-billing features + finish billing removal | `b802c7f`, `428015e`, `ee376de`, `b2399c3` | `main` |
 | 5 | 2026-05-29 | Custom theme system + remove billing/subscription | `635498d` | `main` |
 | 4 | 2026-05-29 | Clean leftover local files | `72827ef` | `main` |
 | 3 | 2026-05-29 | Perplexity source citations | `2a782e4` | `main` |
