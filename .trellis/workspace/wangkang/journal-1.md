@@ -137,3 +137,36 @@ Reviewed leftover local changes, removed unneeded generated/local files, and res
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Custom theme system + remove billing/subscription
+
+**Date**: 2026-05-29
+**Task**: Custom theme system + remove billing/subscription
+**Branch**: `main`
+
+### Summary
+
+Reworked the 8 theme presets into a custom WCAG-AA identity family (Warm Sand/Dusk/Vivid/Midnight/Aurora/Azure/Ink/Graphite), light+dark, with refined shared radius/shadow, prefers-reduced-motion, and token-driven brand wordmark. Fully removed the billing/subscription/pricing/usage feature across frontend and backend (routes, APIs, admin billing, usage logs, chat cost/price displays, i18n), preserving the chat send/stream flow without usage accounting. Optional backend/drop_billing.sql provided for DB cleanup.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `635498d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
