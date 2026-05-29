@@ -1,7 +1,7 @@
 # Cross-Layer Thinking Guide
 
 Use this guide when a change crosses frontend UI, backend API, persistence,
-auth, billing, files, RAG, model routing, or streaming.
+auth, files, RAG, model routing, or streaming.
 
 ## Main Flow
 

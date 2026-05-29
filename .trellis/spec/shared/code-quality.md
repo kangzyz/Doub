@@ -20,7 +20,7 @@ the same task.
 
 - Frontend owns UI, client workflow state, message rendering, and admin/user
   screens.
-- Backend owns auth, authorization, billing, provider routing, file processing,
+- Backend owns auth, authorization, provider routing, file processing,
   memory, RAG, audit logs, persistence, and operational policy.
 - Docker owns optional local OCR/extraction/runtime dependencies.
 

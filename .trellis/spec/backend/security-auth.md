@@ -1,7 +1,7 @@
 # Backend Security And Auth
 
 Security logic belongs in backend services and middleware. The frontend may
-adapt UX, but it must not duplicate authoritative authorization, billing,
+adapt UX, but it must not duplicate authoritative authorization,
 provider routing, or file-processing rules.
 
 ## Session Model

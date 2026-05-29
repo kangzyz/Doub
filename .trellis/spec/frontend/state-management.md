@@ -50,7 +50,7 @@ the expected pattern for delete, rename, and RAG opt-out.
 ## Avoid
 
 - Adding a global state library for one feature.
-- Treating frontend state as the source of truth for authorization, billing,
+- Treating frontend state as the source of truth for authorization,
   model routing, file processing, or provider behavior.
 - Duplicating backend policy logic instead of consuming backend DTOs and policy
   fields.

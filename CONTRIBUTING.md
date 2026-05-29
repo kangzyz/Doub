@@ -66,16 +66,16 @@ Commit message subjects that do not match this format will fail CI.
 ## Architecture Boundaries
 
 - `frontend/` owns the user interface, client-side state, message rendering, and admin/user workflows.
-- `backend/` owns business APIs, authentication, authorization, model routing, file processing, billing, audit logs, and persistence.
+- `backend/` owns business APIs, authentication, authorization, model routing, file processing, audit logs, and persistence.
 - `docker/` contains optional local services for document extraction, OCR, and related runtime dependencies.
-- The frontend should not duplicate backend authorization, billing, provider routing, or file-processing business rules.
+- The frontend should not duplicate backend authorization, provider routing, or file-processing business rules.
 - Shared API contracts should stay explicit through backend DTOs, generated Swagger files, and frontend API types.
 - Keep cross-cutting concerns such as security, tracing, storage, and provider clients behind backend infrastructure boundaries.
 - Backend startup flows through `cmd -> internal/cli -> internal/app`.
 - Backend requests flow through `transport/http -> application -> repository interfaces -> infra implementations`.
 - Domain packages own core business types and constants. Shared packages provide reusable response, request metadata, and security helpers.
-- Database tables are grouped by domain, including identity, conversations, files/RAG, model routing, tools, billing, settings, audit logs, and system events.
-- Financial records, audit logs, system events, file objects, and vector data should remain separate sources of truth.
+- Database tables are grouped by domain, including identity, conversations, files/RAG, model routing, tools, settings, audit logs, and system events.
+- Audit logs, system events, file objects, and vector data should remain separate sources of truth.
 - Standard HTTP responses use `errorMsg + data`; do not introduce alternate response envelopes.
 - User data access must be scoped by authenticated user context unless an admin-only path explicitly requires broader access.
 - Request IDs, structured logs, audit records, and generated Swagger files are part of the operational contract.

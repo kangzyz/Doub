@@ -28,7 +28,7 @@ API contract changes.
 ## Tests To Prefer
 
 - Add focused service tests for domain behavior, policy decisions, routing,
-  billing, conversation branching, RAG, or security-sensitive logic. Existing
+  conversation branching, RAG, or security-sensitive logic. Existing
   examples include `internal/application/user/policy_test.go`,
   `internal/application/channel/service_routing_test.go`, and
   `internal/application/conversation/*_test.go`.
