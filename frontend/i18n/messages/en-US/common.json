@@ -19,6 +19,16 @@
     "back": "Back",
     "continue": "Continue"
   },
+  "selection": {
+    "copy": "Copy",
+    "cut": "Cut",
+    "paste": "Paste",
+    "selectAll": "Select all",
+    "share": "Share",
+    "copied": "Copied",
+    "pasteEmpty": "Clipboard is empty",
+    "failed": "Action failed"
+  },
   "states": {
     "loading": "Loading",
     "empty": "Nothing to show",
