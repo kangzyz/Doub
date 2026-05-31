@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 
 import { ChatFontProvider } from "@/features/layouts/components/providers/chat-font-provider";
-import { SelectionToolbar } from "@/features/layouts/components/sections/selection-toolbar";
 import { WorkspaceShell } from "@/features/layouts/components/sections/workspace-shell";
 import { AppI18nProvider } from "@/i18n/app-i18n-provider";
 import { DevtoolsBrandBanner } from "@/shared/components/devtools-brand-banner";
@@ -140,7 +139,6 @@ export default function RootLayout({
             <ChatFontProvider>
               <WorkspaceShell>{children}</WorkspaceShell>
               <Toaster />
-              <SelectionToolbar />
               {webVitalsEnabled ? <WebVitals /> : null}
               <DevtoolsBrandBanner />
             </ChatFontProvider>

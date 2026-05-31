@@ -19,17 +19,6 @@
     "back": "返回",
     "continue": "继续"
   },
-  "selection": {
-    "copy": "复制",
-    "cut": "剪切",
-    "paste": "粘贴",
-    "selectAll": "全选",
-    "share": "分享",
-    "copied": "已复制",
-    "pasteEmpty": "剪贴板为空",
-    "pasteFailed": "无法读取剪贴板",
-    "failed": "操作失败"
-  },
   "states": {
     "loading": "加载中",
     "empty": "暂无数据",
