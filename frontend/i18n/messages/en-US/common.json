@@ -27,6 +27,7 @@
     "share": "Share",
     "copied": "Copied",
     "pasteEmpty": "Clipboard is empty",
+    "pasteFailed": "Couldn't read clipboard",
     "failed": "Action failed"
   },
   "states": {

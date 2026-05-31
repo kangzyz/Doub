@@ -15,6 +15,11 @@ type SelectionState = {
   rect: { top: number; bottom: number; left: number; width: number };
 };
 
+type Pos = { left: number; top: number; transform: string };
+
+// useLayoutEffect warns during SSR; fall back to useEffect on the server.
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 /**
  * Only active inside the Capacitor native shell (the Android APK), where the
  * OS/OEM text-selection floating toolbar is suppressed natively (see
@@ -52,11 +57,13 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-async function readClipboard(): Promise<string | null> {
+/** Distinguish a clipboard-read denial ({ ok: false }) from an empty clipboard. */
+async function readClipboard(): Promise<{ ok: boolean; text: string }> {
   try {
-    return await navigator.clipboard.readText();
+    const text = await navigator.clipboard.readText();
+    return { ok: true, text };
   } catch {
-    return null;
+    return { ok: false, text: "" };
   }
 }
 
@@ -103,11 +110,17 @@ export function SelectionToolbar() {
   const t = useTranslations("common.selection");
   const [enabled, setEnabled] = React.useState(false);
   const [state, setState] = React.useState<SelectionState | null>(null);
+  const [pos, setPos] = React.useState<Pos | null>(null);
   const toolbarRef = React.useRef<HTMLDivElement | null>(null);
+  const stateRef = React.useRef<SelectionState | null>(null);
 
   React.useEffect(() => {
     setEnabled(isCapacitorNative());
   }, []);
+
+  React.useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const compute = React.useCallback(() => {
     const active = document.activeElement;
@@ -157,17 +170,62 @@ export function SelectionToolbar() {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(compute);
     };
-    const dismiss = () => setState(null);
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      // A scroll inside the toolbar itself must never dismiss it.
+      if (toolbarRef.current && target instanceof Node && toolbarRef.current.contains(target)) {
+        return;
+      }
+      // Scrolling inside the editable that owns the selection: reposition, keep open
+      // (its anchor rect is the input box itself, so this just tracks it).
+      const editable = stateRef.current?.editable ?? null;
+      if (editable && target instanceof Node && (target === editable || editable.contains(target))) {
+        schedule();
+        return;
+      }
+      // Genuine page/content scroll moves the selection out from under the toolbar.
+      setState(null);
+    };
+    let lastWidth = window.innerWidth;
+    const onResize = () => {
+      // Width change = real resize/rotation -> dismiss. Height-only change =
+      // soft keyboard show/hide -> just reposition, don't lose the toolbar.
+      if (window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth;
+        setState(null);
+      } else {
+        schedule();
+      }
+    };
     document.addEventListener("selectionchange", schedule);
-    window.addEventListener("scroll", dismiss, true);
-    window.addEventListener("resize", dismiss);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("selectionchange", schedule);
-      window.removeEventListener("scroll", dismiss, true);
-      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
   }, [enabled, compute]);
+
+  // Measure the rendered toolbar and clamp it fully on-screen before paint.
+  useIsoLayoutEffect(() => {
+    if (!state) return;
+    const el = toolbarRef.current;
+    if (!el) return;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const half = w / 2 + 8;
+    const rectCenter = state.rect.left + state.rect.width / 2;
+    const left = Math.min(Math.max(rectCenter, half), Math.max(half, vw - half));
+    const placeAbove = state.rect.top > h + 16;
+    const top = placeAbove
+      ? state.rect.top - 8
+      : Math.min(state.rect.bottom + 8, Math.max(8, vh - h - 8));
+    setPos({ left, top, transform: placeAbove ? "translate(-50%, -100%)" : "translate(-50%, 0)" });
+  }, [state]);
 
   const hide = React.useCallback(() => setState(null), []);
 
@@ -218,20 +276,25 @@ export function SelectionToolbar() {
   const doPaste = React.useCallback(async () => {
     const el = state?.editable;
     if (!el) return;
-    const clip = await readClipboard();
-    if (clip == null) {
-      toast.error(t("pasteEmpty"));
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const res = await readClipboard();
+    if (!res.ok) {
+      toast.error(t("pasteFailed"));
       hide();
       return;
     }
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? 0;
+    if (!res.text) {
+      toast(t("pasteEmpty"));
+      hide();
+      return;
+    }
     const value = el.value ?? "";
-    setEditableValue(el, value.slice(0, start) + clip + value.slice(end));
-    const pos = start + clip.length;
+    setEditableValue(el, value.slice(0, start) + res.text + value.slice(end));
+    const caret = start + res.text.length;
     el.focus();
     try {
-      el.setSelectionRange(pos, pos);
+      el.setSelectionRange(caret, caret);
     } catch {
       // ignore
     }
@@ -264,11 +327,6 @@ export function SelectionToolbar() {
 
   if (!enabled || !state) return null;
 
-  const viewportWidth = window.innerWidth;
-  const centerX = Math.min(Math.max(state.rect.left + state.rect.width / 2, 76), viewportWidth - 76);
-  const placeAbove = state.rect.top > 56;
-  const top = placeAbove ? state.rect.top - 8 : state.rect.bottom + 8;
-
   return createPortal(
     <div
       ref={toolbarRef}
@@ -279,9 +337,9 @@ export function SelectionToolbar() {
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       )}
       style={{
-        left: centerX,
-        top,
-        transform: placeAbove ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+        left: pos?.left ?? -9999,
+        top: pos?.top ?? -9999,
+        transform: pos?.transform ?? "translate(-50%, 0)",
       }}
     >
       {state.editable ? (
