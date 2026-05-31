@@ -4,7 +4,6 @@ import android.app.DownloadManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.ActionMode;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -41,21 +40,6 @@ public class MainActivity extends BridgeActivity {
     public void onStop() {
         flushCookies();
         super.onStop();
-    }
-
-    // Suppress the system/OEM text-selection floating toolbar (Copy/Share/...).
-    // On some devices (e.g. Huawei EMUI) it is locked to a dark style that
-    // ignores app and system theming. The web app renders its own themed
-    // selection toolbar instead. Returning null prevents the action mode (the
-    // toolbar) from starting while keeping the text selection itself.
-    @Override
-    public ActionMode onWindowStartingActionMode(ActionMode.Callback callback) {
-        return null;
-    }
-
-    @Override
-    public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {
-        return null;
     }
 
     private void configureWebView() {
