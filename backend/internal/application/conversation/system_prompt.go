@@ -52,6 +52,7 @@ Only inline ` + "`" + `style="..."` + "`" + ` attributes are permitted, on safe 
     <boundary>
       <constraint>永远仅输出自包含片段：仅输出 div/span/table 等局部布局标签，绝对禁止输出 !DOCTYPE/html/head/body 等全量页面框架结构，也禁止 ` + "`" + `<style>` + "`" + ` 与 ` + "`" + `<script>` + "`" + ` 标签。</constraint>
       <constraint>无缝嵌入正文流：HTML 片段必须像一段加粗或列表一样，自然穿插在 Markdown 文本之间，文字解释与可视化元素相互配合，禁止整段回复全量包裹于一个巨大 HTML 块中。</constraint>
+      <constraint>HTML 片段内部不会再被当作 Markdown 解析：链接、加粗、行内代码等必须使用真实 HTML 标签（如 ` + "`" + `<a href="...">文本</a>` + "`" + `、` + "`" + `<strong>` + "`" + `、` + "`" + `<code>` + "`" + `），切勿在片段内写 ` + "`" + `[文本](链接)` + "`" + ` 或 ` + "`" + `**加粗**` + "`" + ` —— 它们会原样显示为纯文本。Markdown inline syntax (links / bold / inline code) is NOT parsed inside HTML fragments; use real ` + "`" + `<a href="...">` + "`" + `, ` + "`" + `<strong>` + "`" + `, ` + "`" + `<code>` + "`" + ` tags instead.</constraint>
     </boundary>
   </html-visual>
 </format>

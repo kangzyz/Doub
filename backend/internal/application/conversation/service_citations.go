@@ -1,9 +1,9 @@
 package conversation
 
 import (
+	"html"
 	"net/url"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -11,9 +11,14 @@ import (
 var citationReferenceMarkerPattern = regexp.MustCompile(`\[(\d+)\]`)
 var citationInlineLinkPattern = regexp.MustCompile(`\[(\d+)\]\(([^)\s]+)(?:\s+[^)]*)?\)`)
 
-const citationReferenceLabelPrefix = "citation-"
-
-func appendCitationReferenceDefinitions(content string, citations []string) string {
+// linkCitationMarkers 把数字引用标记 [N] 改写为真实的内联 HTML 锚点 <a href="URL">[N]</a>。
+//
+// 之所以使用内联 HTML 而不是 Markdown 引用式链接（[[N]][citation-N] + 末尾定义），是因为当模型在
+// “视觉排版（htmlVisualPrompt）”模式下用块级 HTML（如 <div>）包裹正文时，CommonMark/remark 会把整个
+// HTML 块当作原始 HTML，块内部的 Markdown 内联语法（包括引用式链接）不会被解析；而真实的 <a> 标签会被
+// rehype-raw 还原成元素。前端 MarkdownLink 仅凭“外链 href + 可见文本为 [N]”识别引用胶囊，与锚点来自
+// Markdown 还是原始 HTML 无关，因此内联 <a> 在纯 Markdown 正文与 HTML 片段中都能渲染成胶囊按钮。
+func linkCitationMarkers(content string, citations []string) string {
 	if strings.TrimSpace(content) == "" {
 		return content
 	}
@@ -30,26 +35,7 @@ func appendCitationReferenceDefinitions(content string, citations []string) stri
 
 	normalizedContent := rewriteInlineCitationLinks(content, linkURLs)
 	normalizedContent = rewritePlainCitationMarkers(normalizedContent, linkURLs)
-	definitions := make([]string, 0, len(linkURLs))
-	for _, index := range sortedCitationURLIndexes(linkURLs) {
-		citationURL := linkURLs[index]
-		label := citationReferenceLabel(index)
-		if hasMarkdownReferenceDefinition(normalizedContent, label) {
-			continue
-		}
-		definitions = append(definitions, "["+label+"]: "+citationURL)
-	}
-	if len(definitions) == 0 {
-		return normalizedContent
-	}
-
-	separator := "\n\n"
-	if strings.HasSuffix(normalizedContent, "\n\n") {
-		separator = ""
-	} else if strings.HasSuffix(normalizedContent, "\n") {
-		separator = "\n"
-	}
-	return normalizedContent + separator + strings.Join(definitions, "\n")
+	return normalizedContent
 }
 
 func referencedCitationIndexes(content string) map[int]struct{} {
@@ -140,7 +126,7 @@ func rewriteInlineCitationLinks(content string, linkURLs map[int]string) string 
 			builder.Grow(len(content))
 		}
 		builder.WriteString(content[lastWritten:match[0]])
-		builder.WriteString(citationDisplayReference(index))
+		builder.WriteString(citationDisplayReference(index, linkURLs[index]))
 		lastWritten = match[1]
 		changed = true
 	}
@@ -172,7 +158,7 @@ func rewritePlainCitationMarkers(content string, linkURLs map[int]string) string
 			builder.Grow(len(content))
 		}
 		builder.WriteString(content[lastWritten:match[0]])
-		builder.WriteString(citationDisplayReference(index))
+		builder.WriteString(citationDisplayReference(index, linkURLs[index]))
 		lastWritten = match[1]
 		changed = true
 	}
@@ -233,6 +219,11 @@ func isCitationInlineLinkMatch(content string, match []int) bool {
 func isPlainCitationMarkerMatch(content string, match []int) bool {
 	start := match[0]
 	end := match[1]
+	// 跳过已经被改写成引用锚点 ">[N]</a>" 的标记（无论是本函数前一阶段的产物，还是模型自己写出的
+	// 引用锚点），否则第二轮改写会把锚点再嵌套一层 <a><a>[N]</a></a>，破坏胶囊渲染。
+	if start > 0 && content[start-1] == '>' && strings.HasPrefix(content[end:], "</a>") {
+		return false
+	}
 	if end < len(content) {
 		switch content[end] {
 		case ':', '(', ']':
@@ -263,32 +254,10 @@ func previousAdjacentNumericMarker(content string, markerStart int) bool {
 	return err == nil
 }
 
-func citationDisplayReference(index int) string {
-	marker := strconv.Itoa(index)
-	return "[[" + marker + "]][" + citationReferenceLabel(index) + "]"
-}
-
-func citationReferenceLabel(index int) string {
-	return citationReferenceLabelPrefix + strconv.Itoa(index)
-}
-
-func sortedCitationURLIndexes(linkURLs map[int]string) []int {
-	indexes := make([]int, 0, len(linkURLs))
-	for index := range linkURLs {
-		indexes = append(indexes, index)
-	}
-	sort.Ints(indexes)
-	return indexes
-}
-
-func hasMarkdownReferenceDefinition(content string, label string) bool {
-	for _, line := range strings.Split(content, "\n") {
-		existingLabel, _, ok := parseReferenceDefinitionLine(line)
-		if ok && existingLabel == label {
-			return true
-		}
-	}
-	return false
+// citationDisplayReference 生成引用胶囊所需的内联 HTML 锚点。href 经过 HTML 转义，避免引号/尖括号/&
+// 等字符破坏属性或被渲染端误解析（normalizeCitationURL 只校验 scheme/host，不会清洗这些字符）。
+func citationDisplayReference(index int, citationURL string) string {
+	return "<a href=\"" + html.EscapeString(citationURL) + "\">[" + strconv.Itoa(index) + "]</a>"
 }
 
 func parseReferenceDefinitionLine(line string) (string, string, bool) {

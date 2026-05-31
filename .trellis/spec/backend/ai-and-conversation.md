@@ -307,7 +307,7 @@ server-side tool calls.
 
 - Infra result: `llm.GenerateOutput.Citations []string`
 - Application helper:
-  `appendCitationReferenceDefinitions(content string, citations []string) string`
+  `linkCitationMarkers(content string, citations []string) string`
 - Stored assistant content: normal Markdown string in `chat_messages.content`
 
 ### 3. Contracts
@@ -320,20 +320,32 @@ server-side tool calls.
   root `sources` and streaming final chunk root `sources` arrays containing
   `{ "url": "...", "title": "..." }` objects.
 - The conversation application layer maps numeric markers in the final assistant
-  text (`[1]`, `[2]`, etc.) to display-only Markdown reference links
-  (`[[1]][citation-1]` plus `[citation-1]: URL`). This keeps URL text out of
-  the visible body while rendering the bracketed marker as the clickable label.
-- The visible assistant text is preserved; reference definitions are appended as
-  Markdown metadata for the existing frontend renderer.
+  text (`[1]`, `[2]`, etc.) to display-only inline HTML anchors
+  (`<a href="URL">[1]</a>`). The href MUST be HTML-escaped (`html.EscapeString`)
+  because `normalizeCitationURL` only validates scheme/host, not quote/angle/`&`
+  characters. This keeps URL text out of the visible body while rendering the
+  bracketed marker as the clickable label.
+- Inline HTML anchors are used instead of Markdown reference links because when
+  the `htmlVisualPrompt` feature is active the model wraps prose in block-level
+  HTML (`<div>`), and CommonMark does NOT parse Markdown (including reference
+  links) inside a raw HTML block — but `rehype-raw` reconstructs real `<a>` tags
+  everywhere, so an inline anchor renders as a citation capsule in both plain
+  Markdown and inside HTML fragments. The frontend `MarkdownLink` detects a
+  citation purely from "external href + visible text `[N]`", independent of
+  whether the anchor came from Markdown or raw HTML.
 - Inline numeric citation links from providers (`[1](https://...)`) must be
-  rewritten to the same display-only reference format so the visible body does
-  not show raw URL text.
-- Adjacent numeric markers (`[1][2]`) must be rewritten as separate
-  display-only citation references so they parse as two links.
-- Streaming deltas stay provider text only. The completed/persisted message may
-  contain appended reference definitions.
-- Do not add a new API field for citation links unless Markdown reference
-  definitions cannot represent the required behavior.
+  rewritten to the same inline-anchor format so the visible body does not show
+  raw URL text.
+- Adjacent numeric markers (`[1][2]`) are rewritten as back-to-back anchors with
+  no separator so the frontend `groupCitationChildren` (inside `<p>`) can still
+  merge them into one clustered capsule.
+- The rewrite must be idempotent: a `[N]` already inside an emitted (or
+  model-authored) `>[N]</a>` anchor is skipped, so re-running the rewrite never
+  nests `<a><a>...</a></a>`.
+- Streaming deltas stay provider text only. Only the completed/persisted message
+  is rewritten (post-stream, at the single `linkCitationMarkers` call site).
+- Do not add a new API field for citation links unless inline HTML anchors cannot
+  represent the required behavior.
 
 ### 4. Validation & Error Matrix
 
@@ -342,15 +354,17 @@ server-side tool calls.
 - No numeric citation markers in content -> return unchanged.
 - Citation marker has no URL at the matching one-based index -> skip it.
 - Empty, malformed, or non-HTTP(S) citation URL -> skip it.
-- Existing numeric reference definition already present -> do not duplicate it.
+- Marker already wrapped in a citation anchor (`>[N]</a>`) -> skip it (idempotent).
 
 ### 5. Good/Base/Bad Cases
 
 - Good: `answer [1][2]` plus two URLs persists as
-  `answer [[1]][citation-1][[2]][citation-2]\n\n[citation-1]: https://...\n[citation-2]: https://...`.
+  `answer <a href="https://...">[1]</a><a href="https://...">[2]</a>`.
 - Good: `answer [1](https://example.com)` persists as
-  `answer [[1]][citation-1]\n\n[citation-1]: https://example.com`.
-- Base: `answer [1]` plus three URLs appends only the referenced first URL.
+  `answer <a href="https://example.com">[1]</a>`.
+- Good: a citation URL with a query string (`?a=1&b=2`) persists with an escaped
+  href (`href="https://example.com/?a=1&amp;b=2"`).
+- Base: `answer [1]` plus three URLs links only the referenced first marker.
 - Base: a Chat Completions stream whose final chunk is
   `{ "choices": [{ "delta": {}, "finish_reason": "stop" }], "sources": [...] }`
   still yields citations for the completed persisted assistant message.
@@ -360,8 +374,8 @@ server-side tool calls.
 ### 6. Tests Required
 
 - Unit tests for marker-to-URL mapping, inline numeric link rewriting, adjacent
-  marker separation, existing-definition deduplication, invalid URL filtering,
-  and unchanged content without markers.
+  marker handling, invalid URL filtering, href HTML-escaping, idempotency (no
+  nested anchors on re-run), and unchanged content without markers.
 - LLM adapter tests must cover provider citation extraction for both
   non-streaming responses and streaming terminal chunks when an upstream uses a
   custom root `sources` field.
@@ -382,5 +396,6 @@ message.ProcessTrace.Tools = citationsJSON
 
 ```go
 // Keep the API contract as Markdown content and let the renderer handle links.
-message.Content = appendCitationReferenceDefinitions(upstream.Text, upstream.Citations)
+// Emit inline HTML anchors so citations render in both Markdown and HTML fragments.
+message.Content = linkCitationMarkers(upstream.Text, upstream.Citations)
 ```
