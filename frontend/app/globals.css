@@ -716,6 +716,15 @@
   * {
     @apply border-border outline-ring/50;
   }
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, var(--background));
+    color: var(--foreground);
+    -webkit-text-fill-color: var(--foreground);
+  }
+  ::-moz-selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, var(--background));
+    color: var(--foreground);
+  }
   html,
   body {
     max-width: 100%;
