@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode background for the native text-selection floating toolbar.
+         Resolved automatically when the system is in dark mode. -->
+    <color name="floatingToolbarBackground">#2A2A2A</color>
+</resources>

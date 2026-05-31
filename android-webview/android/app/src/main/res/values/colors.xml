@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light-mode background for the native text-selection floating toolbar
+         (Copy/Share/Select all/Read). Matches the web light surface. -->
+    <color name="floatingToolbarBackground">#FAF9F4</color>
+</resources>

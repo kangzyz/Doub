@@ -2,7 +2,6 @@ package cloud.helpking.doub;
 
 import android.app.DownloadManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -14,17 +13,11 @@ import android.webkit.WebView;
 import android.widget.Toast;
 import android.content.Intent;
 
-import androidx.appcompat.app.AppCompatDelegate;
-
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Force the native shell to day/light mode so the WebView and its
-        // native text-selection toolbar/menus do not follow the system dark
-        // theme. The web app manages its own light/dark theme.
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
         Window window = getWindow();
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -59,24 +52,12 @@ public class MainActivity extends BridgeActivity {
         webView.setFocusableInTouchMode(true);
         webView.requestFocus(View.FOCUS_DOWN);
         WebSettings settings = webView.getSettings();
-        disableWebViewDarkening(settings);
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
             handleWebViewDownload(url, userAgent, contentDisposition, mimeType, contentLength));
-    }
-
-    @SuppressWarnings("deprecation")
-    private void disableWebViewDarkening(WebSettings settings) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                settings.setAlgorithmicDarkeningAllowed(false);
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                settings.setForceDark(WebSettings.FORCE_DARK_OFF);
-            }
-        } catch (Throwable ignored) {}
     }
 
     private void configureCookies(WebView webView) {
