@@ -137,6 +137,15 @@ function normalizeDollarMathSegments(source: string): string {
 
     const mathContent = source.slice(openingDelimiterIndex + delimiterLength, closingDelimiterIndex);
     const inline = delimiterLength === 1;
+
+    // 行内数学（单 $）不跨越空行：真正的行内公式不会跨段落。跨空行的配对几乎都是货币 $
+    // （如 “$200/月 …（空行、标题、HTML 表格）… $0.25”）的误配对；若按行内数学归一化，
+    // normalizeDollarMathContent 会把中间内容的换行压平成空格，从而摧毁后续的标题与
+    // 块级 HTML（表格/卡片）结构。放弃此开定界符，让后面的 $ 重新尝试配对。
+    if (inline && /\n[^\S\n]*\n/.test(mathContent)) {
+      continue;
+    }
+
     const shouldNormalize =
       (mathContent.includes("|") || (inline && mathContent.includes("\n"))) &&
       looksLikeLatexMathContent(mathContent);
@@ -183,6 +192,24 @@ export function normalizeMathDelimiters(source: string): string {
     const normalizedFragment = shouldNormalizeDelimiters ? normalizeLatexDelimitersInText(fragment) : fragment;
     return normalizedFragment.includes("$") ? normalizeDollarMathSegments(normalizedFragment) : normalizedFragment;
   });
+}
+
+// 货币美元符号：$ 紧跟数字，且既不是块级 $$ 的一部分，也不是已转义的 \$。
+const CURRENCY_DOLLAR_RE = /(?<![\\$\d])\$(?=\d)/g;
+
+// protectCurrencyDollars 把货币美元符号（如 $20、$0.25、$200/月）转成 HTML 实体 &#36;，
+// 避免 singleDollarTextMath 把价格误当成行内公式（导致 $ 丢失、加粗失效、内容被 KaTeX 吞掉）。
+// &#36; 在普通段落和原始 HTML 块中都会被解码回 $ 正常显示，且不再触发数学解析。
+// 字母/LaTeX 开头的行内公式（$x^2$、$\alpha$）的 $ 后不是数字，因此不受影响；
+// 代码块/行内代码由 mapMarkdownTextFragments 跳过，其中的 $ 保持原样。
+export function protectCurrencyDollars(source: string): string {
+  if (!source.includes("$")) {
+    return source;
+  }
+
+  return mapMarkdownTextFragments(source, (fragment) =>
+    fragment.includes("$") ? fragment.replace(CURRENCY_DOLLAR_RE, "&#36;") : fragment,
+  );
 }
 
 const LATEX_UNICODE_SYMBOLS: Array<[RegExp, string]> = [
