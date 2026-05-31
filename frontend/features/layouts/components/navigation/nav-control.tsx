@@ -16,8 +16,8 @@ import { AppLogo } from "@/shared/components/app-logo"
 
 export function NavControl() {
   const t = useTranslations("common.navigation")
-  const { toggleSidebar, state } = useSidebar()
-  const isCollapsed = state === "collapsed"
+  const { toggleSidebar, state, isMobile } = useSidebar()
+  const isCollapsed = state === "collapsed" && !isMobile
 
   return (
     <SidebarMenu>
