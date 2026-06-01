@@ -42,5 +42,14 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="windowSplashScreenAnimationDuration">520</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <!-- Theme.SplashScreen inherits Theme.DeviceDefault.DayNight on API 29+, which
+             carries a title/action bar. Capacitor's BridgeActivity calls setTheme(NoActionBar)
+             only AFTER super.onCreate(), too late to remove it — so a bar titled with the app
+             label ("DOUB") shows at the top on some Android versions. Disable it here on the
+             launch theme so the bar is never created. -->
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
 </resources>
