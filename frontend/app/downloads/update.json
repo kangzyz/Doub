@@ -1,17 +1,16 @@
 {
-  "versionCode": 403,
-  "versionName": "4.0",
+  "versionCode": 417,
+  "versionName": "4.2",
   "packageName": "cloud.helpking.yunxin",
   "appName": "DOUB",
-  "apkUrl": "https://doub.chat/downloads/DOUB-v4.0-doub-chat-release.apk",
-  "versionedApkUrl": "https://doub.chat/downloads/DOUB-v4.0-doub-chat-release.apk",
-  "legacyApkUrl": "https://hui.helpking.cloud/downloads/DOUB-v4.0-doub-chat-release.apk",
-  "releaseNotes": "DOUB 4.0 更新记录\n\n本次更新：\n- 切换至新域名 https://doub.chat\n- 优化安卓登录状态保持，减少退出后重新登录\n- 修复黑夜模式启动和网页首屏白色闪屏\n\n历史更新：\n- 修复更新推送接收异常，增加备用更新清单\n- 修复安卓 WebView 通知兼容问题\n- 继续保持原账号体系；因 4.0 数据库结构调整，旧聊天记录无法沿用",
-  "sha256": "b802e85dd16a4efbf41c28b66a13cb80cc9880c97d8190bd9c320a7c4eecbfa1",
-  "size": 26268684,
+  "apkUrl": "https://doub.chat/downloads/DOUB-release.apk",
+  "versionedApkUrl": "https://doub.chat/downloads/DOUB-v4.2-release.apk",
+  "legacyApkUrl": "https://hui.helpking.cloud/downloads/YunXin-release.apk",
+  "sha256": "1f8c5725da3a26fc6c82c5853c2663b5684ec27426532ae9d780afb3f9a66c76",
+  "size": 26275080,
+  "publishedAt": 1780307751,
   "force": false,
   "requiresFreshInstall": false,
-  "buttonText": "下载并安装 DOUB 4.0",
-  "cancelText": "稍后",
-  "publishedAt": 1779800525
+  "releaseNotes": "4.2 正式版\n\n本次更新：\n- 临时暂停 4.3 更新推送，当前更新通道恢复到 4.2 正式版。\n- 回退此前实验性的网页选择工具栏与原生菜单抑制方案，恢复更稳定的系统默认文本选择体验。\n- 保留 4.1.x 测试期间验证通过的安卓壳兼容性调整，提升深色模式和不同厂商系统下的稳定性。\n\n历史更新：\n- 4.1.7-test：移除网页选择工具栏和原生菜单抑制逻辑，回归上游稳定行为。\n- 4.1.6-test：尝试保留文本选择拖拽手柄，同时隐藏 OEM 原生选择菜单。\n- 4.1.5-test：使用自定义 WebView 抑制原生选择菜单。\n- 4.1.4-test：强化移动端选择工具栏定位和剪贴板处理。\n- 4.1.3-test：引入网页内主题化选择工具栏，替代部分机型不可读的 OEM 选择菜单。\n- 4.1.2-test：优化原生文本选择工具栏的亮/暗色适配。\n- 4.1.1-test：强制安卓 WebView 壳使用浅色原生主题，改善深色模式下菜单显示。",
+  "notes": "临时暂停 4.3 更新推送，当前更新通道恢复到 4.2 正式版。"
 }

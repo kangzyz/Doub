@@ -21,7 +21,7 @@ export const ANDROID = {
     "1f8c5725da3a26fc6c82c5853c2663b5684ec27426532ae9d780afb3f9a66c76",
   apkUrl: "https://doub.chat/downloads/DOUB-release.apk",
   /** Differently-branded fallback channel; always label it as a mirror. */
-  legacyApkUrl: "https://hui.helpking.cloud/downloads/DOUB-release.apk",
+  legacyApkUrl: "https://hui.helpking.cloud/downloads/YunXin-release.apk",
   manifestUrl: "https://doub.chat/downloads/update.json",
   qrSrc: "/downloads/doub-android-qr.svg",
 } as const;
