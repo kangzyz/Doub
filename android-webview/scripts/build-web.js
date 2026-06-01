@@ -1,11 +1,15 @@
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const TARGET_URL = process.env.DOUB_WEB_URL || 'https://doub.chat';
 const DIST_DIR = 'dist';
 mkdirSync(DIST_DIR, { recursive: true });
 
-const faviconSource = '/home/k/projects/Doub/frontend/app/favicon.ico';
+// Portable: resolve relative to this script (repo-root/frontend/app/favicon.ico),
+// overridable via DOUB_FAVICON. Guarded below, so a missing file is harmless.
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const faviconSource = process.env.DOUB_FAVICON || join(scriptDir, '..', '..', 'frontend', 'app', 'favicon.ico');
 if (existsSync(faviconSource)) {
   copyFileSync(faviconSource, join(DIST_DIR, 'favicon.ico'));
 }
