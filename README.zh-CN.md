@@ -285,7 +285,7 @@ docker build -t doub-chat-rapidocr ./docker/rapidocr
 
 DOUB Chat 基于开源生态构建，感谢所有 AI 工具生态中的维护者和社区。
 
-- [Deeix (https://github.com/DEEIX-AI/DEEIX-Chat)]
+- [Deeix](https://github.com/DEEIX-AI/DEEIX-Chat)
 - [Next.js](https://nextjs.org)
 - [Go](https://go.dev)
 - [LINUX DO](https://linux.do)
@@ -298,4 +298,4 @@ DOUB Chat 基于开源生态构建，感谢所有 AI 工具生态中的维护者
 ## 开源协议
 
 DOUB Chat 使用 [Apache License 2.0](./LICENSE) 授权。
-该仓库基于[Deeix (https://github.com/DEEIX-AI/DEEIX-Chat)]开发，后者同样采用 Apache 许可证 2.0 版进行授权。
+该仓库基于[Deeix](https://github.com/DEEIX-AI/DEEIX-Chat)开发，后者同样采用 Apache 许可证 2.0 版进行授权。
