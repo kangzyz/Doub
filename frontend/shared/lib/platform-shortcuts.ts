@@ -28,8 +28,16 @@ export function shouldUseMultilineEnterForTouchInput(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return false;
   }
-  const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
-  return coarsePointer || navigator.maxTouchPoints > 0;
+  if (typeof window.matchMedia !== "function") {
+    return false;
+  }
+  // Only treat as touch-primary device when the primary pointer is coarse (touch)
+  // AND there is no hover capability (no mouse/trackpad available).
+  // This correctly identifies phones and tablets while excluding laptops with
+  // touchscreens where the user has a physical keyboard for newlines.
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const noHover = window.matchMedia("(hover: none)").matches;
+  return coarsePointer && noHover;
 }
 
 export function isSendShortcutEvent(

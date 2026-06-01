@@ -405,7 +405,15 @@ function ChatInputComponent({
             composingRef.current = false;
           }}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing || composingRef.current || event.key === "Process" || event.keyCode === 229) {
+            // Guard against IME composition events. We trust composingRef (set by
+            // onCompositionStart/End) and the standard isComposing flag. keyCode 229
+            // alone is unreliable — some browsers report it for the first keydown
+            // AFTER composition ends, so only block when key is also "Process"
+            // (which browsers use during active composition).
+            if (event.nativeEvent.isComposing || composingRef.current) {
+              return;
+            }
+            if (event.key === "Process") {
               return;
             }
             const shouldSend =
