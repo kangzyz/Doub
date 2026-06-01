@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Animated splash icon: the gradient DOUB "D" grows (0.6 -> 1) and fades in,
+     for a clean "app opening" entrance. Played once by core-splashscreen
+     (windowSplashScreenAnimationDuration in styles.xml). -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:drawable="@drawable/splash_logo">
+    <target android:name="splashScale">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:duration="520"
+                    android:valueFrom="0.62"
+                    android:valueTo="1"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/decelerate_quint" />
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:duration="520"
+                    android:valueFrom="0.62"
+                    android:valueTo="1"
+                    android:valueType="floatType"
+                    android:interpolator="@android:interpolator/decelerate_quint" />
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="splashD">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="fillAlpha"
+                android:duration="420"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/decelerate_cubic" />
+        </aapt:attr>
+    </target>
+</animated-vector>

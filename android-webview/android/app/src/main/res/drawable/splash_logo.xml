@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Underlying vector for the animated splash: DOUB "D" (rounded corners) with the
+     brand red->blue gradient. Optically centered (translateX -6.5 for the 0.44 scale).
+     Named group/path are animation targets (splash_icon.xml). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:name="splashScale" android:pivotX="54" android:pivotY="54">
+        <group
+            android:pivotX="62.5"
+            android:pivotY="85"
+            android:scaleX="0.44"
+            android:scaleY="0.44"
+            android:translateX="-6.5"
+            android:translateY="-31">
+            <path android:name="splashD" android:fillType="evenOdd" android:fillAlpha="1"
+                android:pathData="M27,22 L55,22 Q110,22 110,85 Q110,148 55,148 L23,148 Q15,148 15,140 L15,30 Q15,22 27,22 Z M43,55 Q43,50 48,50 L55,50 Q82,50 82,85 Q82,120 55,120 L48,120 Q43,120 43,115 L43,55 Z">
+                <aapt:attr name="android:fillColor">
+                    <gradient android:type="linear" android:startX="15" android:startY="148" android:endX="110" android:endY="22"
+                        android:startColor="#FFFF4040" android:endColor="#FF367BFF" />
+                </aapt:attr>
+            </path>
+        </group>
+    </group>
+</vector>
