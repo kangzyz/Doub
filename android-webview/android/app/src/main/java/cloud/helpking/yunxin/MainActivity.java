@@ -1,25 +1,16 @@
 package cloud.helpking.yunxin;
 
-import android.Manifest;
 import android.app.AlertDialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.window.OnBackInvokedCallback;
@@ -32,9 +23,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
@@ -51,21 +39,16 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainActivity extends BridgeActivity {
-    private static final int LAUNCH_BACKGROUND_COLOR = 0xff171717;
     private static final String[] UPDATE_MANIFEST_URLS = new String[]{
             "https://doub.chat/downloads/update.json",
             "https://hui.helpking.cloud/downloads/update.json",
             "https://doub.chat/downloads/yunxin-update.json",
             "https://hui.helpking.cloud/downloads/yunxin-update.json"
     };
-    private static final String NOTIFICATION_CHANNEL_ID = "doub_web_notifications";
-    private static final int POST_NOTIFICATIONS_REQUEST_CODE = 4101;
     private static boolean updateCheckedThisProcess = false;
 
-    private final AtomicInteger notificationId = new AtomicInteger(8000);
     private AlertDialog updateDialog;
     private Button updatePrimaryButton;
     private ProgressBar updateProgressBar;
@@ -78,16 +61,13 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        applyDarkLaunchSurface();
         super.onCreate(savedInstanceState);
-        applyDarkLaunchSurface();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         configureWebViewForTextInput();
         registerSidebarBackHandler();
         if (Build.VERSION.SDK_INT >= 33) {
             registerPredictiveBackHandler();
         }
-        createNotificationChannel();
         getWindow().getDecorView().postDelayed(this::checkForUpdatesOnce, 3500);
     }
 
@@ -140,7 +120,7 @@ public class MainActivity extends BridgeActivity {
     private void configureWebViewForTextInput() {
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView == null) return;
-        webView.setBackgroundColor(LAUNCH_BACKGROUND_COLOR);
+        webView.setBackgroundColor(ContextCompat.getColor(this, R.color.splashBackground));
         configureCookies(webView);
         webView.setFocusable(true);
         webView.setFocusableInTouchMode(true);
@@ -150,8 +130,6 @@ public class MainActivity extends BridgeActivity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        webView.addJavascriptInterface(new DoubNotificationBridge(), "DoubNotificationBridge");
-        webView.evaluateJavascript(notificationPolyfillScript(), null);
         webView.setOnKeyListener((view, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
                 if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
@@ -280,23 +258,6 @@ public class MainActivity extends BridgeActivity {
                 "})();";
     }
 
-    private void applyDarkLaunchSurface() {
-        Window window = getWindow();
-        window.setBackgroundDrawable(new ColorDrawable(LAUNCH_BACKGROUND_COLOR));
-        window.setStatusBarColor(LAUNCH_BACKGROUND_COLOR);
-        window.setNavigationBarColor(LAUNCH_BACKGROUND_COLOR);
-        window.getDecorView().setBackgroundColor(LAUNCH_BACKGROUND_COLOR);
-
-        int flags = window.getDecorView().getSystemUiVisibility();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        window.getDecorView().setSystemUiVisibility(flags);
-    }
-
     private void configureCookies(WebView webView) {
         try {
             CookieManager cookieManager = CookieManager.getInstance();
@@ -310,112 +271,6 @@ public class MainActivity extends BridgeActivity {
         try {
             CookieManager.getInstance().flush();
         } catch (Exception ignored) {}
-    }
-
-    private String notificationPolyfillScript() {
-        return "(function(){" +
-                "if(window.__doubAndroidNotificationPolyfill)return;" +
-                "window.__doubAndroidNotificationPolyfill=true;" +
-                "if(!window.DoubNotificationBridge)return;" +
-                "var bridge=window.DoubNotificationBridge;" +
-                "var permission=bridge.getPermission();" +
-                "function AndroidNotification(title,options){" +
-                "options=options||{};" +
-                "this.title=String(title||'DOUB');" +
-                "this.body=options.body||'';" +
-                "this.tag=options.tag||'';" +
-                "this.icon=options.icon||'';" +
-                "this.onclick=null;this.onclose=null;this.onerror=null;this.onshow=null;" +
-                "if(AndroidNotification.permission==='granted'){bridge.show(this.title,String(this.body||''),String(this.tag||''),String(this.icon||''));" +
-                "var self=this;setTimeout(function(){if(typeof self.onshow==='function')self.onshow();},0);}" +
-                "}" +
-                "AndroidNotification.permission=permission;" +
-                "AndroidNotification.maxActions=0;" +
-                "AndroidNotification.requestPermission=function(callback){" +
-                "return new Promise(function(resolve){" +
-                "var result=bridge.requestPermission();" +
-                "AndroidNotification.permission=result;" +
-                "if(typeof callback==='function')callback(result);" +
-                "resolve(result);" +
-                "});" +
-                "};" +
-                "AndroidNotification.prototype.close=function(){if(typeof this.onclose==='function')this.onclose();};" +
-                "window.Notification=AndroidNotification;" +
-                "})();";
-    }
-
-    private class DoubNotificationBridge {
-        @JavascriptInterface
-        public String getPermission() {
-            return hasNotificationPermission() ? "granted" : "default";
-        }
-
-        @JavascriptInterface
-        public String requestPermission() {
-            if (hasNotificationPermission()) return "granted";
-            if (Build.VERSION.SDK_INT >= 33) {
-                runOnUiThread(() -> ActivityCompat.requestPermissions(
-                        MainActivity.this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        POST_NOTIFICATIONS_REQUEST_CODE
-                ));
-                return hasNotificationPermission() ? "granted" : "default";
-            }
-            return "granted";
-        }
-
-        @JavascriptInterface
-        public void show(String title, String body, String tag, String icon) {
-            runOnUiThread(() -> showNativeNotification(title, body, tag));
-        }
-    }
-
-    private boolean hasNotificationPermission() {
-        if (Build.VERSION.SDK_INT < 33) return true;
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        NotificationChannel channel = new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                "DOUB 通知",
-                NotificationManager.IMPORTANCE_DEFAULT
-        );
-        channel.setDescription("DOUB 回复完成与应用提醒");
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) manager.createNotificationChannel(channel);
-    }
-
-    private void showNativeNotification(String title, String body, String tag) {
-        if (!hasNotificationPermission()) {
-            if (Build.VERSION.SDK_INT >= 33) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, POST_NOTIFICATIONS_REQUEST_CODE);
-            }
-            return;
-        }
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                Math.abs((tag == null ? "" : tag).hashCode()),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-        String safeTitle = title == null || title.trim().isEmpty() ? "DOUB" : title.trim();
-        String safeBody = body == null ? "" : body.trim();
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(getApplicationInfo().icon)
-                .setContentTitle(safeTitle)
-                .setContentText(safeBody)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(safeBody))
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        try {
-            NotificationManagerCompat.from(this).notify(notificationId.incrementAndGet(), builder.build());
-        } catch (SecurityException ignored) {
-        }
     }
 
     private void checkForUpdatesOnce() {
