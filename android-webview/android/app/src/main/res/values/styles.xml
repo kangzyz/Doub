@@ -1,52 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Base application theme. DayNight so native UI follows the system
-         light/dark mode. (No DarkActionBar: it forced the text-selection
-         action mode / menus to render dark regardless of mode.) -->
+    <!-- Base application theme. Native UI follows system light/dark mode;
+         the WebView content itself is not force-darkened. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorBackgroundFloating">@color/floatingToolbarBackground</item>
         <item name="android:colorBackgroundFloating">@color/floatingToolbarBackground</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Brand window background (DayNight): no white flash before the web app paints. -->
         <item name="android:windowBackground">@color/splashBackground</item>
-        <!-- The web app manages its own light/dark theme, so the OS must not
-             force-dark the WebView content. -->
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
-        <!-- Adaptive background for the native text-selection floating toolbar:
-             light from values/, dark from values-night/ (follows system mode). -->
         <item name="colorBackgroundFloating">@color/floatingToolbarBackground</item>
         <item name="android:colorBackgroundFloating">@color/floatingToolbarBackground</item>
-        <!-- System bars follow system light/dark. On API 35+ the OS enforces
-             edge-to-edge and ignores these colors, but the light-bar flags still
-             control status/nav icon contrast. -->
         <item name="android:statusBarColor">@color/splashBackground</item>
         <item name="android:navigationBarColor">@color/splashBackground</item>
         <item name="android:windowLightStatusBar">@bool/lightSystemBars</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/lightSystemBars</item>
     </style>
 
-    <!-- Launch / splash. Uses androidx core-splashscreen so the centered DOUB
-         mark on the brand background renders consistently across API 24..36
-         (the platform forces its own splash on API 31+). -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splashBackground</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="windowSplashScreenAnimationDuration">520</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
-        <!-- Theme.SplashScreen inherits Theme.DeviceDefault.DayNight on API 29+, which
-             carries a title/action bar. Capacitor's BridgeActivity calls setTheme(NoActionBar)
-             only AFTER super.onCreate(), too late to remove it — so a bar titled with the app
-             label ("DOUB") shows at the top on some Android versions. Disable it here on the
-             launch theme so the bar is never created. -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>

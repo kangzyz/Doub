@@ -1,19 +1,19 @@
 {
-  "appId": "cloud.helpking.doub",
+  "appId": "cloud.helpking.yunxin",
   "appName": "DOUB",
   "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "resizeOnFullScreen": true
+  },
+  "plugins": {
+    "App": {
+      "disableBackButtonHandler": true
+    }
+  },
   "server": {
     "url": "https://doub.chat",
     "cleartext": false
-  },
-  "android": {
-    "captureInput": false,
-    "allowMixedContent": false,
-    "webContentsDebuggingEnabled": false
-  },
-  "plugins": {
-    "Keyboard": {
-      "resizeOnFullScreen": true
-    }
   }
 }

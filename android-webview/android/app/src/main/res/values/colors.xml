@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Light-mode background for the native text-selection floating toolbar
-         (Copy/Share/Select all/Read). Matches the web light surface. -->
+    <color name="colorPrimary">#171717</color>
+    <color name="colorPrimaryDark">#171717</color>
+    <color name="colorAccent">#4D8DFF</color>
+    <color name="doub_launch_background">#171717</color>
     <color name="floatingToolbarBackground">#FAF9F4</color>
-
-    <!-- Splash / launch + window background (light mode). Near-white to match
-         the web app's light canvas; avoids a white flash before the WebView paints. -->
     <color name="splashBackground">#FCFCFD</color>
-    <!-- DOUB mark on the splash (light mode): near-black. -->
     <color name="splashForeground">#18181B</color>
 </resources>

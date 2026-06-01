@@ -1,23 +1,25 @@
-const fs = require("node:fs");
-const path = require("node:path");
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-const targetUrl = "https://doub.chat";
-const distDir = path.join(__dirname, "..", "dist");
-const indexPath = path.join(distDir, "index.html");
+const TARGET_URL = process.env.DOUB_WEB_URL || 'https://doub.chat';
+const DIST_DIR = 'dist';
+mkdirSync(DIST_DIR, { recursive: true });
 
-fs.mkdirSync(distDir, { recursive: true });
+const faviconSource = '/home/k/projects/Doub/frontend/app/favicon.ico';
+if (existsSync(faviconSource)) {
+  copyFileSync(faviconSource, join(DIST_DIR, 'favicon.ico'));
+}
 
-// Branded, on-brand dark loading stub. With server.url set this is rarely shown,
-// but when it is (cold cache / offline-then-online), it must not flash white.
-const html = `<!doctype html>
-<html lang="en">
+writeFileSync(join(DIST_DIR, 'index.html'), `<!doctype html>
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0C10">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FCFCFD">
-    <meta http-equiv="refresh" content="0;url=${targetUrl}">
+    <link rel="icon" href="/favicon.ico">
+    <meta http-equiv="refresh" content="0;url=${TARGET_URL}">
     <title>DOUB</title>
     <style>
       :root { color-scheme: dark light; }
@@ -41,18 +43,15 @@ const html = `<!doctype html>
       a { color: inherit; }
       @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
     </style>
-    <script>window.location.replace(${JSON.stringify(targetUrl)});</script>
+    <script>window.location.replace(${JSON.stringify(TARGET_URL)});</script>
   </head>
   <body>
     <div class="wrap">
       <div class="mark">DOUB</div>
       <div class="dot" aria-hidden="true"></div>
-      <noscript><a href="${targetUrl}">Open DOUB</a></noscript>
+      <noscript><a href="${TARGET_URL}">打开 DOUB</a></noscript>
     </div>
   </body>
 </html>
-`;
-
-fs.writeFileSync(indexPath, html, "utf8");
-
-console.log(`Wrote ${path.relative(process.cwd(), indexPath)} -> ${targetUrl}`);
+`, 'utf8');
+console.log(JSON.stringify({ targetUrl: TARGET_URL, favicon: existsSync(faviconSource) }, null, 2));

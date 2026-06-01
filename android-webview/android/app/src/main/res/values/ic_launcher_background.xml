@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Legacy launcher background color (the adaptive icon now uses the
-         @drawable/ic_launcher_background vector). Kept near-black for any
-         reference that resolves the color directly. -->
-    <color name="ic_launcher_background">#0C0C10</color>
-</resources>

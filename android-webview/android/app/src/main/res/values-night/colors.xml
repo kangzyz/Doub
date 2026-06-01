@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark-mode background for the native text-selection floating toolbar.
-         Resolved automatically when the system is in dark mode. -->
+    <color name="colorPrimary">#171717</color>
+    <color name="colorPrimaryDark">#171717</color>
+    <color name="colorAccent">#4D8DFF</color>
+    <color name="doub_launch_background">#171717</color>
     <color name="floatingToolbarBackground">#2A2A2A</color>
-
-    <!-- Splash / launch + window background (dark mode). Matches the web app's
-         near-black "Aurora Minimal" canvas (the background token). -->
     <color name="splashBackground">#0C0C10</color>
-    <!-- DOUB mark on the splash (dark mode): near-white. -->
     <color name="splashForeground">#F5F5F7</color>
 </resources>
