@@ -285,6 +285,7 @@ These services are optional. The admin file settings decide which extraction or 
 
 DOUB Chat is built on the open-source ecosystem. Thanks to all maintainers and communities in the AI tooling ecosystem.
 
+- [Deeix (https://github.com/DEEIX-AI/DEEIX-Chat)]
 - [Next.js](https://nextjs.org)
 - [Go](https://go.dev)
 - [LINUX DO](https://linux.do)
@@ -298,5 +299,5 @@ DOUB Chat is built on the open-source ecosystem. Thanks to all maintainers and c
 
 This project is licensed under the Apache License, Version 2.0.
 
-This repository is based on 【https://github.com/DEEIX-AI/DEEIX-Chat】, which is also licensed under the Apache License, Version 2.0.
+This repository is based on [Deeix (https://github.com/DEEIX-AI/DEEIX-Chat)], which is also licensed under the Apache License, Version 2.0.
 
