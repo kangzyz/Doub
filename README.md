@@ -296,4 +296,7 @@ DOUB Chat is built on the open-source ecosystem. Thanks to all maintainers and c
 
 ## License
 
-DOUB Chat is licensed under the [Apache License 2.0](./LICENSE).
+This project is licensed under the Apache License, Version 2.0.
+
+This repository is based on 【https://github.com/DEEIX-AI/DEEIX-Chat】, which is also licensed under the Apache License, Version 2.0.
+
