@@ -178,3 +178,6 @@ frontend/public/vendor/lobehub-icons/
 .DS_Store
 .idea
 .ace-tool/
+
+# Locally-installed Claude Code skill (not project code)
+.claude/skills/ui-ux-pro-max/
