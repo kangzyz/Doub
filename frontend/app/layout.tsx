@@ -106,6 +106,9 @@ const themeInitScript = `
 export const metadata: Metadata = {
   title: "DOUB Chat",
   description: "DOUB Chat is a multi-model AI conversation system.",
+  icons: {
+    icon: [{ url: "/doub-adaptive-favicon.ico", type: "image/x-icon" }],
+  },
 };
 
 export const viewport: Viewport = {

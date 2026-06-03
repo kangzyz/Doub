@@ -6,12 +6,14 @@ const TARGET_URL = process.env.DOUB_WEB_URL || 'https://doub.chat';
 const DIST_DIR = 'dist';
 mkdirSync(DIST_DIR, { recursive: true });
 
-// Portable: resolve relative to this script (repo-root/frontend/app/favicon.ico),
+const FAVICON_FILENAME = 'doub-adaptive-favicon.ico';
+
+// Portable: resolve relative to this script (repo-root/frontend/public/doub-adaptive-favicon.ico),
 // overridable via DOUB_FAVICON. Guarded below, so a missing file is harmless.
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const faviconSource = process.env.DOUB_FAVICON || join(scriptDir, '..', '..', 'frontend', 'app', 'favicon.ico');
+const faviconSource = process.env.DOUB_FAVICON || join(scriptDir, '..', '..', 'frontend', 'public', FAVICON_FILENAME);
 if (existsSync(faviconSource)) {
-  copyFileSync(faviconSource, join(DIST_DIR, 'favicon.ico'));
+  copyFileSync(faviconSource, join(DIST_DIR, FAVICON_FILENAME));
 }
 
 writeFileSync(join(DIST_DIR, 'index.html'), `<!doctype html>
@@ -22,7 +24,7 @@ writeFileSync(join(DIST_DIR, 'index.html'), `<!doctype html>
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0C10">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FCFCFD">
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" href="/${FAVICON_FILENAME}">
     <meta http-equiv="refresh" content="0;url=${TARGET_URL}">
     <title>DOUB</title>
     <style>

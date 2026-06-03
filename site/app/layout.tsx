@@ -25,7 +25,7 @@ export const metadata: Metadata = {
       "Every model. One quiet place. A self-hosted, open-source AI workspace — entirely yours.",
     images: ["/og/doub-og.svg"],
   },
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/doub-adaptive-favicon.ico" },
 };
 
 export const viewport: Viewport = {

@@ -19,7 +19,7 @@ site/
     chat-preview.tsx Faux DOUB Chat product window used in the hero
   lib/cn.ts          clsx + tailwind-merge helper
   public/
-    logo/ og/ favicon.ico
+    logo/ og/ doub-adaptive-favicon.ico
 ```
 
 ## Develop

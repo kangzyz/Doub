@@ -96,7 +96,7 @@ export function notifyResponseCompletion(input: ResponseCompletionNotificationIn
   const notification = new Notification(conversationTitle || "DOUB Chat", {
     body: normalizeNotificationBody(normalizeString(input.content)),
     tag: normalizeString(input.conversationPublicID, `response-completion:${Date.now()}`),
-    icon: "/favicon.ico",
+    icon: "/doub-adaptive-favicon.ico",
   });
 
   notification.onclick = () => {
