@@ -104,8 +104,17 @@ divergence is smaller than the raw commit gap): Release Note skill, HTML-visual
 system-prompt guidance + CSS sanitizer (our richer inline-HTML renderer kept),
 Anthropic tool-trace fix, artifact preview, system-prompt refactor, conversation
 file-cleanup on delete, model connectivity test, MCP tool grouping/search, KaTeX
-math rendering, and Turnstile registration. Upstream **billing** commits were
-deliberately skipped — keep skipping them on future merges.
+math rendering plus KaTeX span/style isolation, Turnstile registration,
+navigation prefetch suppression, Monaco JSON editor value-sync fixes, image-edit
+input PNG normalization/filename handling, and logo carousel image preloading.
+Upstream **billing** commits were deliberately skipped — keep skipping them on
+future merges.
+
+For Markdown/KaTeX conflicts, keep the local richer renderer, citation chips,
+currency-dollar protection, and HTML visual theme normalization. Port only
+upstream formula-structure fixes that preserve that local renderer, such as
+allowing KaTeX `top` offsets and excluding `.katex` descendants from prose
+wrapping/font inheritance.
 
 ---
 

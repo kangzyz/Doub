@@ -62,6 +62,14 @@ wrappers server-renderable when possible.
   hard-coded light neutral descendant text as well so white/gray text does not
   become low-contrast on the softened surface. Do not globally override colored
   accents or charts with `!important` dark-mode CSS.
+- KaTeX output is renderer-owned structure, not ordinary prose HTML. Its nested
+  `span` tree uses classes such as `katex`, `mord`, `vlist`, `reset-size*`, and
+  inline `top` offsets for formula layout. Do not apply generic Markdown span
+  constraints such as forced `min-w-0`, `max-w-full`, `overflow-wrap:anywhere`,
+  or chat-font inheritance to `.katex` descendants, and do not strip `top` from
+  KaTeX span styles in the sanitizer. The safe pattern is to keep prose wrapping
+  on paragraphs/lists/blockquote and add explicit `.katex` exclusions or
+  KaTeX-specific sanitizer handling.
 - Keep executable or app-embedding tags out of the allowed schema unless a task
   explicitly designs an isolated sandbox. Examples: `script`, `iframe`,
   `object`, `embed`, `link`, `meta`, `form`, `input`, `button`, `textarea`,

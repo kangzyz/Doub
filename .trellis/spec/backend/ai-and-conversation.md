@@ -82,6 +82,10 @@ source and generated image attachments.
 - Request `fileIDs` must reference 1 to 16 active files owned by the user.
 - Source files must be image objects backed by object storage; supported edit
   MIME types are `image/png`, `image/jpeg`, and `image/webp`.
+- Source image bytes for edit requests are decoded, bounded to
+  `64 * 1024 * 1024` pixels, converted to 8-bit RGBA PNG, and sent upstream as
+  `image/png`; the multipart filename extension must match the normalized MIME
+  type.
 - The LLM adapter sends `multipart/form-data` with `model`, `prompt`, one or
   more `image[]` file parts, and allowed image edit options only.
 - Supported edit options include `quality`, `size`, `n`, `user`; GPT-image
