@@ -1,16 +1,16 @@
 {
-  "versionCode": 418,
-  "versionName": "4.3",
+  "versionCode": 419,
+  "versionName": "4.3.1",
   "packageName": "cloud.helpking.yunxin",
   "appName": "DOUB",
   "apkUrl": "https://doub.chat/downloads/DOUB-release.apk",
   "legacyApkUrl": "https://hui.helpking.cloud/downloads/YunXin-release.apk",
-  "versionedApkUrl": "https://doub.chat/downloads/DOUB-v4.3-release.apk",
-  "sha256": "e2f267acc018815f576a2e304288fb5f65823b8c9d6c7bb6416eeebb73335c96",
-  "size": 3033161,
-  "publishedAt": 1780316954,
+  "versionedApkUrl": "https://doub.chat/downloads/DOUB-v4.3.1-release.apk",
+  "sha256": "e014e802ac8bb9db77200187979f48d7fbad531627152440f8d31621949204e2",
+  "size": 3055230,
+  "publishedAt": 1780648370,
   "force": false,
   "requiresFreshInstall": false,
-  "releaseNotes": "4.3 正式版\n\n本次更新：\n- 使用 DOUB 仓库内 android-webview 官方打包源构建新的轻量 WebView 壳。\n- 更新极光风格启动图标与启动页资源，移除旧的冗余启动资源。\n- 清理启动阶段深色主题覆盖和顶部标题栏相关逻辑，启动体验更干净。\n- 精简原生通知桥等非必要逻辑，保留远程加载 https://doub.chat 的轻量 APK 方案。",
-  "notes": "DOUB 4.3 正式版：更新 Android WebView 壳、启动图标/启动页与标题栏清理，继续使用轻量远程 WebView 方案。"
+  "releaseNotes": "4.3.1 正式版\n\n本次更新：\n- 支持 Android 客户端在聊天中通过原生下载流程保存图片。\n- 修复图片生成/流式响应出现可恢复错误后，前端没有及时同步图片结果的问题。\n- 继续使用轻量远程 WebView 方案，加载 https://doub.chat。",
+  "notes": "DOUB 4.3.1 正式版：新增 Android 聊天图片原生下载支持，并修复图片流式错误恢复后的结果同步。"
 }

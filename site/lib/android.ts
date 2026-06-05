@@ -9,16 +9,16 @@
  */
 export const ANDROID = {
   appName: "DOUB",
-  versionName: "4.3",
-  versionCode: 418,
+  versionName: "4.3.1",
+  versionCode: 419,
   packageName: "cloud.helpking.yunxin",
-  sizeBytes: 3033161,
+  sizeBytes: 3055230,
   sizeLabel: "2.9 MB",
-  sizeExactLabel: "3,033,161 B",
-  /** Derived from publishedAt (unix 1780316954 → 2026-06). */
+  sizeExactLabel: "3,055,230 B",
+  /** Derived from publishedAt (unix 1780648370 → 2026-06). */
   publishedLabel: "2026-06",
   sha256:
-    "e2f267acc018815f576a2e304288fb5f65823b8c9d6c7bb6416eeebb73335c96",
+    "e014e802ac8bb9db77200187979f48d7fbad531627152440f8d31621949204e2",
   apkUrl: "https://doub.chat/downloads/DOUB-release.apk",
   /** Differently-branded fallback channel; always label it as a mirror. */
   legacyApkUrl: "https://hui.helpking.cloud/downloads/YunXin-release.apk",
