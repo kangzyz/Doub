@@ -206,3 +206,36 @@ Merged selected non-billing upstream features (artifact preview, MCP tool groupi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: Image stream sync recovery
+
+**Date**: 2026-06-05
+**Task**: Image stream sync recovery
+**Branch**: `main`
+
+### Summary
+
+Handled recoverable image stream transport errors by keeping the image placeholder syncing, then reconciling with same-run server success.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `17474c0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
