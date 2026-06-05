@@ -307,7 +307,8 @@
     "mediaStatus": {
       "queued": "图片任务已排队",
       "running": "正在生成图片",
-      "savingArtifact": "正在保存图片"
+      "savingArtifact": "正在保存图片",
+      "syncingResult": "正在同步生成结果"
     },
     "generationInterrupted": "生成中断",
     "sendFailed": "发送失败",

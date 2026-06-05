@@ -36,6 +36,7 @@ import {
   streamMessage as streamConversationMessage,
   type ConversationStreamOptions,
 } from "@/shared/api/conversation";
+import { ApiError } from "@/shared/api/http-client";
 import type {
   ConversationDTO,
   ConversationOptions,
@@ -89,6 +90,33 @@ function resolveMediaStatusLabel(
     default:
       return fallbackMessage.trim() || status.trim();
   }
+}
+
+function isRecoverableMediaStreamError(error: unknown): boolean {
+  if (!(error instanceof Error) || error.name === "AbortError") {
+    return false;
+  }
+  if (error instanceof ApiError && (error.errorCode || error.details != null)) {
+    return false;
+  }
+
+  const message = error.message.trim().toLowerCase();
+  if (!message) {
+    return false;
+  }
+
+  return [
+    "network error",
+    "failed to fetch",
+    "fetch failed",
+    "network connection was lost",
+    "stream completed without final payload",
+    "stream body is empty",
+    "body stream",
+    "connection closed",
+    "connection lost",
+    "connection reset",
+  ].some((marker) => message.includes(marker));
 }
 
 type ActiveStream = {
@@ -622,6 +650,26 @@ export function useChatMessageSubmit({
         const errorDetails = resolveErrorDetails(error);
         const errorSummary = resolveErrorSummary(error, t("retryLater"));
         shouldKeepConversationLayout = true;
+        if (submitTask !== "chat" && isRecoverableMediaStreamError(error)) {
+          sentSuccessfully = true;
+          setPendingExchange((prev) =>
+            prev && prev.key === exchangeKey
+              ? {
+                  ...prev,
+                  assistantPending: true,
+                  assistantStreaming: false,
+                  assistantFileProc: true,
+                  assistantActivityLabel: t("mediaStatus.syncingResult"),
+                  assistantContentType: "image",
+                  assistantInlineAlert: undefined,
+                }
+              : prev,
+          );
+          if (targetConversationID) {
+            reload();
+          }
+          return true;
+        }
         if (resetComposer && restoreDraftOnFailure) {
           setDraft(content);
           setAttachments(currentAttachments);

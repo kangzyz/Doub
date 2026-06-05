@@ -123,6 +123,18 @@ function mergePendingAssistantState(messages: ChatAreaMessage[], pendingExchange
     if (!sameAssistant) {
       return item;
     }
+    const serverStatus = item.status?.trim();
+    const serverTerminal = serverStatus === "success" || serverStatus === "error";
+    if (serverTerminal) {
+      return {
+        ...item,
+        isPending: false,
+        isStreaming: false,
+        isFileProc: false,
+        activityLabel: undefined,
+        inlineAlert: serverStatus === "success" ? undefined : item.inlineAlert,
+      };
+    }
     const existingAlert = item.inlineAlert;
     const nextAlert = pendingAlert
       ? {
