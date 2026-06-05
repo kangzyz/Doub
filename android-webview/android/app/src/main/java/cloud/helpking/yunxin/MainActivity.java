@@ -1,16 +1,22 @@
 package cloud.helpking.yunxin;
 
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
+import android.webkit.MimeTypeMap;
+import android.webkit.URLUtil;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.window.OnBackInvokedCallback;
@@ -47,8 +53,12 @@ public class MainActivity extends BridgeActivity {
             "https://doub.chat/downloads/yunxin-update.json",
             "https://hui.helpking.cloud/downloads/yunxin-update.json"
     };
+    private static final String ANDROID_DOWNLOADS_BRIDGE = "DoubAndroidDownloads";
+    private static final String DEFAULT_DOWNLOAD_FILE_NAME = "doub-download";
+    private static final String TRUSTED_AUTH_DOWNLOAD_HOST = "doub.chat";
     private static boolean updateCheckedThisProcess = false;
 
+    private final AndroidDownloadsBridge androidDownloadsBridge = new AndroidDownloadsBridge();
     private AlertDialog updateDialog;
     private Button updatePrimaryButton;
     private ProgressBar updateProgressBar;
@@ -130,6 +140,7 @@ public class MainActivity extends BridgeActivity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        configureDownloads(webView);
         webView.setOnKeyListener((view, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
                 if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
@@ -139,6 +150,32 @@ public class MainActivity extends BridgeActivity {
             }
             return false;
         });
+    }
+
+    private void configureDownloads(WebView webView) {
+        webView.addJavascriptInterface(androidDownloadsBridge, ANDROID_DOWNLOADS_BRIDGE);
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
+                handleWebViewDownload(url, userAgent, contentDisposition, mimeType, contentLength));
+    }
+
+    private final class AndroidDownloadsBridge {
+        @JavascriptInterface
+        public boolean downloadImage(String url, String fileName, String authorizationHeader, String mimeType) {
+            Uri uri = parseHttpDownloadUri(url);
+            if (uri == null) return false;
+
+            String normalizedAuthorization = normalizeAuthorizationHeader(authorizationHeader);
+            if (!normalizedAuthorization.isEmpty() && !canAttachAuthorizationHeader(uri, normalizedAuthorization)) {
+                return false;
+            }
+
+            String normalizedMimeType = normalizeMimeType(mimeType);
+            String normalizedFileName = ensureImageDownloadExtension(sanitizeDownloadFileName(fileName), normalizedMimeType);
+            String contentDisposition = buildDownloadContentDisposition(normalizedFileName);
+            runOnUiThread(() ->
+                    handleWebViewDownload(uri.toString(), "", contentDisposition, normalizedMimeType, -1L, normalizedAuthorization));
+            return true;
+        }
     }
 
     private void registerSidebarBackHandler() {
@@ -271,6 +308,159 @@ public class MainActivity extends BridgeActivity {
         try {
             CookieManager.getInstance().flush();
         } catch (Exception ignored) {}
+    }
+
+    private boolean handleWebViewDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+        return handleWebViewDownload(url, userAgent, contentDisposition, mimeType, contentLength, "");
+    }
+
+    private boolean handleWebViewDownload(
+            String url,
+            String userAgent,
+            String contentDisposition,
+            String mimeType,
+            long contentLength,
+            String authorizationHeader
+    ) {
+        Uri uri = parseHttpDownloadUri(url);
+        if (uri == null) return false;
+
+        String normalizedAuthorization = normalizeAuthorizationHeader(authorizationHeader);
+        if (!normalizedAuthorization.isEmpty() && !canAttachAuthorizationHeader(uri, normalizedAuthorization)) {
+            return false;
+        }
+
+        String normalizedMimeType = normalizeMimeType(mimeType);
+        String fileName = resolveDownloadFileName(uri.toString(), contentDisposition, normalizedMimeType);
+        try {
+            DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager == null) throw new IllegalStateException("DownloadManager unavailable");
+
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle(fileName);
+            request.setDescription("DOUB download");
+            if (!normalizedMimeType.isEmpty()) request.setMimeType(normalizedMimeType);
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(true);
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            if (!isBlank(userAgent)) request.addRequestHeader("User-Agent", userAgent);
+            String cookieHeader = resolveCookieHeader(uri.toString());
+            if (!isBlank(cookieHeader)) request.addRequestHeader("Cookie", cookieHeader);
+            if (!normalizedAuthorization.isEmpty()) request.addRequestHeader("Authorization", normalizedAuthorization);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+            } else {
+                request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, fileName);
+            }
+
+            downloadManager.enqueue(request);
+            Toast.makeText(this, "已开始下载：" + fileName, Toast.LENGTH_SHORT).show();
+            return true;
+        } catch (Exception e) {
+            openExternalUrl(uri.toString());
+            return false;
+        }
+    }
+
+    private Uri parseHttpDownloadUri(String url) {
+        if (isBlank(url)) return null;
+        try {
+            Uri uri = Uri.parse(url.trim());
+            String scheme = uri.getScheme();
+            if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme)) {
+                return null;
+            }
+            return uri;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean canAttachAuthorizationHeader(Uri uri, String authorizationHeader) {
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        return "https".equalsIgnoreCase(scheme)
+                && TRUSTED_AUTH_DOWNLOAD_HOST.equalsIgnoreCase(host)
+                && authorizationHeader.startsWith("Bearer ");
+    }
+
+    private String normalizeAuthorizationHeader(String value) {
+        if (value == null) return "";
+        String trimmed = value.trim();
+        if (!trimmed.startsWith("Bearer ") || trimmed.length() <= "Bearer ".length()) {
+            return "";
+        }
+        return trimmed;
+    }
+
+    private String normalizeMimeType(String value) {
+        if (value == null) return "";
+        return value.trim().toLowerCase(Locale.US);
+    }
+
+    private String resolveDownloadFileName(String url, String contentDisposition, String mimeType) {
+        String guessedName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+        return ensureImageDownloadExtension(sanitizeDownloadFileName(guessedName), mimeType);
+    }
+
+    private String sanitizeDownloadFileName(String value) {
+        String candidate = value == null ? "" : value.trim().replace('\\', '/');
+        int slashIndex = candidate.lastIndexOf('/');
+        if (slashIndex >= 0) candidate = candidate.substring(slashIndex + 1);
+        candidate = candidate.replaceAll("[\\\\/:*?\\\"<>|\\r\\n]+", "_").trim();
+        if (candidate.isEmpty()) candidate = DEFAULT_DOWNLOAD_FILE_NAME;
+        if (candidate.length() > 160) candidate = candidate.substring(candidate.length() - 160);
+        return candidate;
+    }
+
+    private String ensureImageDownloadExtension(String fileName, String mimeType) {
+        if (!mimeType.startsWith("image/") || hasImageFileExtension(fileName)) {
+            return fileName;
+        }
+        String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+        if (isBlank(extension)) extension = "png";
+        return fileName + "." + extension;
+    }
+
+    private boolean hasImageFileExtension(String fileName) {
+        String lower = fileName.toLowerCase(Locale.US);
+        return lower.endsWith(".png")
+                || lower.endsWith(".jpg")
+                || lower.endsWith(".jpeg")
+                || lower.endsWith(".webp")
+                || lower.endsWith(".gif")
+                || lower.endsWith(".bmp")
+                || lower.endsWith(".avif")
+                || lower.endsWith(".heic")
+                || lower.endsWith(".heif");
+    }
+
+    private String buildDownloadContentDisposition(String fileName) {
+        return "attachment; filename=\"" + fileName.replace("\"", "") + "\"";
+    }
+
+    private String resolveCookieHeader(String url) {
+        try {
+            String cookieHeader = CookieManager.getInstance().getCookie(url);
+            return cookieHeader == null ? "" : cookieHeader.trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private void openExternalUrl(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "无法打开下载链接", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private void checkForUpdatesOnce() {

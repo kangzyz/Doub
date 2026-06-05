@@ -38,11 +38,11 @@ Fix the Android DOUB app behavior where tapping the generated/markdown image dow
 
 ## Acceptance Criteria
 
-* [ ] Chat image download still works in normal desktop browser flow.
-* [ ] Android WebView chat image download no longer depends solely on `blob:` + `a.download`.
-* [ ] Protected chat images still include authorization during download.
-* [ ] Lint/type-check for touched frontend code passes.
-* [ ] Android Java changes compile, or the changed file is checked for syntax/import consistency if full Gradle build is not feasible.
+* [x] Chat image download still works in normal desktop browser flow.
+* [x] Android WebView chat image download no longer depends solely on `blob:` + `a.download`.
+* [x] Protected chat images still include authorization during download.
+* [x] Lint/type-check for touched frontend code passes.
+* [x] Android Java changes compile, or the changed file is checked for syntax/import consistency if full Gradle build is not feasible.
 
 ## Definition of Done
 
@@ -67,3 +67,25 @@ Fix the Android DOUB app behavior where tapping the generated/markdown image dow
   * `android-webview/package.json`
   * `android-webview/android/app/src/main/AndroidManifest.xml`
 * Existing uncommitted files before this task include chat stream sync work and i18n files; do not overwrite or include them in this fix unless directly required.
+
+## Implementation Notes
+
+* Added optional frontend detection for `window.DoubAndroidDownloads.downloadImage(...)` in `frontend/features/chat/model/markdown-image-source.ts`.
+* The frontend passes the resolved HTTP(S) image URL, download filename, optional `Bearer` authorization header, and image MIME hint to the Android bridge before falling back to the existing browser blob download path.
+* Added `DoubAndroidDownloads` JavaScript bridge and `WebView.setDownloadListener(...)` in `android-webview/android/app/src/main/java/cloud/helpking/yunxin/MainActivity.java`.
+* Android native downloads now enqueue through `DownloadManager`, preserve cookies and trusted Bearer auth headers, sanitize filenames, append image extensions where needed, and fall back to `ACTION_VIEW` if enqueueing fails.
+* Updated `.trellis/spec/android-webview/capacitor-shell.md` with the bridge contract and Android download validation rules.
+
+## Verification
+
+* `cd frontend && pnpm lint` passed.
+* `cd android-webview && npm run build` passed.
+* `cd android-webview/android && .\gradlew.bat :app:assembleDebug` passed.
+* `git diff --check` passed for the touched implementation files before the final spec/PRD note update.
+* Android emulator manual test passed on AVD `doub_test`:
+  * Installed `android-webview/android/app/build/outputs/apk/debug/app-debug.apk`.
+  * Launched `cloud.helpking.yunxin/.MainActivity`; app reached the DOUB login WebView.
+  * Connected to `webview_devtools_remote_2153` and verified `window.DoubAndroidDownloads.downloadImage` exists.
+  * Called `downloadImage("https://doub.chat/DOUB-Chat.png", "doub-android-bridge-test.png", "", "image/png")`; bridge returned `true`.
+  * Verified `/sdcard/Download/doub-android-bridge-test.png` exists, size `1764823`, PNG magic `89 50 4E 47 0D 0A 1A 0A`, and visual preview is the expected DOUB image.
+  * Verified rejected paths: `blob:` URL returned `false`; `https://example.com/...` with `Bearer fake-token` returned `false`.

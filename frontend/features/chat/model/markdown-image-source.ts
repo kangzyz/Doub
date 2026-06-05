@@ -1,6 +1,21 @@
 import { resolveApiBaseURL } from "@/shared/api/http-client";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 
+type AndroidDownloadsBridge = {
+  downloadImage?: (
+    url: string,
+    fileName: string,
+    authorizationHeader: string,
+    mimeType: string,
+  ) => boolean | void;
+};
+
+declare global {
+  interface Window {
+    DoubAndroidDownloads?: AndroidDownloadsBridge;
+  }
+}
+
 export function resolveMarkdownImageSource(src: string): string {
   if (typeof window === "undefined") {
     return src;
@@ -47,7 +62,54 @@ export function resolveMarkdownImageDownloadName(src: string, alt: string | unde
   return `${baseName}.png`;
 }
 
+function resolveAndroidDownloadsBridge(): AndroidDownloadsBridge | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const bridge = window.DoubAndroidDownloads;
+  return typeof bridge?.downloadImage === "function" ? bridge : null;
+}
+
+function isBridgeDownloadURL(url: string): boolean {
+  try {
+    const parsedURL = new URL(url, window.location.origin);
+    return parsedURL.protocol === "https:" || parsedURL.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+async function tryAndroidNativeImageDownload(src: string, fileName: string): Promise<boolean> {
+  const bridge = resolveAndroidDownloadsBridge();
+  if (!bridge?.downloadImage) {
+    return false;
+  }
+
+  const resolvedSrc = resolveMarkdownImageSource(src);
+  if (!isBridgeDownloadURL(resolvedSrc)) {
+    return false;
+  }
+
+  const protectedSrc = resolveProtectedMarkdownImageSource(src);
+  const accessToken = protectedSrc ? await resolveAccessToken() : null;
+  if (protectedSrc && !accessToken) {
+    throw new Error("Missing access token");
+  }
+
+  const accepted = bridge.downloadImage(
+    resolvedSrc,
+    fileName,
+    accessToken ? `Bearer ${accessToken}` : "",
+    "image/*",
+  );
+  return accepted !== false;
+}
+
 export async function downloadMarkdownImageSource(src: string, fileName: string): Promise<void> {
+  if (await tryAndroidNativeImageDownload(src, fileName)) {
+    return;
+  }
+
   const protectedSrc = resolveProtectedMarkdownImageSource(src);
   const accessToken = protectedSrc ? await resolveAccessToken() : null;
   const response = await fetch(resolveMarkdownImageSource(src), {
