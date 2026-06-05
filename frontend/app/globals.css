@@ -870,9 +870,21 @@
     th,
     ul,
     ol
-  ):not(pre *):not(code):not(code *) {
+  ):not(pre *):not(code):not(code *):not(.katex):not(.katex *) {
     font-family: var(--font-chat);
     font-weight: var(--font-chat-weight);
+  }
+
+  .chat-font-content .katex,
+  .chat-font-content .katex * {
+    min-width: auto !important;
+    max-width: none !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .chat-font-content .katex {
+    white-space: nowrap !important;
   }
 
   .chat-font-content .katex,

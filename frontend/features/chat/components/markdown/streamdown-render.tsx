@@ -64,6 +64,7 @@ type HtmlVisualStyleNormalization = {
 };
 
 type HtmlVisualComponentProps = Record<string, unknown> & {
+  className?: unknown;
   color?: unknown;
   fill?: unknown;
   node?: unknown;
@@ -450,6 +451,42 @@ const SAFE_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set([
   "whiteSpace",
   "width",
 ]);
+const KATEX_SPAN_CLASS_NAMES = [
+  "katex",
+  "katex-html",
+  "katex-mathml",
+  "base",
+  "strut",
+  "mord",
+  "mop",
+  "mbin",
+  "mrel",
+  "mopen",
+  "mclose",
+  "mpunct",
+  "minner",
+  "msupsub",
+  "vlist",
+  "vlist-t",
+  "vlist-r",
+  "vlist-s",
+  "pstrut",
+  "sizing",
+  "mtight",
+  "mspace",
+  "mfrac",
+  "mathrm",
+  "mathnormal",
+  "mathit",
+  "mathbf",
+  "textbf",
+  "textrm",
+  "mainrm",
+] as const;
+const KATEX_SAFE_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set([
+  ...SAFE_HTML_STYLE_PROPERTIES,
+  "top",
+]);
 const UNSAFE_STYLE_VALUE_RE = /(?:url\s*\(|expression\s*\(|javascript:|@import|[<>{}])/i;
 
 function isSafeHTMLStyleValue(value: string | number): boolean {
@@ -485,6 +522,34 @@ function parseInlineStyleString(style: string): Record<string, string> {
     result[cssPropertyToCamelCase(rawProperty)] = rawValue;
   }
   return result;
+}
+
+function hasInlineStyleProperty(style: React.CSSProperties | string | undefined, property: string): boolean {
+  if (!style) {
+    return false;
+  }
+  if (typeof style === "string") {
+    return Object.prototype.hasOwnProperty.call(parseInlineStyleString(style), property);
+  }
+  return Object.prototype.hasOwnProperty.call(style, property);
+}
+
+function isKatexSpan(className: unknown, style: React.CSSProperties | string | undefined): boolean {
+  if (hasInlineStyleProperty(style, "top")) {
+    return true;
+  }
+  if (typeof className !== "string") {
+    return false;
+  }
+  return className
+    .trim()
+    .split(/\s+/)
+    .some(
+      (item) =>
+        KATEX_SPAN_CLASS_NAMES.includes(item as (typeof KATEX_SPAN_CLASS_NAMES)[number]) ||
+        /^reset-size\d+$/.test(item) ||
+        /^size\d+$/.test(item),
+    );
 }
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
@@ -662,13 +727,15 @@ function replaceNeutralBorderTokens(value: string): string {
 function normalizeHtmlVisualStyle(
   style: React.CSSProperties | string | undefined,
   inheritedDarkSurfaceNormalized = false,
+  safeProperties: ReadonlySet<string> = SAFE_HTML_STYLE_PROPERTIES,
 ): React.CSSProperties | undefined {
-  return normalizeHtmlVisualStyleWithTone(style, inheritedDarkSurfaceNormalized).style;
+  return normalizeHtmlVisualStyleWithTone(style, inheritedDarkSurfaceNormalized, safeProperties).style;
 }
 
 function normalizeHtmlVisualStyleWithTone(
   style: React.CSSProperties | string | undefined,
   inheritedDarkSurfaceNormalized = false,
+  safeProperties: ReadonlySet<string> = SAFE_HTML_STYLE_PROPERTIES,
 ): HtmlVisualStyleNormalization {
   if (!style) {
     return { darkSurfaceNormalized: false };
@@ -742,7 +809,7 @@ function normalizeHtmlVisualStyleWithTone(
       sanitized[key] = value;
       continue;
     }
-    if (!SAFE_HTML_STYLE_PROPERTIES.has(key)) {
+    if (!safeProperties.has(key)) {
       sanitizedChanged = true;
       continue;
     }
@@ -810,9 +877,14 @@ function createHtmlVisualComponent(tag: string) {
   }: HtmlVisualComponentProps) {
     const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
     const normalizedProps: Record<string, unknown> = { ...props };
+    const safeProperties =
+      tag === "span" && isKatexSpan(props.className, style)
+        ? KATEX_SAFE_HTML_STYLE_PROPERTIES
+        : SAFE_HTML_STYLE_PROPERTIES;
     const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
       style,
       inheritedDarkSurfaceNormalized,
+      safeProperties,
     );
     const normalizeLightText = inheritedDarkSurfaceNormalized || darkSurfaceNormalized;
     const normalizedColor = normalizeHtmlVisualTextColor(color, normalizeLightText);

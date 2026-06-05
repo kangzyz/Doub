@@ -82,6 +82,9 @@ export function JsonCodeEditor({
   const editorRef = React.useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = React.useRef<MonacoModule | null>(null);
   const onChangeRef = React.useRef(onChange);
+  const suppressChangeRef = React.useRef(false);
+  const valueRef = React.useRef(value);
+  const editorValueRef = React.useRef(value);
   const mountValueRef = React.useRef(value);
   const mountDisabledRef = React.useRef(disabled);
   const mountThemeRef = React.useRef(resolvedTheme);
@@ -93,8 +96,29 @@ export function JsonCodeEditor({
   }, [onChange]);
 
   React.useEffect(() => {
+    valueRef.current = value;
     mountValueRef.current = value;
   }, [value]);
+
+  const syncEditorValue = React.useCallback((nextValue: string) => {
+    const editor = editorRef.current;
+    if (!editor || editorValueRef.current === nextValue) {
+      return;
+    }
+
+    suppressChangeRef.current = true;
+    try {
+      const model = editor.getModel();
+      if (model) {
+        model.setValue(nextValue);
+      } else {
+        editor.setValue(nextValue);
+      }
+      editorValueRef.current = editor.getValue();
+    } finally {
+      suppressChangeRef.current = false;
+    }
+  }, []);
 
   React.useEffect(() => {
     mountDisabledRef.current = disabled;
@@ -108,6 +132,7 @@ export function JsonCodeEditor({
     let disposed = false;
     let contentSubscription: Monaco.IDisposable | null = null;
     let markerSubscription: Monaco.IDisposable | null = null;
+    let blurSubscription: Monaco.IDisposable | null = null;
 
     async function mountEditor() {
       const monaco = await loadMonaco();
@@ -156,8 +181,18 @@ export function JsonCodeEditor({
       });
 
       editorRef.current = editor;
+      editorValueRef.current = editor.getValue();
       contentSubscription = editor.onDidChangeModelContent(() => {
-        onChangeRef.current(editor.getValue());
+        const nextValue = editor.getValue();
+        editorValueRef.current = nextValue;
+        if (suppressChangeRef.current) {
+          return;
+        }
+        valueRef.current = nextValue;
+        onChangeRef.current(nextValue);
+      });
+      blurSubscription = editor.onDidBlurEditorText(() => {
+        syncEditorValue(valueRef.current);
       });
       markerSubscription = monaco.editor.onDidChangeMarkers((uris) => {
         const model = editor.getModel();
@@ -175,18 +210,19 @@ export function JsonCodeEditor({
       disposed = true;
       contentSubscription?.dispose();
       markerSubscription?.dispose();
+      blurSubscription?.dispose();
       editorRef.current?.dispose();
       editorRef.current = null;
       monacoRef.current = null;
     };
-  }, []);
+  }, [syncEditorValue]);
 
   React.useEffect(() => {
-    const editor = editorRef.current;
-    if (editor && editor.getValue() !== value) {
-      editor.setValue(value);
+    if (!editorRef.current || editorValueRef.current === value) {
+      return;
     }
-  }, [value]);
+    syncEditorValue(value);
+  }, [syncEditorValue, value]);
 
   React.useEffect(() => {
     editorRef.current?.updateOptions({ readOnly: disabled });
