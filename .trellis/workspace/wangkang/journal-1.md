@@ -239,3 +239,36 @@ Handled recoverable image stream transport errors by keeping the image placehold
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Fix Android chat image downloads
+
+**Date**: 2026-06-05
+**Task**: Fix Android chat image downloads
+**Branch**: `main`
+
+### Summary
+
+Added an Android WebView native download bridge for chat images, preserved desktop fallback behavior, validated with frontend lint, Android build, and emulator download checks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f92f42c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
