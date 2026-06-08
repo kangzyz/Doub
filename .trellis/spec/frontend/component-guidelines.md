@@ -56,6 +56,11 @@ wrappers server-renderable when possible.
   `htmlVisualPromptInstruction`, the frontend semantic class allowlist, and the
   global `.reply` CSS. Do not allow arbitrary `className`; sanitize it to the
   approved semantic set while preserving renderer-owned KaTeX/code classes.
+- Semantic chat HTML is not an artifact. `chat-artifacts.ts` must not treat raw
+  `.reply`, `.card`, `.pros-cons`, `.stats`, or similar approved visual
+  fragments as preview artifacts, and the artifact workspace must not
+  auto-open for streamed HTML visual replies. Keep full standalone HTML pages or
+  explicit demos as fenced source that users can preview manually.
 - `streamdown-content.ts` may normalize model mistakes only when the content
   clearly contains the approved semantic HTML classes. It can unwrap fenced
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,

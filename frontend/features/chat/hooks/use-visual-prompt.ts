@@ -3,16 +3,21 @@
 import * as React from "react";
 
 const HTML_VISUAL_PROMPT_STORAGE_KEY = "deeix-chat:html-visual-prompt:v1";
+const DEFAULT_HTML_VISUAL_PROMPT_ENABLED = true;
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 function readHTMLVisualPromptEnabled(): boolean {
   if (typeof window === "undefined") {
-    return false;
+    return DEFAULT_HTML_VISUAL_PROMPT_ENABLED;
   }
   try {
-    return window.localStorage.getItem(HTML_VISUAL_PROMPT_STORAGE_KEY) === "true";
+    const stored = window.localStorage.getItem(HTML_VISUAL_PROMPT_STORAGE_KEY);
+    if (stored === null) {
+      return DEFAULT_HTML_VISUAL_PROMPT_ENABLED;
+    }
+    return stored === "true";
   } catch {
-    return false;
+    return DEFAULT_HTML_VISUAL_PROMPT_ENABLED;
   }
 }
 
@@ -28,7 +33,7 @@ function writeHTMLVisualPromptEnabled(enabled: boolean): void {
 }
 
 export function useHTMLVisualPrompt() {
-  const [enabled, setEnabledState] = React.useState(false);
+  const [enabled, setEnabledState] = React.useState(DEFAULT_HTML_VISUAL_PROMPT_ENABLED);
 
   useIsomorphicLayoutEffect(() => {
     setEnabledState(readHTMLVisualPromptEnabled());
@@ -41,7 +46,7 @@ export function useHTMLVisualPrompt() {
 
     function onStorage(event: StorageEvent) {
       if (event.key === HTML_VISUAL_PROMPT_STORAGE_KEY) {
-        setEnabledState(event.newValue === "true");
+        setEnabledState(event.newValue === null ? DEFAULT_HTML_VISUAL_PROMPT_ENABLED : event.newValue === "true");
       }
     }
 

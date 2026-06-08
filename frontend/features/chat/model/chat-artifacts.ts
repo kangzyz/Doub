@@ -23,6 +23,75 @@ export type OpenCodeArtifactInput = {
 };
 
 const HTML_LIKE_RE = /^\s*(?:<!doctype\s+html|<html\b|<head\b|<body\b|<(?:article|canvas|div|main|section|style|script|svg)\b)/i;
+const SEMANTIC_CHAT_HTML_TAG_RE = /<\s*(?:a|abbr|article|aside|blockquote|cite|code|dd|del|details|div|dl|dt|em|figure|figcaption|h[1-6]|hr|ins|kbd|li|mark|ol|p|pre|section|small|span|strong|sub|summary|sup|table|tbody|td|tfoot|th|thead|tr|ul)\b[^>]*>/i;
+const UNSAFE_CHAT_HTML_TAG_RE = /<\/?\s*(?:body|button|embed|form|head|html|iframe|input|link|meta|object|script|select|style|textarea)\b/i;
+const SEMANTIC_CHAT_HTML_CLASS_NAMES = new Set([
+  "badge",
+  "badge-b",
+  "badge-g",
+  "badge-o",
+  "badge-r",
+  "card",
+  "card-b",
+  "card-g",
+  "card-o",
+  "card-p",
+  "card-r",
+  "card-x",
+  "checklist",
+  "cmd",
+  "col",
+  "comment",
+  "cons",
+  "danger",
+  "dialog",
+  "dialog-avatar",
+  "dialog-bubble",
+  "dialog-msg",
+  "dialog-name",
+  "dir",
+  "done",
+  "error",
+  "file",
+  "filetree",
+  "flow",
+  "fn-ref",
+  "footnotes",
+  "formula",
+  "grid",
+  "grid-2",
+  "grid-3",
+  "hint",
+  "label",
+  "note",
+  "ok",
+  "output",
+  "pending",
+  "progress",
+  "progress-bar",
+  "prompt",
+  "pros",
+  "pros-cons",
+  "pullquote",
+  "reply",
+  "row",
+  "stat",
+  "stats",
+  "tag",
+  "tag-g",
+  "tag-o",
+  "tag-p",
+  "tag-r",
+  "tags",
+  "terminal",
+  "terminal-body",
+  "terminal-header",
+  "timeline",
+  "timeline-item",
+  "tip",
+  "tldr",
+  "warn",
+]);
 const SCRIPT_CLOSE_RE = /<\/script/gi;
 const STYLE_CLOSE_RE = /<\/style/gi;
 const FENCE_OPEN_RE = /^[ \t]*(`{3,}|~{3,})([^\n]*)$/;
@@ -54,9 +123,40 @@ function normalizeLanguage(language: string): string {
   return language.trim().toLowerCase();
 }
 
+function isHTMLLanguage(language: string): boolean {
+  return ["html", "htm", "xhtml"].includes(language);
+}
+
 function parseFenceLanguage(info: string): string {
   const raw = info.trim().split(/\s+/)[0] ?? "";
   return raw.replace(/^\{?\.?/, "").replace(/\}?$/, "");
+}
+
+function hasSemanticChatHTMLClass(source: string): boolean {
+  const classAttributeRe = /\bclass(?:Name)?\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  let match: RegExpExecArray | null;
+  while ((match = classAttributeRe.exec(source)) !== null) {
+    const classValue = match[1] ?? match[2] ?? "";
+    if (
+      classValue
+        .trim()
+        .split(/\s+/)
+        .some((className) => SEMANTIC_CHAT_HTML_CLASS_NAMES.has(className))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function looksLikeSemanticChatHTML(source: string): boolean {
+  const trimmed = source.trim();
+  return (
+    trimmed.includes("<") &&
+    SEMANTIC_CHAT_HTML_TAG_RE.test(trimmed) &&
+    !UNSAFE_CHAT_HTML_TAG_RE.test(trimmed) &&
+    hasSemanticChatHTMLClass(trimmed)
+  );
 }
 
 function artifactStableMessageID(
@@ -73,7 +173,12 @@ function isFenceClose(line: string, marker: string): boolean {
 
 export function resolveArtifactPreviewKind(language: string, code: string): ArtifactPreviewKind | null {
   const normalized = normalizeLanguage(language);
-  if (["html", "htm", "xhtml"].includes(normalized)) return "html";
+  const htmlPreviewCandidate =
+    isHTMLLanguage(normalized) || ((!normalized || normalized === "markdown") && HTML_LIKE_RE.test(code));
+  if (htmlPreviewCandidate && looksLikeSemanticChatHTML(code)) {
+    return null;
+  }
+  if (isHTMLLanguage(normalized)) return "html";
   if (["css", "scss", "sass", "less"].includes(normalized)) return "css";
   if (["js", "javascript", "mjs", "cjs"].includes(normalized)) return "javascript";
   if ((!normalized || normalized === "markdown") && HTML_LIKE_RE.test(code)) return "html";
@@ -314,25 +419,6 @@ export function extractArtifactsFromContent(
 
   if (openMarker && message.isStreaming) {
     pushArtifact(codeLines.join("\n"), false);
-  }
-
-  if (artifacts.length === 0) {
-    const kind = resolveArtifactPreviewKind("", content);
-    if (kind && content.trim()) {
-      artifacts.push({
-        id: `${stableMessageID}:artifact:0`,
-        messageID: message.publicID,
-        messageKey: message.key,
-        runID,
-        blockIndex: 0,
-        kind,
-        language: kind,
-        code: content,
-        complete: !message.isStreaming,
-        streaming: Boolean(message.isStreaming),
-        updatedAt: message.updatedAt,
-      });
-    }
   }
 
   return artifacts;

@@ -171,7 +171,12 @@ export function useChatArtifacts({ conversationID, messages }: UseChatArtifactsP
   }, [activeArtifact, activeArtifactID, artifacts]);
 
   React.useEffect(() => {
-    if (!isInline || !latestArtifact?.streaming || dismissedArtifactID === latestArtifact.id) {
+    if (
+      !isInline ||
+      !latestArtifact?.streaming ||
+      latestArtifact.kind === "html" ||
+      dismissedArtifactID === latestArtifact.id
+    ) {
       return;
     }
     if (dismissedArtifactRef.current && isSameLogicalArtifact(latestArtifact, dismissedArtifactRef.current)) {

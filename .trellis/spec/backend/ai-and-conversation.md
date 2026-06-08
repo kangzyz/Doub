@@ -48,6 +48,11 @@ and the frontend sanitizes/styles the resulting HTML.
   tell the model to wrap `.reply`, `.card`, `.pros`, `.cons`, or other semantic
   HTML in fenced `markdown`, `html`, `text`, or source-code blocks. Fences are
   reserved for explicit source/demo/component requests.
+- Explicit user requests for a full HTML page, HTML file, standalone webpage,
+  interactive demo, or copyable HTML template take precedence over the semantic
+  visual prompt. In that case the model should output the requested source
+  artifact and should not force `.reply` fragments or the ordinary-chat ban on
+  `html/head/body/style/script`.
 - Semantic HTML block tags should start at column 0 or use shallow 2-space
   indentation, and a semantic container should not contain blank lines before a
   4-space-indented child tag. CommonMark ends raw HTML blocks at blank lines,
