@@ -52,9 +52,19 @@ and the frontend sanitizes/styles the resulting HTML.
   indentation, and a semantic container should not contain blank lines before a
   4-space-indented child tag. CommonMark ends raw HTML blocks at blank lines,
   so a later indented child can be parsed as a code block instead of DOM.
+- Semantic HTML tag lines should not use 4+ leading spaces even without a blank
+  line. CommonMark can interpret those lines as indented code when the raw HTML
+  block boundary is ambiguous; the frontend compatibility normalizer may reduce
+  approved semantic tag indentation to 2 spaces outside `<pre>`.
 - The frontend may apply a compatibility normalizer for persisted/model-broken
   semantic HTML only when approved semantic classes are present. That normalizer
   must not unwrap arbitrary source/demo code fences or bypass the sanitizer.
+- Citation sources in semantic HTML must remain real citation anchors. Models
+  should emit numeric citation markers or `<a href="...">[N]</a>` when they have
+  a URL, not static visual badges such as
+  `<span class="badge badge-g">来源</span>`. As a compatibility fallback,
+  `linkCitationMarkers` may rewrite approved semantic source badges to citation
+  anchors only when upstream citation URLs are available.
 - The model must not emit full documents (`html/head/body`), `<style>`,
   `<script>`, event handlers, hard-coded colors, or invented classes.
 - Inline style has one prompt-level exception:
@@ -67,6 +77,10 @@ and the frontend sanitizes/styles the resulting HTML.
 - Unknown class from model -> frontend strips it from `className`.
 - Unsupported tag/attribute -> Streamdown sanitizer strips it.
 - Unsafe inline style value or property -> style sanitizer strips it.
+- Static semantic source badge plus upstream citation URL ->
+  `linkCitationMarkers` rewrites the badge to `<a href="URL">[N]</a>`.
+- Static semantic source badge without upstream citation URL -> unchanged; do
+  not fabricate a clickable source.
 - New theme preset omitted from bootstrap or persistence validation -> first
   paint or reload can fall back to default theme; update both runtime and
   bootstrap paths.
@@ -77,11 +91,15 @@ and the frontend sanitizes/styles the resulting HTML.
   through theme-aware CSS and changes appearance when the app theme changes.
 - Base: an existing persisted message with `.reply` restyles automatically
   after switching light/dark mode or preset because CSS variables changed.
+- Good: `<p>claim <a href="https://example.com">[1]</a></p>` renders as a
+  clickable citation chip even inside `.reply` HTML.
 - Bad: a normal answer emits ```markdown around `<div class="cons">...</div>`;
   the prompt should prevent it, and any frontend compatibility unwrap must be
   narrow enough to preserve real source/demo code blocks.
 - Bad: a `.pros-cons` container inserts a blank line before an indented
   `<div class="cons">`; CommonMark can treat the child as an indented code block.
+- Bad: `<span class="badge badge-g">来源</span>` has no URL and cannot be
+  clicked unless backend citation URLs are available for compatibility rewrite.
 - Bad: `<div style="background:#fff" class="made-up">...</div>` relies on
   stripped or non-theme-safe presentation and must not be prompted.
 
@@ -89,6 +107,8 @@ and the frontend sanitizes/styles the resulting HTML.
 
 - Backend prompt tests should assert the semantic markers that matter, such as
   `.reply`, predefined classes, and CSS/theme ownership.
+- Citation tests should cover semantic source badge rewriting with upstream URLs
+  and unchanged behavior when no citation URL exists.
 - Frontend lint/build must pass after changing allowed tags, allowed classes,
   global CSS, theme preset typing, i18n, or layout bootstrap.
 - Browser verification should cover at least one semantic `.reply` sample across

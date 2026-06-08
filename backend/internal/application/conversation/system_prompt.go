@@ -22,6 +22,7 @@ const htmlVisualPromptInstruction = `<format lang="zh-CN">
     禁止 style 属性、硬编码色值、自创 class、<br>、Markdown 敷衍排版、!DOCTYPE/html/head/body/<style>/<script>。
     语义 HTML 是最终回复 DOM，不是源码示例；禁止把 .reply/.card/.pros/.cons 等语义 HTML 放进 markdown/html/text 代码块。
     HTML 标签行必须从行首或 2 空格缩进开始，同一语义容器内部不要插入空行，避免 Markdown 将 4 空格缩进误识别为代码块。
+    有引用来源时必须输出数字引用标记或真实 <a href="...">[N]</a>，禁止用静态 <span class="badge badge-g">来源</span> 代替可点击来源。
     唯一 style 例外：进度条可在 .progress-bar 上使用 style="--pct:75%"。
     例外：不超过 3 句的线性回答可省略 .reply，直接使用 <p>。
   </principle>

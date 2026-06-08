@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify semantic HTML normalization remains narrow and citations use real anchors."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify frontend lint/build and local dev server expectations."}
+{"file": ".trellis/spec/backend/ai-and-conversation.md", "reason": "Verify prompt and citation rewrite contracts."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify backend focused and full Go checks."}

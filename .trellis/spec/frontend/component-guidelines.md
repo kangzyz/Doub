@@ -61,9 +61,15 @@ wrappers server-renderable when possible.
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,
   `.pros`, `.cons`, `.card`, etc. fragments and no full-document or executable
   tags, and it can compact blank lines before 4-space-indented HTML child tags
-  so CommonMark does not turn them into indented code blocks. Do not generalize
-  this into arbitrary code-fence unwrapping; normal source/demo code blocks must
-  stay code.
+  and reduce 4+ space indentation before HTML tag lines so CommonMark does not
+  turn them into indented code blocks. Do not generalize this into arbitrary
+  code-fence unwrapping; normal source/demo code blocks must stay code.
+- Source/citation chips inside semantic HTML must come from real anchors that
+  the renderer can identify as citations: external `href` plus visible text
+  `[N]`, `【N】`, or `N`. A static visual badge such as
+  `<span class="badge badge-g">来源</span>` is not clickable because it has no
+  URL. Keep citation click behavior in `MarkdownLink`/`CitationCluster`; do not
+  infer URLs in the frontend from unrelated process trace data.
 - Keep historical visual messages theme-adaptive by styling classes through CSS
   variables (`--background`, `--foreground`, `--card`, charts, etc.). Do not
   rewrite stored message content on theme changes. If adding a theme preset,

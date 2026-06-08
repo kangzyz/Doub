@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Semantic HTML renderer normalization and citation chip contract."}
+{"file": ".trellis/spec/backend/ai-and-conversation.md", "reason": "HTML visual prompt contract and backend citation anchor rewrite behavior."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend normalization code should stay explicit and narrowly typed."}

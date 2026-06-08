@@ -10,6 +10,12 @@ import (
 
 var citationReferenceMarkerPattern = regexp.MustCompile(`\[(\d+)\]`)
 var citationInlineLinkPattern = regexp.MustCompile(`\[(\d+)\]\(([^)\s]+)(?:\s+[^)]*)?\)`)
+var citationSemanticSourceBadgePattern = regexp.MustCompile(`(?is)<span\s+class\s*=\s*(?:"([^"]*)"|'([^']*)')\s*>\s*(来源|source)\s*</span>`)
+
+type citationReference struct {
+	index int
+	url   string
+}
 
 // linkCitationMarkers 把数字引用标记 [N] 改写为真实的内联 HTML 锚点 <a href="URL">[N]</a>。
 //
@@ -23,18 +29,17 @@ func linkCitationMarkers(content string, citations []string) string {
 		return content
 	}
 
+	normalizedContent := content
 	referenced := referencedCitationIndexes(content)
-	if len(referenced) == 0 {
-		return content
+	if len(referenced) > 0 {
+		linkURLs := citationReferenceURLs(content, citations, referenced)
+		if len(linkURLs) > 0 {
+			normalizedContent = rewriteInlineCitationLinks(content, linkURLs)
+			normalizedContent = rewritePlainCitationMarkers(normalizedContent, linkURLs)
+		}
 	}
 
-	linkURLs := citationReferenceURLs(content, citations, referenced)
-	if len(linkURLs) == 0 {
-		return content
-	}
-
-	normalizedContent := rewriteInlineCitationLinks(content, linkURLs)
-	normalizedContent = rewritePlainCitationMarkers(normalizedContent, linkURLs)
+	normalizedContent = rewriteSemanticSourceBadges(normalizedContent, citations)
 	return normalizedContent
 }
 
@@ -167,6 +172,83 @@ func rewritePlainCitationMarkers(content string, linkURLs map[int]string) string
 	}
 	builder.WriteString(content[lastWritten:])
 	return builder.String()
+}
+
+func rewriteSemanticSourceBadges(content string, citations []string) string {
+	if len(citations) == 0 || !strings.Contains(strings.ToLower(content), "<span") {
+		return content
+	}
+
+	citationRefs := normalizedCitationReferences(citations)
+	if len(citationRefs) == 0 {
+		return content
+	}
+
+	matches := citationSemanticSourceBadgePattern.FindAllStringSubmatchIndex(content, -1)
+	if len(matches) == 0 {
+		return content
+	}
+
+	var builder strings.Builder
+	lastWritten := 0
+	citationCursor := 0
+	changed := false
+	for _, match := range matches {
+		if len(match) < 8 {
+			continue
+		}
+		classStart, classEnd := match[2], match[3]
+		if classStart < 0 || classEnd < 0 {
+			classStart, classEnd = match[4], match[5]
+		}
+		if classStart < 0 || classEnd < 0 || !isSemanticSourceBadgeClass(content[classStart:classEnd]) {
+			continue
+		}
+		if citationCursor >= len(citationRefs) {
+			break
+		}
+		if !changed {
+			builder.Grow(len(content))
+		}
+		builder.WriteString(content[lastWritten:match[0]])
+		citationRef := citationRefs[citationCursor]
+		builder.WriteString(citationDisplayReference(citationRef.index, citationRef.url))
+		lastWritten = match[1]
+		citationCursor++
+		changed = true
+	}
+	if !changed {
+		return content
+	}
+	builder.WriteString(content[lastWritten:])
+	return builder.String()
+}
+
+func isSemanticSourceBadgeClass(classValue string) bool {
+	hasBadge := false
+	hasTone := false
+	for _, className := range strings.Fields(classValue) {
+		switch className {
+		case "badge":
+			hasBadge = true
+		case "badge-b", "badge-g", "badge-o", "badge-r":
+			hasTone = true
+		}
+	}
+	return hasBadge && hasTone
+}
+
+func normalizedCitationReferences(citations []string) []citationReference {
+	result := make([]citationReference, 0, len(citations))
+	for index, citation := range citations {
+		if urlValue := normalizeCitationURL(citation); urlValue != "" {
+			result = append(result, citationReference{
+				index: index + 1,
+				url:   urlValue,
+			})
+		}
+	}
+	return result
 }
 
 func numericReferenceDefinitionURLs(content string) map[int]string {

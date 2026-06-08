@@ -70,6 +70,30 @@ func TestLinkCitationMarkersLeavesUnmarkedContentUnchanged(t *testing.T) {
 	}
 }
 
+func TestLinkCitationMarkersRewritesSemanticSourceBadges(t *testing.T) {
+	content := `<p>Claude 适合长文本分析。<span class="badge badge-g">来源</span></p>` + "\n" +
+		`<p>GPT 生态更成熟。<span class='badge badge-b'>source</span></p>`
+
+	got := linkCitationMarkers(content, []string{
+		"https://example.com/a",
+		"https://example.com/b",
+	})
+	want := `<p>Claude 适合长文本分析。<a href="https://example.com/a">[1]</a></p>` + "\n" +
+		`<p>GPT 生态更成熟。<a href="https://example.com/b">[2]</a></p>`
+	if got != want {
+		t.Fatalf("expected semantic source badges to become citation anchors:\nwant: %q\n got: %q", want, got)
+	}
+}
+
+func TestLinkCitationMarkersPreservesSemanticSourceBadgesWithoutURLs(t *testing.T) {
+	content := `<p>没有 URL 时不应伪造来源。<span class="badge badge-g">来源</span></p>`
+
+	got := linkCitationMarkers(content, nil)
+	if got != content {
+		t.Fatalf("expected source badge without citation URL to stay unchanged, got %q", got)
+	}
+}
+
 // 已经改写过的内容再次进入改写不能把锚点嵌套起来，否则会破坏前端引用胶囊渲染。
 func TestLinkCitationMarkersIsIdempotent(t *testing.T) {
 	content := "参考 [1] 与内联 [2](https://example.com/b)。"

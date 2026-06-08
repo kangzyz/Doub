@@ -208,8 +208,16 @@ function compactSemanticHtmlBlockSpacing(source: string): string {
   return source.replace(/\n[ \t]*\n(?=[ \t]{4,}<\/?[a-z][\w:-]*\b[^>\n]*>)/gi, "\n");
 }
 
+function normalizeSemanticHtmlTagIndentation(source: string): string {
+  if (!source.includes("\n") || /<\s*pre\b/i.test(source)) {
+    return source;
+  }
+
+  return source.replace(/^[ \t]{4,}(?=<\/?[a-z][\w:-]*\b[^>\n]*>)/gim, "  ");
+}
+
 function normalizeSemanticHtmlFragmentBody(source: string): string {
-  return compactSemanticHtmlBlockSpacing(dedentSemanticHtmlFragment(source));
+  return normalizeSemanticHtmlTagIndentation(compactSemanticHtmlBlockSpacing(dedentSemanticHtmlFragment(source)));
 }
 
 function normalizeSemanticHtmlCodeFences(source: string): string {
@@ -234,7 +242,9 @@ function normalizeSemanticHtmlIndentedBlocks(source: string): string {
   }
 
   return mapMarkdownTextFragments(source, (fragment) =>
-    looksLikeSemanticHtmlFragment(fragment) ? compactSemanticHtmlBlockSpacing(fragment) : fragment,
+    looksLikeSemanticHtmlFragment(fragment)
+      ? normalizeSemanticHtmlTagIndentation(compactSemanticHtmlBlockSpacing(fragment))
+      : fragment,
   );
 }
 
