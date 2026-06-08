@@ -474,3 +474,36 @@ Reworked semantic HTML reply styling toward the pasted Cherry-style visual inten
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Align reply prompt and Cherry CSS
+
+**Date**: 2026-06-08
+**Task**: Align reply prompt and Cherry CSS
+**Branch**: `main`
+
+### Summary
+
+Aligned the HTML visual prompt with the provided format and restyled semantic reply CSS around the Cherry-style --llm variable contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `85f698b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
