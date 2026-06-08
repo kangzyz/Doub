@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-06-08
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~311 | Active |
+| `journal-1.md` | ~344 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-06-08 | Semantic HTML citation fix | `1ff661b` | `main` |
 | 9 | 2026-06-08 | Cherry HTML theme integration | `83fce49`, `1dad405`, `1b3eaec`, `35ba05e`, `7c583c2` | `main` |
 | 8 | 2026-06-05 | Fix Android chat image downloads | `f92f42c` | `main` |
 | 7 | 2026-06-05 | Image stream sync recovery | `17474c0` | `main` |

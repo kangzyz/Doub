@@ -309,3 +309,36 @@ Integrated semantic HTML visual themes, added Claude/Yan-yu presets and backend 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Semantic HTML citation fix
+
+**Date**: 2026-06-08
+**Task**: Semantic HTML citation fix
+**Branch**: `main`
+
+### Summary
+
+Fixed remaining semantic HTML CommonMark indentation failures and preserved clickable citation sources by rewriting model-authored source badges to citation anchors when upstream URLs are available.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1ff661b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
