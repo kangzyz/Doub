@@ -342,3 +342,36 @@ Fixed remaining semantic HTML CommonMark indentation failures and preserved clic
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Default HTML visual prompt behavior
+
+**Date**: 2026-06-08
+**Task**: Default HTML visual prompt behavior
+**Branch**: `main`
+
+### Summary
+
+Enabled the HTML visual prompt by default, prevented semantic chat HTML from auto-opening the artifact panel, and clarified that explicit full HTML page/demo requests override the semantic reply prompt.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `91e9a78` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
