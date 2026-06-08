@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify renderer, theme preset wiring, i18n, and .reply CSS against frontend component contracts."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify lint/build expectations and hydration/bootstrap behavior after theme changes."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify focused and full Go tests for backend prompt injection changes."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Verify ThemePreset union and sanitizer changes stay type-safe."}

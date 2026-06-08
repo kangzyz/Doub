@@ -80,7 +80,9 @@
     "lagoon": "极光",
     "ink": "墨白",
     "ochre": "活力",
-    "sepia": "暮"
+    "sepia": "暮",
+    "claude": "Claude",
+    "yan-yu": "烟雨"
   },
   "states": {
     "twoFactorUnavailable": "当前环境未启用两步验证。",

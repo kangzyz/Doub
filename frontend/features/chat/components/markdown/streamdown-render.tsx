@@ -109,7 +109,7 @@ const STREAMDOWN_REMEND = {
 const STREAMDOWN_CARET = "circle" as const;
 const STREAMDOWN_LINK_SAFETY = { enabled: false } as const;
 const HTML_VISUAL_COLOR_TOKEN_RE = /#[\da-f]{3,8}\b|rgba?\([^)]*\)|\b(?:black|white)\b/gi;
-const HTML_VISUAL_STYLE_ATTRIBUTES = ["style", "title"] as const;
+const HTML_VISUAL_STYLE_ATTRIBUTES = ["style", "title", "className"] as const;
 const HTML_VISUAL_BOX_ATTRIBUTES = [...HTML_VISUAL_STYLE_ATTRIBUTES, "align", "height", "width"];
 const HTML_VISUAL_LINK_ATTRIBUTES = [
   ...HTML_VISUAL_STYLE_ATTRIBUTES,
@@ -188,12 +188,14 @@ const HTML_VISUAL_SVG_ATTRIBUTES = [
 ];
 const STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS: AllowedTags = {
   a: [...HTML_VISUAL_LINK_ATTRIBUTES],
+  abbr: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   article: [...HTML_VISUAL_BOX_ATTRIBUTES],
   aside: [...HTML_VISUAL_BOX_ATTRIBUTES],
   blockquote: [...HTML_VISUAL_BOX_ATTRIBUTES],
   br: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   caption: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   circle: [...HTML_VISUAL_SVG_ATTRIBUTES],
+  cite: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   code: [...HTML_VISUAL_CODE_ATTRIBUTES],
   col: [...HTML_VISUAL_BOX_ATTRIBUTES, "span"],
   colgroup: [...HTML_VISUAL_BOX_ATTRIBUTES, "span"],
@@ -218,10 +220,12 @@ const STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS: AllowedTags = {
   hr: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   img: [...HTML_VISUAL_IMAGE_ATTRIBUTES],
   ins: [...HTML_VISUAL_STYLE_ATTRIBUTES],
+  kbd: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   li: [...HTML_VISUAL_BOX_ATTRIBUTES],
   line: [...HTML_VISUAL_SVG_ATTRIBUTES],
   linearGradient: [...HTML_VISUAL_SVG_ATTRIBUTES, "gradientTransform", "gradientUnits", "id"],
   marker: [...HTML_VISUAL_SVG_ATTRIBUTES, "id"],
+  mark: [...HTML_VISUAL_STYLE_ATTRIBUTES],
   ol: [...HTML_VISUAL_BOX_ATTRIBUTES, "start", "type"],
   p: [...HTML_VISUAL_BOX_ATTRIBUTES],
   path: [...HTML_VISUAL_SVG_ATTRIBUTES],
@@ -251,11 +255,13 @@ const STREAMDOWN_HTML_VISUAL_ALLOWED_TAGS: AllowedTags = {
   ul: [...HTML_VISUAL_BOX_ATTRIBUTES],
 };
 const HTML_VISUAL_COMPONENT_TAGS: string[] = [
+  "abbr",
   "article",
   "aside",
   "blockquote",
   "caption",
   "circle",
+  "cite",
   "dd",
   "del",
   "details",
@@ -275,10 +281,12 @@ const HTML_VISUAL_COMPONENT_TAGS: string[] = [
   "h6",
   "hr",
   "ins",
+  "kbd",
   "li",
   "line",
   "linearGradient",
   "marker",
+  "mark",
   "ol",
   "path",
   "polygon",
@@ -336,6 +344,7 @@ const HTML_VISUAL_BORDER_STYLE_KEYS = [
 // SAFE_HTML_STYLE_PROPERTIES 限定内联样式允许出现的属性，基于上游布局/盒模型白名单，
 // 并补充 SVG 与主题归一化管线实际写入/读取的属性，避免裁剪掉我们更完整的渲染能力。
 const SAFE_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set([
+  "--pct",
   "alignContent",
   "alignItems",
   "alignSelf",
@@ -550,6 +559,94 @@ function isKatexSpan(className: unknown, style: React.CSSProperties | string | u
         /^reset-size\d+$/.test(item) ||
         /^size\d+$/.test(item),
     );
+}
+
+const HTML_VISUAL_SEMANTIC_CLASS_NAMES: ReadonlySet<string> = new Set([
+  "reply",
+  "grid",
+  "grid-2",
+  "grid-3",
+  "row",
+  "col",
+  "card",
+  "card-b",
+  "card-g",
+  "card-o",
+  "card-r",
+  "card-p",
+  "card-x",
+  "pros-cons",
+  "pros",
+  "cons",
+  "stats",
+  "stat",
+  "timeline",
+  "timeline-item",
+  "badge",
+  "badge-b",
+  "badge-g",
+  "badge-o",
+  "badge-r",
+  "tags",
+  "tag",
+  "tag-g",
+  "tag-o",
+  "tag-p",
+  "tag-r",
+  "checklist",
+  "done",
+  "pending",
+  "note",
+  "warn",
+  "tip",
+  "tldr",
+  "pullquote",
+  "formula",
+  "label",
+  "filetree",
+  "dir",
+  "file",
+  "hint",
+  "terminal",
+  "terminal-header",
+  "terminal-body",
+  "prompt",
+  "cmd",
+  "output",
+  "comment",
+  "error",
+  "dialog",
+  "dialog-msg",
+  "right",
+  "dialog-avatar",
+  "dialog-bubble",
+  "dialog-name",
+  "flow",
+  "progress",
+  "progress-bar",
+  "ok",
+  "danger",
+  "fn-ref",
+  "footnotes",
+]);
+
+function normalizeHtmlVisualClassName(
+  tag: string,
+  className: unknown,
+  style: React.CSSProperties | string | undefined,
+): string | undefined {
+  if (typeof className !== "string") {
+    return undefined;
+  }
+  if (tag === "span" && isKatexSpan(className, style)) {
+    return className;
+  }
+
+  const semanticClassNames = className
+    .trim()
+    .split(/\s+/)
+    .filter((item, index, items) => HTML_VISUAL_SEMANTIC_CLASS_NAMES.has(item) && items.indexOf(item) === index);
+  return semanticClassNames.length > 0 ? semanticClassNames.join(" ") : undefined;
 }
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
@@ -891,7 +988,13 @@ function createHtmlVisualComponent(tag: string) {
     const normalizedFill = normalizeHtmlVisualPaint(tag, "fill", fill);
     const normalizedStopColor = normalizeHtmlVisualPaint(tag, "stopColor", stopColor);
     const normalizedStroke = normalizeHtmlVisualPaint(tag, "stroke", stroke);
+    const normalizedClassName = normalizeHtmlVisualClassName(tag, props.className, style);
 
+    if (normalizedClassName) {
+      normalizedProps.className = normalizedClassName;
+    } else {
+      delete normalizedProps.className;
+    }
     if (normalizedStyle) normalizedProps.style = normalizedStyle;
     if (normalizedColor !== undefined) normalizedProps.color = normalizedColor;
     if (normalizedFill !== undefined) normalizedProps.fill = normalizedFill;
@@ -919,7 +1022,13 @@ function MarkdownVisualLink({
     style,
     inheritedDarkSurfaceNormalized,
   );
-  const element = <MarkdownLink {...props} style={normalizedStyle} />;
+  const element = (
+    <MarkdownLink
+      {...props}
+      className={normalizeHtmlVisualClassName("a", props.className, style)}
+      style={normalizedStyle}
+    />
+  );
   return darkSurfaceNormalized ? (
     <HtmlVisualToneContext.Provider value={true}>{element}</HtmlVisualToneContext.Provider>
   ) : (
@@ -932,7 +1041,13 @@ function MarkdownVisualImage({
   ...props
 }: React.ImgHTMLAttributes<HTMLImageElement> & { alt?: string; src?: string; style?: React.CSSProperties | string }) {
   const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
-  return <MarkdownImage {...props} style={normalizeHtmlVisualStyle(style, inheritedDarkSurfaceNormalized)} />;
+  return (
+    <MarkdownImage
+      {...props}
+      className={normalizeHtmlVisualClassName("img", props.className, style)}
+      style={normalizeHtmlVisualStyle(style, inheritedDarkSurfaceNormalized)}
+    />
+  );
 }
 
 function MarkdownVisualParagraph({
@@ -944,7 +1059,13 @@ function MarkdownVisualParagraph({
     style,
     inheritedDarkSurfaceNormalized,
   );
-  const element = <MarkdownParagraph {...props} style={normalizedStyle} />;
+  const element = (
+    <MarkdownParagraph
+      {...props}
+      className={normalizeHtmlVisualClassName("p", props.className, style)}
+      style={normalizedStyle}
+    />
+  );
   return darkSurfaceNormalized ? (
     <HtmlVisualToneContext.Provider value={true}>{element}</HtmlVisualToneContext.Provider>
   ) : (

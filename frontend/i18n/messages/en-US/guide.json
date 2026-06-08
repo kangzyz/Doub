@@ -80,7 +80,9 @@
     "lagoon": "Aurora",
     "ink": "Ink",
     "ochre": "Vivid",
-    "sepia": "Dusk"
+    "sepia": "Dusk",
+    "claude": "Claude",
+    "yan-yu": "Yan-yu"
   },
   "states": {
     "twoFactorUnavailable": "Two-factor authentication is not enabled in this environment.",

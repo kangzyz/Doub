@@ -3,7 +3,30 @@
 import * as React from "react";
 
 export type Theme = "light" | "dark" | "system";
-export type ThemePreset = "default" | "azure" | "cobalt" | "graphite" | "lagoon" | "ink" | "ochre" | "sepia";
+export type ThemePreset =
+  | "default"
+  | "azure"
+  | "cobalt"
+  | "graphite"
+  | "lagoon"
+  | "ink"
+  | "ochre"
+  | "sepia"
+  | "claude"
+  | "yan-yu";
+
+const THEME_PRESETS: ThemePreset[] = [
+  "default",
+  "azure",
+  "cobalt",
+  "graphite",
+  "lagoon",
+  "ink",
+  "ochre",
+  "sepia",
+  "claude",
+  "yan-yu",
+];
 
 type ThemeContextValue = {
   theme: Theme;
@@ -51,22 +74,20 @@ export function normalizeTheme(value: string | null | undefined): Theme {
 }
 
 export function normalizeThemePreset(value: string | null | undefined): ThemePreset {
-  return value === "azure" || value === "cobalt" || value === "graphite" || value === "lagoon" || value === "ink" || value === "ochre" || value === "sepia" ? value : "default";
+  return THEME_PRESETS.includes(value as ThemePreset) ? (value as ThemePreset) : "default";
 }
 
 function applyTheme(theme: Theme, systemTheme: "light" | "dark", preset: ThemePreset) {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
-  const backgroundColor = resolvedTheme === "dark" ? "#191714" : "#f9f5f0";
-  const color = resolvedTheme === "dark" ? "#e7e2da" : "#29241f";
   const root = document.documentElement;
   root.classList.remove("light", "dark");
   root.classList.add(resolvedTheme);
   root.dataset.theme = preset;
-  root.style.backgroundColor = backgroundColor;
-  root.style.color = color;
+  root.style.backgroundColor = "var(--background)";
+  root.style.color = "var(--foreground)";
   root.style.colorScheme = resolvedTheme;
-  document.body.style.backgroundColor = backgroundColor;
-  document.body.style.color = color;
+  document.body.style.backgroundColor = "var(--background)";
+  document.body.style.color = "var(--foreground)";
 }
 
 export function ThemeProvider({
@@ -136,7 +157,7 @@ export function ThemeProvider({
       resolvedTheme: theme === "system" ? systemTheme : theme,
       systemTheme,
       themes: ["light", "dark", "system"],
-      presets: ["default", "azure", "cobalt", "graphite", "lagoon", "ink", "ochre", "sepia"],
+      presets: THEME_PRESETS,
     }),
     [preset, setPreset, setTheme, systemTheme, theme],
   );
@@ -155,7 +176,7 @@ export function useTheme() {
       resolvedTheme: "light" as const,
       systemTheme: "light" as const,
       themes: ["light", "dark", "system"] as Theme[],
-      presets: ["default", "azure", "cobalt", "graphite", "lagoon", "ink", "ochre", "sepia"] as ThemePreset[],
+      presets: THEME_PRESETS,
     };
   }
   return context;

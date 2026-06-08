@@ -26,33 +26,35 @@ const geistMono = Geist_Mono({
 
 const webVitalsEnabled = process.env.NEXT_PUBLIC_WEB_VITALS_DEBUG === "true";
 const initialDocumentStyle = {
-  backgroundColor: "#171717",
+  backgroundColor: "var(--background, #171717)",
+  color: "var(--foreground, #dedbd2)",
   colorScheme: "dark",
 } as const;
 const initialBodyStyle = {
-  backgroundColor: "#171717",
+  backgroundColor: "var(--background, #171717)",
+  color: "var(--foreground, #dedbd2)",
 } as const;
 const themeBootstrapStyle = `
 :where(html.dark-safe, html.dark-safe body, html.dark-safe #__next, html.dark-safe #root, html.dark-safe #app, html.dark-safe [data-nextjs-root]) {
-  background: #171717;
-  color: #dedbd2;
+  background: var(--background, #171717);
+  color: var(--foreground, #dedbd2);
   color-scheme: dark;
 }
 :where(html.dark-safe.light, html.dark-safe.light body, html.dark-safe.light #__next, html.dark-safe.light #root, html.dark-safe.light #app, html.dark-safe.light [data-nextjs-root]) {
-  background: #faf9f4;
-  color: #5a5347;
+  background: var(--background, #faf9f4);
+  color: var(--foreground, #5a5347);
   color-scheme: light;
 }
 @media (prefers-color-scheme: light) {
   :where(html.dark-safe:not(.dark), html.dark-safe:not(.dark) body, html.dark-safe:not(.dark) #__next, html.dark-safe:not(.dark) #root, html.dark-safe:not(.dark) #app, html.dark-safe:not(.dark) [data-nextjs-root]) {
-    background: #faf9f4;
-    color: #5a5347;
+    background: var(--background, #faf9f4);
+    color: var(--foreground, #5a5347);
     color-scheme: light;
   }
 }
 :where(html.dark-safe.dark, html.dark-safe.dark body, html.dark-safe.dark #__next, html.dark-safe.dark #root, html.dark-safe.dark #app, html.dark-safe.dark [data-nextjs-root]) {
-  background: #171717;
-  color: #dedbd2;
+  background: var(--background, #171717);
+  color: var(--foreground, #dedbd2);
   color-scheme: dark;
 }
 `;
@@ -81,7 +83,9 @@ const themeInitScript = `
       storedPreset === "lagoon" ||
       storedPreset === "ink" ||
       storedPreset === "ochre" ||
-      storedPreset === "sepia"
+      storedPreset === "sepia" ||
+      storedPreset === "claude" ||
+      storedPreset === "yan-yu"
     ) {
       preset = storedPreset;
     }
@@ -96,8 +100,8 @@ const themeInitScript = `
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
     root.dataset.theme = preset;
-    root.style.backgroundColor = resolvedTheme === "dark" ? "#171717" : "#faf9f4";
-    root.style.color = resolvedTheme === "dark" ? "#dedbd2" : "#5a5347";
+    root.style.backgroundColor = "var(--background)";
+    root.style.color = "var(--foreground)";
     root.style.colorScheme = resolvedTheme;
   } catch (_) {}
 })();

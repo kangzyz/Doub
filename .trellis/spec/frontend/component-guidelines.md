@@ -49,11 +49,29 @@ wrappers server-renderable when possible.
 - When allowing AI-generated raw HTML for visual layouts, extend Streamdown's
   sanitizer with a narrow `allowedTags` policy. Do not bypass the Markdown AST
   pipeline with `dangerouslySetInnerHTML`.
+- Model-authored visual HTML should be semantic, not decorative CSS embedded in
+  message content. The accepted contract is `.reply` plus the predefined class
+  map owned by `streamdown-render.tsx` and `frontend/app/globals.css`. When
+  adding a class, update all three places together: backend
+  `htmlVisualPromptInstruction`, the frontend semantic class allowlist, and the
+  global `.reply` CSS. Do not allow arbitrary `className`; sanitize it to the
+  approved semantic set while preserving renderer-owned KaTeX/code classes.
+- Keep historical visual messages theme-adaptive by styling classes through CSS
+  variables (`--background`, `--foreground`, `--card`, charts, etc.). Do not
+  rewrite stored message content on theme changes. If adding a theme preset,
+  update `ThemePreset`, settings persistence validation, settings/guide i18n,
+  preset previews, `globals.css` variables, and the layout bootstrap script so
+  first paint and runtime switching agree.
 - `allowedTags` entries replace Streamdown's tag-specific sanitizer attributes
   for the same tag. When adding visual attributes to existing Markdown tags,
   preserve renderer-critical attributes such as link `href`, footnote
   `dataFootnoteRef` / `dataFootnoteBackref`, section `dataFootnotes`, image
   `src`, and code `className` / `metastring`.
+- Inline `style` remains a compatibility exception, not the design surface for
+  new visual prompts. The semantic prompt only permits `style="--pct:75%"` on
+  progress bars; if more inline style exceptions are needed, add a targeted
+  sanitizer rule and a clear reason instead of widening the whole style
+  allowlist.
 - Raw HTML visual components should normalize obvious hard-coded neutral inline
   colors into theme tokens during render. Examples: light neutral backgrounds
   become `var(--card)`, dark neutral backgrounds become `var(--muted)`, dark

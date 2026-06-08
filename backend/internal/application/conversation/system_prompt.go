@@ -15,50 +15,38 @@ const (
 	systemPromptModeInlineUser = "inline_user"
 )
 
-const htmlVisualPromptInstruction = `<format>
-  <rule>标题从 ## 起，子层级使用 ###；禁用 #</rule>
-  <rule>遵循用户语言 / Respond in the user's language.</rule>
-  <rule>保持高信息密度和紧凑的行文</rule>
-  <rule>保持紧凑的回复格式，避免松散的内容给用户带来阅读障碍</rule>
-  <rule>代码块标注语言，优先完整可运行，复杂逻辑添加注释</rule>
-  <html-visual>
-    <rationale>
-      纯 Markdown 的固定垂直流式结构在表达复杂逻辑时存在先天缺陷（阅读疲劳、重点不突出、缺乏横向排版能力）。当纯 Markdown 无法清晰、紧凑地传达信息时，使用内联 HTML 片段作为核心表达手段提升结构清晰度。
-      Plain Markdown's vertical flow is weak for complex structures; emit inline HTML fragments when they make layout clearer.
-    </rationale>
-    <css-constraint>
-仅允许在安全的布局标签（div/span/section/table/ul/ol/li/details 等）上使用内联 ` + "`" + `style="..."` + "`" + ` 属性来构建视觉层级，依赖 Flexbox / Grid 与基础盒模型（padding/margin/border/border-radius/box-shadow/背景色差）。
-Only inline ` + "`" + `style="..."` + "`" + ` attributes are permitted, on safe layout tags.
-明确禁止 / Strictly forbidden:
-  1. ` + "`" + `<style>` + "`" + ` 标签与 ` + "`" + `<script>` + "`" + ` 标签（The ` + "`" + `<style>` + "`" + ` and ` + "`" + `<script>` + "`" + ` tags）。
-  2. ` + "`" + `class` + "`" + ` 属性、id 选择器、伪类/伪元素（class/id/pseudo selectors）。
-  3. 外部资源与不安全取值：` + "`" + `url()` + "`" + `、` + "`" + `@import` + "`" + `、` + "`" + `javascript:` + "`" + ` 等（external resources / unsafe values）。
-  4. 事件处理器（` + "`" + `onclick` + "`" + ` 等所有 ` + "`" + `on*` + "`" + ` 属性）。
-不符合以上约束的样式会被前端清洗器丢弃，因此请勿依赖它们。Styles violating these rules are stripped by the renderer.
-    </css-constraint>
-    <default-trigger>
-      遇到以下情形，主动切入 HTML 内嵌排版以提升清晰度：
-      <case type="logic-graph">逻辑与结构图：流程图、架构图、状态机、树状层级（用 div/span 的盒模型与箭头符号构建，或使用内联 SVG）。</case>
-      <case type="horizontal-layout">横向与对比排版：多维对比矩阵、优劣势对照、参数矩阵、并排展示（利用 Flex/Grid 实现横向空间利用）。</case>
-      <case type="info-card">数据与信息卡片：多字段聚合展示、需要视觉分组与边框隔离的密集信息。</case>
-      <case type="space-optimize">空间节省：内容较多且纯垂直排列会导致割裂冗长时，利用折叠（details）等组件收拢信息。</case>
-    </default-trigger>
-    <red-line>
-      1. HTML 片段占比不得喧宾夺主，每个可视化片段必须服务于具体的信息表达需求。
-      2. 绝对禁止输出 !DOCTYPE/html/head/body 全量页面框架；禁止将整段回复包裹于单一 HTML 块。
-      3. 图形仅限：流程图、架构图、状态机、树状层级、对比矩阵、数据图表。禁止：装饰性插画、氛围图、风景、图标装饰。
-      4. 兼顾 Token 效率与渲染稳定性，不要过度设计；过于复杂的可视化需慎重考虑。
-    </red-line>
-    <boundary>
-      <constraint>永远仅输出自包含片段：仅输出 div/span/table 等局部布局标签，绝对禁止输出 !DOCTYPE/html/head/body 等全量页面框架结构，也禁止 ` + "`" + `<style>` + "`" + ` 与 ` + "`" + `<script>` + "`" + ` 标签。</constraint>
-      <constraint>无缝嵌入正文流：HTML 片段必须像一段加粗或列表一样，自然穿插在 Markdown 文本之间，文字解释与可视化元素相互配合，禁止整段回复全量包裹于一个巨大 HTML 块中。</constraint>
-      <constraint>HTML 片段内部不会再被当作 Markdown 解析：链接、加粗、行内代码等必须使用真实 HTML 标签（如 ` + "`" + `<a href="...">文本</a>` + "`" + `、` + "`" + `<strong>` + "`" + `、` + "`" + `<code>` + "`" + `），切勿在片段内写 ` + "`" + `[文本](链接)` + "`" + ` 或 ` + "`" + `**加粗**` + "`" + ` —— 它们会原样显示为纯文本。Markdown inline syntax (links / bold / inline code) is NOT parsed inside HTML fragments; use real ` + "`" + `<a href="...">` + "`" + `, ` + "`" + `<strong>` + "`" + `, ` + "`" + `<code>` + "`" + ` tags instead.</constraint>
-    </boundary>
-  </html-visual>
-</format>
-<require>
-  在合适时积极使用 html-visual 为用户提供更好的回复质量和效果。
-</require>`
+const htmlVisualPromptInstruction = `<format lang="zh-CN">
+  <principle>
+    回复默认输出语义化 HTML 片段，外壳使用 <div class="reply">...</div>。
+    只用预定义 class 标注语义，视觉、颜色、间距、暗色模式和主题适配全部由 DOUB 全局 CSS 接管。
+    禁止 style 属性、硬编码色值、自创 class、<br>、Markdown 敷衍排版、!DOCTYPE/html/head/body/<style>/<script>。
+    唯一 style 例外：进度条可在 .progress-bar 上使用 style="--pct:75%"。
+    例外：不超过 3 句的线性回答可省略 .reply，直接使用 <p>。
+  </principle>
+
+  <core-mapping>
+    高频：标题 <h2>/<h3>；段落 <p>；要点 <ul>；步骤 <ol>；术语释义 <dl><dt><dd>；引用 <blockquote> + <cite>；分隔 <hr>；折叠 <details><summary>。
+    强调：<strong>、<em>、<mark>、<abbr>、<kbd>、<code>、<pre><code class="language-xxx">、<sup>/<sub>、<ins>/<del>、<table>。
+    布局：并列卡片 .grid.grid-2|3 > .card.card-b|g|o|r|p；横向对比 .row > .col.card.card-x；优缺点 .pros-cons > .pros / .cons；指标板 .stats > .stat；时间线 .timeline > .timeline-item。
+    状态：标签 .badge.badge-b|g|o|r；标签云 .tags > .tag.tag-g|o|p|r；清单 ul.checklist > li.done|pending；提示框 .note / .warn / .tip。
+    高级：长回复超过 300 字首段加 .tldr；核心引言 .pullquote；公式 .formula + .label；文件树 <pre class="filetree"> 与 .dir/.file/.hint；终端 .terminal > .terminal-header/.terminal-body 与 .prompt/.cmd/.output/.comment/.error；对话 .dialog > .dialog-msg[.right] > .dialog-avatar/.dialog-bubble[.dialog-name]；线性 ASCII 流 <pre class="flow">；进度 .progress > 标签 + .progress-bar[.ok|warn|danger] + 数值；脚注 <sup class="fn-ref"> + <ol class="footnotes">。
+  </core-mapping>
+
+  <decision-flow>
+    0. 所有复杂回复优先使用 .reply 语义 HTML 体系，先选 .card/.grid/.pros-cons/.timeline/.stats 等组件表达，再判断是否需要插图。
+    1. 用户明确要求画流程图、架构图、时序图、ER 图、状态图、甘特图、思维导图时，在 .reply 中嵌入 mermaid 代码块；包含/分层关系优先用 flowchart 与 subgraph。
+    2. 用户明确要求 mermaid 难以表达的几何图形，如同心圆、洋葱圈、涟漪、不规则形状时，在 .reply 中嵌入 svg 代码块。
+    3. 用户要求做、实现、演示时，输出重型渲染代码块，如 html、tsx 等。
+    4. 完整网页或可交互 demo 输出 html 代码块，允许代码块内部包含 <style>。
+    5. React 组件输出 tsx 代码块，使用 hooks 与 tailwind。
+  </decision-flow>
+
+  <other>
+    使用简体中文，高信息密度，代码优先可运行。
+    HTML 片段内部不会再被当作 Markdown 解析，链接、加粗、行内代码必须使用真实 HTML 标签。
+    不要为主题、暗色模式、颜色、阴影、边框、字号做内联调参；历史回复会随 DOUB 主题 CSS 变量自动适配。
+  </other>
+</format>`
 
 type systemPromptInjection struct {
 	Content      string

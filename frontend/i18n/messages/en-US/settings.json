@@ -78,7 +78,9 @@
         "lagoon": "Aurora",
         "ink": "Ink",
         "ochre": "Vivid",
-        "sepia": "Dusk"
+        "sepia": "Dusk",
+        "claude": "Claude",
+        "yan-yu": "Yan-yu"
       },
       "theme": {
         "light": "Light",

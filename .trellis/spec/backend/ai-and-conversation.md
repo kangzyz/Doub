@@ -19,6 +19,81 @@ When changing chat behavior, check the related focused files and tests:
 - `prompt_plan.go` and `prompt_plan_test.go`
 - `generation_stream.go` and `generation_stream_test.go`
 
+## Scenario: HTML Visual Prompt Contract
+
+### 1. Scope / Trigger
+
+Use this contract when changing `htmlVisualPrompt` behavior, model output format
+instructions, or the frontend renderer classes that those instructions target.
+This is a backend-to-frontend output contract: the backend shapes model output,
+and the frontend sanitizes/styles the resulting HTML.
+
+### 2. Signatures
+
+- Backend flag: `resolveMessageSystemPromptInjection(..., htmlVisualPrompt bool)`
+- Backend prompt constant:
+  `backend/internal/application/conversation/system_prompt.go::htmlVisualPromptInstruction`
+- Frontend renderer:
+  `frontend/features/chat/components/markdown/streamdown-render.tsx`
+- Frontend CSS:
+  `frontend/app/globals.css` `.reply` semantic component styles
+
+### 3. Contracts
+
+- When enabled, the request-level system prompt tells the model to emit semantic
+  HTML fragments using `.reply` and predefined semantic classes only.
+- Visual styling is owned by frontend CSS variables, not by model-authored
+  colors, shadows, spacing, or arbitrary classes.
+- The model must not emit full documents (`html/head/body`), `<style>`,
+  `<script>`, event handlers, hard-coded colors, or invented classes.
+- Inline style has one prompt-level exception:
+  `.progress-bar` may carry `style="--pct:75%"`.
+- Every prompt class must exist in the Streamdown semantic class allowlist and
+  in global CSS. Adding a class in only one layer is invalid.
+
+### 4. Validation & Error Matrix
+
+- Unknown class from model -> frontend strips it from `className`.
+- Unsupported tag/attribute -> Streamdown sanitizer strips it.
+- Unsafe inline style value or property -> style sanitizer strips it.
+- New theme preset omitted from bootstrap or persistence validation -> first
+  paint or reload can fall back to default theme; update both runtime and
+  bootstrap paths.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `<div class="reply"><div class="grid grid-2">...</div></div>` renders
+  through theme-aware CSS and changes appearance when the app theme changes.
+- Base: an existing persisted message with `.reply` restyles automatically
+  after switching light/dark mode or preset because CSS variables changed.
+- Bad: `<div style="background:#fff" class="made-up">...</div>` relies on
+  stripped or non-theme-safe presentation and must not be prompted.
+
+### 6. Tests Required
+
+- Backend prompt tests should assert the semantic markers that matter, such as
+  `.reply`, predefined classes, and CSS/theme ownership.
+- Frontend lint/build must pass after changing allowed tags, allowed classes,
+  global CSS, theme preset typing, i18n, or layout bootstrap.
+- Browser verification should cover at least one semantic `.reply` sample across
+  the new preset(s), light mode, and dark mode.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+// Do not ask the model to design the chat message with arbitrary inline CSS.
+const htmlVisualPromptInstruction = `use style="background:#fff;color:#111"`
+```
+
+#### Correct
+
+```go
+// Ask the model to emit semantic classes; frontend CSS owns presentation.
+const htmlVisualPromptInstruction = `use <div class="reply"> and predefined class mappings`
+```
+
 ## Model Routing
 
 Platform model names are resolved to upstream models by
