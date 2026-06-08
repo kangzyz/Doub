@@ -32,6 +32,7 @@ import {
   normalizeLatexUnicodeSymbols,
   normalizeMathDelimiters,
   normalizeMermaidBlocks,
+  normalizeSemanticHtmlFragments,
   parseStreamdownSegments,
   protectCurrencyDollars,
   type RenderSegment,
@@ -1173,7 +1174,9 @@ const THINKING_STREAMDOWN_COMPONENTS = {
 
 function normalizeStreamdownContent(content: unknown): string {
   return normalizeMermaidBlocks(
-    normalizeLatexUnicodeSymbols(normalizeMathDelimiters(protectCurrencyDollars(normalizeContent(content)))),
+    normalizeLatexUnicodeSymbols(
+      normalizeMathDelimiters(protectCurrencyDollars(normalizeSemanticHtmlFragments(normalizeContent(content)))),
+    ),
   );
 }
 

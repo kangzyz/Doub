@@ -48,6 +48,13 @@ and the frontend sanitizes/styles the resulting HTML.
   tell the model to wrap `.reply`, `.card`, `.pros`, `.cons`, or other semantic
   HTML in fenced `markdown`, `html`, `text`, or source-code blocks. Fences are
   reserved for explicit source/demo/component requests.
+- Semantic HTML block tags should start at column 0 or use shallow 2-space
+  indentation, and a semantic container should not contain blank lines before a
+  4-space-indented child tag. CommonMark ends raw HTML blocks at blank lines,
+  so a later indented child can be parsed as a code block instead of DOM.
+- The frontend may apply a compatibility normalizer for persisted/model-broken
+  semantic HTML only when approved semantic classes are present. That normalizer
+  must not unwrap arbitrary source/demo code fences or bypass the sanitizer.
 - The model must not emit full documents (`html/head/body`), `<style>`,
   `<script>`, event handlers, hard-coded colors, or invented classes.
 - Inline style has one prompt-level exception:
@@ -71,8 +78,10 @@ and the frontend sanitizes/styles the resulting HTML.
 - Base: an existing persisted message with `.reply` restyles automatically
   after switching light/dark mode or preset because CSS variables changed.
 - Bad: a normal answer emits ```markdown around `<div class="cons">...</div>`;
-  the frontend must display that as code, so the prompt should prevent it rather
-  than relying on renderer unwrapping.
+  the prompt should prevent it, and any frontend compatibility unwrap must be
+  narrow enough to preserve real source/demo code blocks.
+- Bad: a `.pros-cons` container inserts a blank line before an indented
+  `<div class="cons">`; CommonMark can treat the child as an indented code block.
 - Bad: `<div style="background:#fff" class="made-up">...</div>` relies on
   stripped or non-theme-safe presentation and must not be prompted.
 

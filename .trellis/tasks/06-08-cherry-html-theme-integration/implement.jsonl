@@ -1,3 +1,6 @@
 {"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Streamdown raw HTML sanitizer, semantic class allowlist, theme-adaptive .reply renderer contract."}
 {"file": ".trellis/spec/backend/ai-and-conversation.md", "reason": "Request-level htmlVisualPrompt contract between backend prompt shaping and frontend rendering."}
 {"file": ".trellis/tasks/06-08-cherry-html-theme-integration/research/cherry-theme-sources.md", "reason": "Cherry Studio source mapping, palette inspiration, and direct-port risks."}
+{"file": "frontend/features/chat/components/markdown/streamdown-content.ts", "reason": "Added narrow semantic HTML normalization for model-broken markdown/html/text fences and CommonMark blank-line plus 4-space indentation failures."}
+{"file": "frontend/features/chat/components/markdown/streamdown-render.tsx", "reason": "Runs semantic HTML normalization before Streamdown parses Markdown content."}
+{"file": "backend/internal/application/conversation/system_prompt.go", "reason": "Prompt now forbids semantic HTML containers from using blank lines before 4-space-indented child tags."}

@@ -47,6 +47,86 @@ const MARKDOWN_LITERAL_FRAGMENT_RE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/
 const INLINE_DOLLAR_MATH_RE = /(^|[^\\$])\$([^$\n]{1,800})\$/g;
 const ESCAPED_INLINE_DOLLAR_MATH_RE = /\\\$([^$\n]{1,400})\\\$/g;
 const DISPLAY_DOLLAR_MATH_RE = /(\${2,})([\s\S]*?)(\1)/g;
+const SEMANTIC_HTML_FENCE_RE = /(^|\n)([ \t]*)(```|~~~)([^\n]*)\n([\s\S]*?)\n[ \t]*\3[ \t]*(?=\n|$)/g;
+const SEMANTIC_HTML_TAG_RE = /<\s*(?:a|abbr|article|aside|blockquote|cite|code|dd|del|details|div|dl|dt|em|figure|figcaption|h[1-6]|hr|ins|kbd|li|mark|ol|p|pre|section|small|span|strong|sub|summary|sup|table|tbody|td|tfoot|th|thead|tr|ul)\b[^>]*>/i;
+const UNSAFE_SEMANTIC_HTML_TAG_RE = /<\/?\s*(?:body|button|embed|form|head|html|iframe|input|link|meta|object|script|select|style|textarea)\b/i;
+const SEMANTIC_HTML_FENCE_LANGUAGES: ReadonlySet<string> = new Set([
+  "",
+  "htm",
+  "html",
+  "markdown",
+  "md",
+  "plain",
+  "text",
+]);
+const SEMANTIC_HTML_CLASS_NAMES: ReadonlySet<string> = new Set([
+  "badge",
+  "badge-b",
+  "badge-g",
+  "badge-o",
+  "badge-r",
+  "card",
+  "card-b",
+  "card-g",
+  "card-o",
+  "card-p",
+  "card-r",
+  "card-x",
+  "checklist",
+  "cmd",
+  "col",
+  "comment",
+  "cons",
+  "danger",
+  "dialog",
+  "dialog-avatar",
+  "dialog-bubble",
+  "dialog-msg",
+  "dialog-name",
+  "dir",
+  "done",
+  "error",
+  "file",
+  "filetree",
+  "flow",
+  "fn-ref",
+  "footnotes",
+  "formula",
+  "grid",
+  "grid-2",
+  "grid-3",
+  "hint",
+  "label",
+  "note",
+  "ok",
+  "output",
+  "pending",
+  "progress",
+  "progress-bar",
+  "prompt",
+  "pros",
+  "pros-cons",
+  "pullquote",
+  "reply",
+  "right",
+  "row",
+  "stat",
+  "stats",
+  "tag",
+  "tag-g",
+  "tag-o",
+  "tag-p",
+  "tag-r",
+  "tags",
+  "terminal",
+  "terminal-body",
+  "terminal-header",
+  "timeline",
+  "timeline-item",
+  "tip",
+  "tldr",
+  "warn",
+]);
 
 function isMarkdownLiteralFragment(fragment: string): boolean {
   return fragment.startsWith("```") || fragment.startsWith("~~~") || fragment.startsWith("`");
@@ -62,6 +142,108 @@ function mapMarkdownTextFragments(source: string, transform: (fragment: string) 
       return transform(fragment);
     })
     .join("");
+}
+
+function isSemanticHtmlFenceLanguage(info: string): boolean {
+  const language = info.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+  return SEMANTIC_HTML_FENCE_LANGUAGES.has(language);
+}
+
+function hasSemanticHtmlClass(source: string): boolean {
+  const classAttributeRe = /\bclass(?:Name)?\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  let match: RegExpExecArray | null;
+  while ((match = classAttributeRe.exec(source)) !== null) {
+    const classValue = match[1] ?? match[2] ?? "";
+    if (
+      classValue
+        .trim()
+        .split(/\s+/)
+        .some((className) => SEMANTIC_HTML_CLASS_NAMES.has(className))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function looksLikeSemanticHtmlFragment(source: string): boolean {
+  const trimmedSource = source.trim();
+  return (
+    trimmedSource.includes("<") &&
+    SEMANTIC_HTML_TAG_RE.test(trimmedSource) &&
+    !UNSAFE_SEMANTIC_HTML_TAG_RE.test(trimmedSource) &&
+    hasSemanticHtmlClass(trimmedSource)
+  );
+}
+
+function countLeadingIndent(source: string): number {
+  return source.match(/^[ \t]*/)?.[0].length ?? 0;
+}
+
+function dedentSemanticHtmlFragment(source: string): string {
+  const lines = source.replace(/\r\n?/g, "\n").split("\n");
+  while (lines.length > 0 && !lines[0].trim()) {
+    lines.shift();
+  }
+  while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+    lines.pop();
+  }
+  const nonBlankLines = lines.filter((line) => line.trim());
+  if (nonBlankLines.length === 0) {
+    return "";
+  }
+
+  const minIndent = Math.min(...nonBlankLines.map(countLeadingIndent));
+  if (minIndent <= 0) {
+    return lines.join("\n");
+  }
+  return lines.map((line) => (line.trim() ? line.slice(minIndent) : line)).join("\n");
+}
+
+function compactSemanticHtmlBlockSpacing(source: string): string {
+  if (!source.includes("\n") || /<\s*pre\b/i.test(source)) {
+    return source;
+  }
+
+  return source.replace(/\n[ \t]*\n(?=[ \t]{4,}<\/?[a-z][\w:-]*\b[^>\n]*>)/gi, "\n");
+}
+
+function normalizeSemanticHtmlFragmentBody(source: string): string {
+  return compactSemanticHtmlBlockSpacing(dedentSemanticHtmlFragment(source));
+}
+
+function normalizeSemanticHtmlCodeFences(source: string): string {
+  if (!source.includes("```") && !source.includes("~~~")) {
+    return source;
+  }
+
+  return source.replace(
+    SEMANTIC_HTML_FENCE_RE,
+    (match: string, prefix: string, _indent: string, _fence: string, info: string, body: string) => {
+      if (!isSemanticHtmlFenceLanguage(info) || !looksLikeSemanticHtmlFragment(body)) {
+        return match;
+      }
+      return `${prefix}${normalizeSemanticHtmlFragmentBody(body)}`;
+    },
+  );
+}
+
+function normalizeSemanticHtmlIndentedBlocks(source: string): string {
+  if (!looksLikeSemanticHtmlFragment(source)) {
+    return source;
+  }
+
+  return mapMarkdownTextFragments(source, (fragment) =>
+    looksLikeSemanticHtmlFragment(fragment) ? compactSemanticHtmlBlockSpacing(fragment) : fragment,
+  );
+}
+
+export function normalizeSemanticHtmlFragments(source: string): string {
+  if (!source || !source.includes("class")) {
+    return source;
+  }
+
+  return normalizeSemanticHtmlIndentedBlocks(normalizeSemanticHtmlCodeFences(source));
 }
 
 function looksLikeLatexMathContent(value: string): boolean {

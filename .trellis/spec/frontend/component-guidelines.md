@@ -56,6 +56,14 @@ wrappers server-renderable when possible.
   `htmlVisualPromptInstruction`, the frontend semantic class allowlist, and the
   global `.reply` CSS. Do not allow arbitrary `className`; sanitize it to the
   approved semantic set while preserving renderer-owned KaTeX/code classes.
+- `streamdown-content.ts` may normalize model mistakes only when the content
+  clearly contains the approved semantic HTML classes. It can unwrap fenced
+  `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,
+  `.pros`, `.cons`, `.card`, etc. fragments and no full-document or executable
+  tags, and it can compact blank lines before 4-space-indented HTML child tags
+  so CommonMark does not turn them into indented code blocks. Do not generalize
+  this into arbitrary code-fence unwrapping; normal source/demo code blocks must
+  stay code.
 - Keep historical visual messages theme-adaptive by styling classes through CSS
   variables (`--background`, `--foreground`, `--card`, charts, etc.). Do not
   rewrite stored message content on theme changes. If adding a theme preset,
