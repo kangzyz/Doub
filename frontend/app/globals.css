@@ -64,18 +64,16 @@
   --shadow-2xl: 0 28px 56px -12px hsl(0 0% 0% / 0.18);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-  --reply-surface: var(--card);
-  --reply-surface-muted: color-mix(in oklch, var(--muted) 78%, var(--card) 22%);
-  --reply-surface-strong: color-mix(in oklch, var(--card) 88%, var(--muted) 12%);
-  --reply-border: color-mix(in oklch, var(--border) 72%, var(--foreground) 16%);
-  --reply-rule: color-mix(in oklch, var(--border) 84%, transparent);
-  --reply-accent: var(--primary);
-  --reply-blue: var(--chart-3);
-  --reply-green: var(--chart-5);
-  --reply-orange: var(--chart-2);
-  --reply-red: var(--destructive);
-  --reply-purple: var(--chart-4);
-  --reply-shadow: 0 12px 30px -24px color-mix(in oklch, var(--foreground) 38%, transparent);
+  --llm-card: var(--card);
+  --llm-sunken: var(--muted);
+  --llm-fg: var(--foreground);
+  --llm-muted: var(--muted-foreground);
+  --llm-border: var(--border);
+  --llm-c-b: var(--chart-3);
+  --llm-c-g: var(--chart-5);
+  --llm-c-o: var(--chart-2);
+  --llm-c-r: var(--destructive);
+  --llm-c-p: var(--chart-4);
 }
 
 .dark {
@@ -113,7 +111,6 @@
   --sidebar-accent-foreground: oklch(0.915 0.012 80);
   --sidebar-border: oklch(0.305 0.007 70);
   --sidebar-ring: oklch(0.665 0.135 43);
-  --reply-shadow: 0 14px 34px -26px color-mix(in oklch, oklch(0 0 0) 70%, transparent);
   --shadow-color: oklch(0 0 0);
   --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.30);
   --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.32);
@@ -953,8 +950,8 @@
     display: flow-root;
     width: 100%;
     max-width: 100%;
-    color: var(--foreground);
-    line-height: 1.68;
+    color: var(--llm-fg);
+    line-height: 1.65;
   }
 
   .reply > :first-child {
@@ -966,107 +963,102 @@
   }
 
   .reply :where(p, ul, ol, dl, blockquote, details, table, pre, .grid, .row, .pros-cons, .stats, .timeline) {
-    margin-block: 0.78rem;
+    margin-block: 0.5em;
   }
 
   .reply :where(h2, h3) {
     letter-spacing: 0;
-    line-height: 1.28;
+    line-height: 1.3;
+    margin: 1em 0 0.4em;
   }
 
   .reply h2 {
-    margin: 1.1rem 0 0.58rem;
-    border-bottom: 1px solid color-mix(in oklch, var(--reply-blue) 28%, var(--reply-rule));
-    color: color-mix(in oklch, var(--reply-blue) 72%, var(--foreground));
-    font-size: 1.08rem;
-    font-weight: 680;
-    padding-bottom: 0.34rem;
+    border-bottom: 1px solid var(--llm-border);
+    color: var(--llm-c-b);
+    font-size: 1.15em;
+    font-weight: 650;
+    padding-bottom: 4px;
   }
 
   .reply h3 {
-    margin: 0.92rem 0 0.48rem;
-    color: color-mix(in oklch, var(--reply-purple) 68%, var(--foreground));
-    font-size: 0.98rem;
+    color: var(--llm-c-p);
+    font-size: 1em;
     font-weight: 650;
   }
 
   .reply :where(ul, ol) {
-    padding-left: 1.22rem;
+    padding-left: 1.25em;
   }
 
   .reply :where(li + li, dd + dt) {
-    margin-top: 0.34rem;
+    margin-top: 0.28em;
   }
 
   .reply dl {
     display: grid;
-    gap: 0.38rem 0.9rem;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 14px;
   }
 
   .reply dt {
-    color: color-mix(in oklch, var(--reply-green) 72%, var(--foreground));
-    font-weight: 650;
+    color: var(--llm-c-g);
+    font-weight: 600;
   }
 
   .reply dd {
     margin: 0 0 0.18rem 0;
-    color: color-mix(in oklch, var(--foreground) 82%, var(--muted-foreground));
+    color: var(--llm-muted);
   }
 
   .reply :where(strong) {
-    color: var(--foreground);
+    color: var(--llm-fg);
     font-weight: 680;
   }
 
   .reply :where(em, cite) {
-    color: color-mix(in oklch, var(--foreground) 78%, var(--muted-foreground));
+    color: var(--llm-muted);
   }
 
   .reply mark {
-    border: 1px solid color-mix(in oklch, var(--reply-orange) 66%, var(--reply-border));
-    border-radius: 0.25rem;
-    background: color-mix(in oklch, var(--reply-orange) 14%, transparent);
-    color: color-mix(in oklch, var(--reply-orange) 78%, var(--foreground));
-    padding: 0.02rem 0.2rem;
+    border-radius: 3px;
+    background: color-mix(in oklch, var(--llm-c-o) 18%, transparent);
+    color: var(--llm-c-o);
+    padding: 0 4px;
   }
 
   .reply abbr {
-    text-decoration: underline dotted color-mix(in oklch, var(--reply-accent) 58%, var(--foreground));
+    text-decoration: underline dotted var(--llm-c-b);
     text-underline-offset: 0.18em;
   }
 
   .reply kbd {
     display: inline-flex;
-    min-width: 1.45rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--reply-border);
-    border-bottom-color: color-mix(in oklch, var(--reply-border) 68%, var(--foreground));
-    border-radius: 0.3rem;
-    background: var(--reply-surface);
-    box-shadow: 0 1px 0 color-mix(in oklch, var(--foreground) 14%, transparent);
-    color: var(--foreground);
+    border: 1px solid var(--llm-border);
+    border-radius: 3px;
+    background: var(--llm-sunken);
+    color: var(--llm-fg);
     font-family: var(--font-mono);
-    font-size: 0.78em;
+    font-size: 0.85em;
     line-height: 1.3;
-    padding: 0.08rem 0.32rem;
+    padding: 1px 6px;
     vertical-align: 0.08em;
   }
 
   .reply code:not(pre code) {
-    border: 1px solid color-mix(in oklch, var(--reply-border) 76%, transparent);
-    border-radius: 0.25rem;
-    background: var(--reply-surface-muted);
-    color: color-mix(in oklch, var(--foreground) 92%, var(--reply-accent));
+    border-radius: 3px;
+    background: var(--llm-sunken);
+    color: var(--llm-c-o);
     font-size: 0.9em;
-    padding: 0.05rem 0.24rem;
+    padding: 0 4px;
   }
 
   .reply :where(pre.filetree, pre.flow, .terminal) {
-    border: 1px solid color-mix(in oklch, var(--reply-accent) 36%, var(--reply-border));
-    border-radius: 0.5rem;
-    background: var(--reply-surface-muted);
-    color: var(--foreground);
+    border: 1px solid var(--llm-border);
+    border-radius: 6px;
+    background: var(--llm-sunken);
+    color: var(--llm-fg);
     font-family: var(--font-mono);
     font-size: 0.88rem;
     overflow: auto;
@@ -1074,7 +1066,7 @@
 
   .reply pre.filetree,
   .reply pre.flow {
-    padding: 0.78rem 0.88rem;
+    padding: 10px 12px;
     white-space: pre;
   }
 
@@ -1083,13 +1075,13 @@
   }
 
   .reply .filetree .dir {
-    color: var(--reply-blue);
-    font-weight: 650;
+    color: var(--llm-c-b);
+    font-weight: 600;
   }
 
   .reply .filetree .hint,
   .reply .terminal .comment {
-    color: var(--muted-foreground);
+    color: var(--llm-muted);
   }
 
   .reply .terminal {
@@ -1097,16 +1089,16 @@
   }
 
   .reply .terminal-header {
-    border-bottom: 1px solid color-mix(in oklch, var(--reply-accent) 34%, var(--reply-border));
-    background: var(--reply-surface);
-    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--llm-border);
+    background: var(--llm-card);
+    color: var(--llm-muted);
     font-size: 0.78rem;
-    padding: 0.5rem 0.72rem;
+    padding: 8px 12px;
   }
 
   .reply .terminal-body {
     overflow: auto;
-    padding: 0.72rem;
+    padding: 10px 12px;
   }
 
   .reply .terminal :where(.prompt, .cmd, .output, .comment, .error) {
@@ -1115,29 +1107,29 @@
   }
 
   .reply .terminal .prompt {
-    color: var(--reply-green);
+    color: var(--llm-c-g);
   }
 
   .reply .terminal .cmd {
-    color: var(--foreground);
+    color: var(--llm-fg);
   }
 
   .reply .terminal .output {
-    color: color-mix(in oklch, var(--foreground) 84%, var(--muted-foreground));
+    color: var(--llm-muted);
   }
 
   .reply .terminal .error {
-    color: var(--reply-red);
+    color: var(--llm-c-r);
   }
 
   .reply blockquote,
   .reply .pullquote {
-    border-left: 0.22rem solid var(--reply-accent);
-    border-radius: 0 0.5rem 0.5rem 0;
-    background: color-mix(in oklch, var(--reply-surface) 95%, var(--reply-accent) 5%);
-    color: color-mix(in oklch, var(--foreground) 86%, var(--muted-foreground));
+    border-left: 3px solid var(--llm-c-b);
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--llm-c-b) 7%, transparent);
+    color: var(--llm-fg);
     margin-inline: 0;
-    padding: 0.72rem 0.86rem;
+    padding: 10px 14px;
   }
 
   .reply .pullquote {
@@ -1148,21 +1140,21 @@
   .reply hr {
     height: 1px;
     border: 0;
-    background: var(--reply-rule);
+    background: var(--llm-border);
     margin: 1.05rem 0;
   }
 
   .reply details {
-    border: 1px solid color-mix(in oklch, var(--reply-accent) 34%, var(--reply-border));
-    border-radius: 0.5rem;
-    background: color-mix(in oklch, var(--reply-surface) 96%, var(--reply-accent) 4%);
-    padding: 0.68rem 0.8rem;
+    border: 1px solid var(--llm-border);
+    border-radius: 6px;
+    background: var(--llm-card);
+    padding: 8px 12px;
   }
 
   .reply summary {
     cursor: pointer;
-    color: color-mix(in oklch, var(--reply-blue) 66%, var(--foreground));
-    font-weight: 650;
+    color: var(--llm-c-b);
+    font-weight: 600;
   }
 
   .reply summary + * {
@@ -1171,35 +1163,29 @@
 
   .reply table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border: 1px solid color-mix(in oklch, var(--reply-accent) 32%, var(--reply-border));
-    border-radius: 0.5rem;
-    overflow: hidden;
+    border-collapse: collapse;
+    margin: 8px 0;
   }
 
   .reply :where(th, td) {
-    border-bottom: 1px solid var(--reply-rule);
-    padding: 0.55rem 0.68rem;
+    border: 1px solid var(--llm-border);
+    padding: 6px 10px;
     text-align: left;
     vertical-align: top;
   }
 
-  .reply tr:last-child :where(th, td) {
-    border-bottom: 0;
-  }
-
   .reply th {
-    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-blue) 8%);
-    color: color-mix(in oklch, var(--reply-blue) 68%, var(--foreground));
-    font-weight: 650;
+    background: color-mix(in oklch, var(--llm-c-b) 8%, transparent);
+    color: var(--llm-c-b);
+    font-weight: 600;
   }
 
   .reply .grid,
   .reply .row,
   .reply .pros-cons,
   .reply .stats {
-    gap: 0.72rem;
+    gap: 12px;
+    margin: 10px 0;
   }
 
   .reply .grid,
@@ -1210,11 +1196,11 @@
 
   .reply .grid-2,
   .reply .pros-cons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .reply .grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .reply .row {
@@ -1223,7 +1209,8 @@
   }
 
   .reply .col {
-    flex: 1 1 13rem;
+    flex: 1;
+    min-width: 240px;
   }
 
   .reply .card,
@@ -1235,11 +1222,10 @@
   .reply .tip,
   .reply .tldr,
   .reply .formula {
-    border: 1px solid color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 48%, var(--reply-border));
-    border-radius: 0.5rem;
-    background: color-mix(in oklch, var(--reply-surface) 94%, var(--reply-item-accent, var(--reply-accent)) 6%);
-    box-shadow: var(--reply-shadow);
-    padding: 0.78rem 0.86rem;
+    border: 1px solid var(--llm-border);
+    border-radius: 6px;
+    background: var(--llm-card);
+    padding: 12px 14px;
   }
 
   .reply :where(.card, .pros, .cons, .stat, .note, .warn, .tip, .tldr, .formula) > :first-child {
@@ -1250,52 +1236,97 @@
     margin-bottom: 0;
   }
 
-  .reply :where(.card-b, .badge-b) {
-    --reply-item-accent: var(--reply-blue);
+  .reply .card-b,
+  .reply .badge-b {
+    --reply-item-accent: var(--llm-c-b);
   }
 
-  .reply :where(.card-g, .badge-g, .tag-g, .pros, .done),
+  .reply .card-g,
+  .reply .badge-g,
+  .reply .tag-g,
+  .reply .pros,
+  .reply .done,
   .reply .progress-bar.ok {
-    --reply-item-accent: var(--reply-green);
+    --reply-item-accent: var(--llm-c-g);
   }
 
-  .reply :where(.card-o, .badge-o, .tag-o, .warn),
+  .reply .card-o,
+  .reply .badge-o,
+  .reply .tag-o,
+  .reply .warn,
   .reply .progress-bar.warn {
-    --reply-item-accent: var(--reply-orange);
+    --reply-item-accent: var(--llm-c-o);
   }
 
-  .reply :where(.card-r, .badge-r, .tag-r, .cons),
+  .reply .card-r,
+  .reply .badge-r,
+  .reply .tag-r,
+  .reply .cons,
   .reply .progress-bar.danger {
-    --reply-item-accent: var(--reply-red);
+    --reply-item-accent: var(--llm-c-r);
   }
 
-  .reply :where(.card-p, .tag-p) {
-    --reply-item-accent: var(--reply-purple);
+  .reply .card-p,
+  .reply .tag-p {
+    --reply-item-accent: var(--llm-c-p);
   }
 
   .reply .card-x {
-    --reply-item-accent: var(--reply-accent);
+    --reply-item-accent: var(--llm-c-b);
   }
 
-  .reply :where(.card-b, .card-g, .card-o, .card-r, .card-p, .card-x) {
-    border-top: 0.2rem solid var(--reply-item-accent, var(--reply-accent));
+  .reply .card-b,
+  .reply .card-g,
+  .reply .card-o,
+  .reply .card-r,
+  .reply .card-p,
+  .reply .card-x {
+    border-top: 3px solid var(--reply-item-accent);
   }
 
-  .reply :where(.pros, .cons, .note, .warn, .tip, .tldr) {
-    border-left: 0.22rem solid var(--reply-item-accent, var(--reply-accent));
+  .reply .pros,
+  .reply .cons,
+  .reply .note,
+  .reply .warn,
+  .reply .tip,
+  .reply .tldr {
+    border-left: 3px solid var(--reply-item-accent, var(--llm-c-b));
   }
 
   .reply .note {
-    --reply-item-accent: var(--reply-blue);
+    --reply-item-accent: var(--llm-c-b);
+    background: color-mix(in oklch, var(--llm-c-b) 7%, transparent);
+    border-radius: 4px;
+    padding: 10px 14px;
   }
 
   .reply .tip {
-    --reply-item-accent: var(--reply-green);
+    --reply-item-accent: var(--llm-c-g);
+    background: color-mix(in oklch, var(--llm-c-g) 7%, transparent);
+    border-radius: 4px;
+    padding: 10px 14px;
+  }
+
+  .reply .warn {
+    background: color-mix(in oklch, var(--llm-c-o) 7%, transparent);
+    border-radius: 4px;
+    padding: 10px 14px;
+  }
+
+  .reply .pros {
+    background: color-mix(in oklch, var(--llm-c-g) 7%, transparent);
+    border-radius: 4px;
+  }
+
+  .reply .cons {
+    background: color-mix(in oklch, var(--llm-c-r) 7%, transparent);
+    border-radius: 4px;
   }
 
   .reply .tldr {
-    --reply-item-accent: var(--reply-accent);
-    background: color-mix(in oklch, var(--reply-surface-strong) 92%, var(--reply-accent) 8%);
+    --reply-item-accent: var(--llm-c-b);
+    background: color-mix(in oklch, var(--llm-c-b) 7%, transparent);
+    border-radius: 4px;
   }
 
   .reply .stats {
@@ -1308,31 +1339,30 @@
   }
 
   .reply .stat strong {
+    color: var(--llm-c-b);
     font-size: 1.22rem;
     line-height: 1.2;
   }
 
   .reply .badge,
   .reply .tag {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
     max-width: 100%;
-    border: 1px solid color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 68%, var(--reply-border));
-    border-radius: 999px;
-    background: color-mix(in oklch, var(--reply-surface-muted) 86%, var(--reply-item-accent, var(--reply-accent)) 14%);
-    color: color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 76%, var(--foreground));
-    font-size: 0.78rem;
-    font-weight: 620;
+    border-radius: 10px;
+    background: var(--llm-sunken);
+    color: var(--reply-item-accent, var(--llm-c-b));
+    font-size: 0.82em;
+    font-weight: 600;
     line-height: 1.35;
-    padding: 0.12rem 0.44rem;
+    padding: 1px 8px;
     vertical-align: middle;
   }
 
   .reply .tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.36rem;
-    margin-block: 0.68rem;
+    gap: 6px;
+    margin-block: 8px;
   }
 
   .reply .checklist {
@@ -1351,15 +1381,15 @@
     left: 0.1rem;
     width: 0.78rem;
     height: 0.78rem;
-    border: 1px solid var(--reply-border);
+    border: 1px solid var(--llm-border);
     border-radius: 999px;
-    background: color-mix(in oklch, var(--reply-surface) 88%, var(--reply-accent) 8%);
+    background: var(--llm-sunken);
     content: "";
   }
 
   .reply .checklist li.done::before {
-    border-color: var(--reply-green);
-    background: color-mix(in oklch, var(--reply-green) 16%, var(--reply-surface));
+    border-color: var(--llm-c-g);
+    background: color-mix(in oklch, var(--llm-c-g) 16%, var(--llm-sunken));
   }
 
   .reply .checklist li.done::after {
@@ -1368,19 +1398,19 @@
     left: 0.32rem;
     width: 0.35rem;
     height: 0.18rem;
-    border-bottom: 2px solid var(--reply-green);
-    border-left: 2px solid var(--reply-green);
+    border-bottom: 2px solid var(--llm-c-g);
+    border-left: 2px solid var(--llm-c-g);
     content: "";
     transform: rotate(-45deg);
   }
 
   .reply .checklist li.pending {
-    color: color-mix(in oklch, var(--foreground) 78%, var(--muted-foreground));
+    color: var(--llm-muted);
   }
 
   .reply .timeline {
     position: relative;
-    border-left: 1px solid var(--reply-border);
+    border-left: 1px solid var(--llm-border);
     padding-left: 0.95rem;
   }
 
@@ -1399,9 +1429,9 @@
     left: -1.25rem;
     width: 0.55rem;
     height: 0.55rem;
-    border: 2px solid var(--reply-accent);
+    border: 2px solid var(--llm-c-b);
     border-radius: 999px;
-    background: color-mix(in oklch, var(--reply-surface) 84%, var(--reply-accent) 16%);
+    background: var(--llm-card);
     content: "";
   }
 
@@ -1412,7 +1442,7 @@
   .reply .formula .label {
     display: block;
     margin-top: 0.42rem;
-    color: var(--muted-foreground);
+    color: var(--llm-muted);
     font-size: 0.78rem;
     text-align: right;
   }
@@ -1442,8 +1472,8 @@
   .reply .dialog-msg.right .dialog-bubble {
     grid-column: 1;
     grid-row: 1;
-    border-color: color-mix(in oklch, var(--reply-accent) 48%, var(--reply-border));
-    background: color-mix(in oklch, var(--reply-surface) 92%, var(--reply-accent) 8%);
+    border-color: var(--llm-c-b);
+    background: color-mix(in oklch, var(--llm-c-b) 8%, var(--llm-card));
   }
 
   .reply .dialog-avatar {
@@ -1451,10 +1481,10 @@
     width: 1.7rem;
     height: 1.7rem;
     place-items: center;
-    border: 1px solid color-mix(in oklch, var(--reply-accent) 42%, var(--reply-border));
+    border: 1px solid var(--llm-border);
     border-radius: 999px;
-    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-accent) 8%);
-    color: var(--muted-foreground);
+    background: var(--llm-sunken);
+    color: var(--llm-muted);
     font-size: 0.72rem;
     font-weight: 650;
     overflow: hidden;
@@ -1462,16 +1492,16 @@
 
   .reply .dialog-bubble {
     max-width: min(34rem, 100%);
-    border: 1px solid color-mix(in oklch, var(--reply-accent) 30%, var(--reply-border));
-    border-radius: 0.5rem;
-    background: var(--reply-surface);
-    padding: 0.55rem 0.68rem;
+    border: 1px solid var(--llm-border);
+    border-radius: 6px;
+    background: var(--llm-card);
+    padding: 8px 12px;
   }
 
   .reply .dialog-name {
     display: block;
     margin-bottom: 0.18rem;
-    color: var(--muted-foreground);
+    color: var(--llm-muted);
     font-size: 0.76rem;
     font-weight: 620;
   }
@@ -1485,19 +1515,19 @@
   }
 
   .reply .progress > :first-child {
-    color: var(--foreground);
-    font-weight: 620;
+    color: var(--llm-fg);
+    font-weight: 600;
   }
 
   .reply .progress-bar {
-    --reply-item-accent: var(--reply-accent);
+    --reply-item-accent: var(--llm-c-b);
     position: relative;
     grid-column: 1 / -1;
     height: 0.52rem;
     overflow: hidden;
-    border: 1px solid color-mix(in oklch, var(--reply-item-accent) 44%, var(--reply-border));
+    border: 1px solid var(--llm-border);
     border-radius: 999px;
-    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-item-accent) 8%);
+    background: var(--llm-sunken);
     box-shadow: none;
     padding: 0;
   }
@@ -1512,14 +1542,14 @@
   }
 
   .reply .fn-ref {
-    color: var(--reply-accent);
+    color: var(--llm-c-b);
     font-size: 0.72em;
     font-weight: 650;
   }
 
   .reply .footnotes {
-    border-top: 1px solid var(--reply-rule);
-    color: var(--muted-foreground);
+    border-top: 1px solid var(--llm-border);
+    color: var(--llm-muted);
     font-size: 0.86rem;
     margin-top: 1rem;
     padding-left: 1.2rem;

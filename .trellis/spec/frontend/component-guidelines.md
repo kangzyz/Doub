@@ -81,15 +81,15 @@ wrappers server-renderable when possible.
   update `ThemePreset`, settings persistence validation, settings/guide i18n,
   preset previews, `globals.css` variables, and the layout bootstrap script so
   first paint and runtime switching agree.
-- `.reply` broad surfaces should stay neutral and theme-adaptive through
-  `--card`, `--muted`, `--background`, and related base tokens, but can use
-  very low-opacity semantic tints when they clarify structure. Use the active
-  theme's `--primary` and `--chart-*` variables for heading color, top rails on
-  `.card-*`, left rails on semantic callouts (`.pros`, `.cons`, `.warn`, `.tip`,
-  `.note`, `.tldr`), tag outlines, table-header emphasis, timeline markers, and
-  progress values. Avoid broad saturated colored fills; for semantic variants,
-  use `--reply-item-accent` so approved classes keep theme-specific personality
-  without hard-coded Cherry Studio colors.
+- `.reply` styling should follow the Cherry Studio semantic CSS contract. Bridge
+  DOUB theme tokens into `--llm-card`, `--llm-sunken`, `--llm-fg`,
+  `--llm-muted`, `--llm-border`, and `--llm-c-*`, then style the predefined
+  semantic classes from those variables. Keep the pasted Cherry structure
+  consistent: compact headings, `h2` divider, collapsed tables, top rails on
+  `.card-*`, simple sunken badges, and left-rail callouts. Use
+  `--reply-item-accent` only as an internal per-component accent handoff; do not
+  reintroduce a parallel `--reply-*` visual system or hard-code one static
+  Cherry palette across every DOUB theme.
 - `allowedTags` entries replace Streamdown's tag-specific sanitizer attributes
   for the same tag. When adding visual attributes to existing Markdown tags,
   preserve renderer-critical attributes such as link `href`, footnote
