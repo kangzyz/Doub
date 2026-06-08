@@ -272,3 +272,40 @@ Added an Android WebView native download bridge for chat images, preserved deskt
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: Cherry HTML theme integration
+
+**Date**: 2026-06-08
+**Task**: Cherry HTML theme integration
+**Branch**: `main`
+
+### Summary
+
+Integrated semantic HTML visual themes, added Claude/Yan-yu presets and backend validation, fixed HMR loopback access, and added semantic HTML renderer normalization for fenced/indented CommonMark failures.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `83fce49` | (see git log) |
+| `1dad405` | (see git log) |
+| `1b3eaec` | (see git log) |
+| `35ba05e` | (see git log) |
+| `7c583c2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

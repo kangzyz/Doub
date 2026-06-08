@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
-- **Last Active**: 2026-06-05
+- **Total Sessions**: 9
+- **Last Active**: 2026-06-08
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~274 | Active |
+| `journal-1.md` | ~311 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-06-08 | Cherry HTML theme integration | `83fce49`, `1dad405`, `1b3eaec`, `35ba05e`, `7c583c2` | `main` |
 | 8 | 2026-06-05 | Fix Android chat image downloads | `f92f42c` | `main` |
 | 7 | 2026-06-05 | Image stream sync recovery | `17474c0` | `main` |
 | 6 | 2026-05-30 | Sync upstream non-billing features + finish billing removal | `b802c7f`, `428015e`, `ee376de`, `b2399c3` | `main` |
