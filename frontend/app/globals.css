@@ -970,19 +970,22 @@
   }
 
   .reply :where(h2, h3) {
-    color: var(--foreground);
     letter-spacing: 0;
     line-height: 1.28;
   }
 
   .reply h2 {
     margin: 1.1rem 0 0.58rem;
+    border-bottom: 1px solid color-mix(in oklch, var(--reply-blue) 28%, var(--reply-rule));
+    color: color-mix(in oklch, var(--reply-blue) 72%, var(--foreground));
     font-size: 1.08rem;
     font-weight: 680;
+    padding-bottom: 0.34rem;
   }
 
   .reply h3 {
     margin: 0.92rem 0 0.48rem;
+    color: color-mix(in oklch, var(--reply-purple) 68%, var(--foreground));
     font-size: 0.98rem;
     font-weight: 650;
   }
@@ -1001,7 +1004,7 @@
   }
 
   .reply dt {
-    color: var(--foreground);
+    color: color-mix(in oklch, var(--reply-green) 72%, var(--foreground));
     font-weight: 650;
   }
 
@@ -1022,8 +1025,8 @@
   .reply mark {
     border: 1px solid color-mix(in oklch, var(--reply-orange) 66%, var(--reply-border));
     border-radius: 0.25rem;
-    background: transparent;
-    color: var(--foreground);
+    background: color-mix(in oklch, var(--reply-orange) 14%, transparent);
+    color: color-mix(in oklch, var(--reply-orange) 78%, var(--foreground));
     padding: 0.02rem 0.2rem;
   }
 
@@ -1131,7 +1134,7 @@
   .reply .pullquote {
     border-left: 0.22rem solid var(--reply-accent);
     border-radius: 0 0.5rem 0.5rem 0;
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface) 95%, var(--reply-accent) 5%);
     color: color-mix(in oklch, var(--foreground) 86%, var(--muted-foreground));
     margin-inline: 0;
     padding: 0.72rem 0.86rem;
@@ -1152,13 +1155,13 @@
   .reply details {
     border: 1px solid color-mix(in oklch, var(--reply-accent) 34%, var(--reply-border));
     border-radius: 0.5rem;
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface) 96%, var(--reply-accent) 4%);
     padding: 0.68rem 0.8rem;
   }
 
   .reply summary {
     cursor: pointer;
-    color: var(--foreground);
+    color: color-mix(in oklch, var(--reply-blue) 66%, var(--foreground));
     font-weight: 650;
   }
 
@@ -1187,8 +1190,8 @@
   }
 
   .reply th {
-    background: var(--reply-surface-muted);
-    color: var(--foreground);
+    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-blue) 8%);
+    color: color-mix(in oklch, var(--reply-blue) 68%, var(--foreground));
     font-weight: 650;
   }
 
@@ -1234,7 +1237,7 @@
   .reply .formula {
     border: 1px solid color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 48%, var(--reply-border));
     border-radius: 0.5rem;
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface) 94%, var(--reply-item-accent, var(--reply-accent)) 6%);
     box-shadow: var(--reply-shadow);
     padding: 0.78rem 0.86rem;
   }
@@ -1274,7 +1277,11 @@
     --reply-item-accent: var(--reply-accent);
   }
 
-  .reply :where(.card-b, .card-g, .card-o, .card-r, .card-p, .card-x, .pros, .cons, .note, .warn, .tip, .tldr) {
+  .reply :where(.card-b, .card-g, .card-o, .card-r, .card-p, .card-x) {
+    border-top: 0.2rem solid var(--reply-item-accent, var(--reply-accent));
+  }
+
+  .reply :where(.pros, .cons, .note, .warn, .tip, .tldr) {
     border-left: 0.22rem solid var(--reply-item-accent, var(--reply-accent));
   }
 
@@ -1288,7 +1295,7 @@
 
   .reply .tldr {
     --reply-item-accent: var(--reply-accent);
-    background: var(--reply-surface-strong);
+    background: color-mix(in oklch, var(--reply-surface-strong) 92%, var(--reply-accent) 8%);
   }
 
   .reply .stats {
@@ -1312,8 +1319,8 @@
     max-width: 100%;
     border: 1px solid color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 68%, var(--reply-border));
     border-radius: 999px;
-    background: transparent;
-    color: color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 72%, var(--foreground));
+    background: color-mix(in oklch, var(--reply-surface-muted) 86%, var(--reply-item-accent, var(--reply-accent)) 14%);
+    color: color-mix(in oklch, var(--reply-item-accent, var(--reply-accent)) 76%, var(--foreground));
     font-size: 0.78rem;
     font-weight: 620;
     line-height: 1.35;
@@ -1346,13 +1353,13 @@
     height: 0.78rem;
     border: 1px solid var(--reply-border);
     border-radius: 999px;
-    background: transparent;
+    background: color-mix(in oklch, var(--reply-surface) 88%, var(--reply-accent) 8%);
     content: "";
   }
 
   .reply .checklist li.done::before {
     border-color: var(--reply-green);
-    background: transparent;
+    background: color-mix(in oklch, var(--reply-green) 16%, var(--reply-surface));
   }
 
   .reply .checklist li.done::after {
@@ -1394,7 +1401,7 @@
     height: 0.55rem;
     border: 2px solid var(--reply-accent);
     border-radius: 999px;
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface) 84%, var(--reply-accent) 16%);
     content: "";
   }
 
@@ -1436,7 +1443,7 @@
     grid-column: 1;
     grid-row: 1;
     border-color: color-mix(in oklch, var(--reply-accent) 48%, var(--reply-border));
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface) 92%, var(--reply-accent) 8%);
   }
 
   .reply .dialog-avatar {
@@ -1446,7 +1453,7 @@
     place-items: center;
     border: 1px solid color-mix(in oklch, var(--reply-accent) 42%, var(--reply-border));
     border-radius: 999px;
-    background: var(--reply-surface);
+    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-accent) 8%);
     color: var(--muted-foreground);
     font-size: 0.72rem;
     font-weight: 650;
@@ -1490,7 +1497,7 @@
     overflow: hidden;
     border: 1px solid color-mix(in oklch, var(--reply-item-accent) 44%, var(--reply-border));
     border-radius: 999px;
-    background: var(--reply-surface-muted);
+    background: color-mix(in oklch, var(--reply-surface-muted) 88%, var(--reply-item-accent) 8%);
     box-shadow: none;
     padding: 0;
   }

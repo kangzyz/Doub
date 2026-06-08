@@ -82,13 +82,14 @@ wrappers server-renderable when possible.
   preset previews, `globals.css` variables, and the layout bootstrap script so
   first paint and runtime switching agree.
 - `.reply` broad surfaces should stay neutral and theme-adaptive through
-  `--card`, `--muted`, `--background`, and related base tokens. Use the active
-  theme's `--primary` and `--chart-*` variables mainly for borders, left rails,
-  tag outlines, timeline markers, and progress values. Avoid broad colored
-  fills on cards, badges, dialogs, tables, and details; for semantic variants,
-  use `--reply-item-accent` so `.card-b`, `.pros`, `.cons`, `.warn`, `.tip`, and
-  related classes keep vivid theme-specific borders without heavy colored
-  surfaces.
+  `--card`, `--muted`, `--background`, and related base tokens, but can use
+  very low-opacity semantic tints when they clarify structure. Use the active
+  theme's `--primary` and `--chart-*` variables for heading color, top rails on
+  `.card-*`, left rails on semantic callouts (`.pros`, `.cons`, `.warn`, `.tip`,
+  `.note`, `.tldr`), tag outlines, table-header emphasis, timeline markers, and
+  progress values. Avoid broad saturated colored fills; for semantic variants,
+  use `--reply-item-accent` so approved classes keep theme-specific personality
+  without hard-coded Cherry Studio colors.
 - `allowedTags` entries replace Streamdown's tag-specific sanitizer attributes
   for the same tag. When adding visual attributes to existing Markdown tags,
   preserve renderer-critical attributes such as link `href`, footnote

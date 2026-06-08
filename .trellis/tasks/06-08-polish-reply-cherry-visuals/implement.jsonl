@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Defines ownership and constraints for semantic HTML `.reply` rendering, theme-adaptive CSS variables, artifact behavior, and source/citation handling."}
+{"file": ".trellis/spec/guides/pre-implementation-checklist.md", "reason": "Confirms this is frontend-only CSS polish with no backend, API, auth, persistence, or port changes."}

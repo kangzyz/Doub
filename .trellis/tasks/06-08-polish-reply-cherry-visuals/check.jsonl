@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Requires lint, production build for broad UI changes, static export awareness, and no duplicate local dev servers."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Used to verify semantic HTML styling remains CSS-variable driven and does not widen sanitizer or artifact behavior."}
