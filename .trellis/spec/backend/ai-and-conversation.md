@@ -44,6 +44,10 @@ and the frontend sanitizes/styles the resulting HTML.
   HTML fragments using `.reply` and predefined semantic classes only.
 - Visual styling is owned by frontend CSS variables, not by model-authored
   colors, shadows, spacing, or arbitrary classes.
+- Semantic `.reply` HTML is the final rendered answer DOM. The prompt must not
+  tell the model to wrap `.reply`, `.card`, `.pros`, `.cons`, or other semantic
+  HTML in fenced `markdown`, `html`, `text`, or source-code blocks. Fences are
+  reserved for explicit source/demo/component requests.
 - The model must not emit full documents (`html/head/body`), `<style>`,
   `<script>`, event handlers, hard-coded colors, or invented classes.
 - Inline style has one prompt-level exception:
@@ -66,6 +70,9 @@ and the frontend sanitizes/styles the resulting HTML.
   through theme-aware CSS and changes appearance when the app theme changes.
 - Base: an existing persisted message with `.reply` restyles automatically
   after switching light/dark mode or preset because CSS variables changed.
+- Bad: a normal answer emits ```markdown around `<div class="cons">...</div>`;
+  the frontend must display that as code, so the prompt should prevent it rather
+  than relying on renderer unwrapping.
 - Bad: `<div style="background:#fff" class="made-up">...</div>` relies on
   stripped or non-theme-safe presentation and must not be prompted.
 

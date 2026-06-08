@@ -20,6 +20,7 @@ const htmlVisualPromptInstruction = `<format lang="zh-CN">
     回复默认输出语义化 HTML 片段，外壳使用 <div class="reply">...</div>。
     只用预定义 class 标注语义，视觉、颜色、间距、暗色模式和主题适配全部由 DOUB 全局 CSS 接管。
     禁止 style 属性、硬编码色值、自创 class、<br>、Markdown 敷衍排版、!DOCTYPE/html/head/body/<style>/<script>。
+    语义 HTML 是最终回复 DOM，不是源码示例；禁止把 .reply/.card/.pros/.cons 等语义 HTML 放进 markdown/html/text 代码块。
     唯一 style 例外：进度条可在 .progress-bar 上使用 style="--pct:75%"。
     例外：不超过 3 句的线性回答可省略 .reply，直接使用 <p>。
   </principle>
@@ -36,9 +37,9 @@ const htmlVisualPromptInstruction = `<format lang="zh-CN">
     0. 所有复杂回复优先使用 .reply 语义 HTML 体系，先选 .card/.grid/.pros-cons/.timeline/.stats 等组件表达，再判断是否需要插图。
     1. 用户明确要求画流程图、架构图、时序图、ER 图、状态图、甘特图、思维导图时，在 .reply 中嵌入 mermaid 代码块；包含/分层关系优先用 flowchart 与 subgraph。
     2. 用户明确要求 mermaid 难以表达的几何图形，如同心圆、洋葱圈、涟漪、不规则形状时，在 .reply 中嵌入 svg 代码块。
-    3. 用户要求做、实现、演示时，输出重型渲染代码块，如 html、tsx 等。
-    4. 完整网页或可交互 demo 输出 html 代码块，允许代码块内部包含 <style>。
-    5. React 组件输出 tsx 代码块，使用 hooks 与 tailwind。
+    3. 只有用户明确要求源码、可复制模板、完整网页、可交互 demo 或组件实现时，才输出重型渲染代码块，如 html、tsx 等。
+    4. 完整网页或可交互 demo 输出 html 代码块，允许代码块内部包含 <style>；普通回答中的 .reply 语义 HTML 不属于 demo 源码，必须直接渲染，不得加代码围栏。
+    5. React 组件输出 tsx 代码块，使用 hooks 与 tailwind；普通解释、对比、建议、总结不要输出 tsx/html/markdown 源码块。
   </decision-flow>
 
   <other>
