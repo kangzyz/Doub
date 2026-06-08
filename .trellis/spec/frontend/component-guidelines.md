@@ -81,12 +81,14 @@ wrappers server-renderable when possible.
   update `ThemePreset`, settings persistence validation, settings/guide i18n,
   preset previews, `globals.css` variables, and the layout bootstrap script so
   first paint and runtime switching agree.
-- `.reply` surfaces, borders, badges, cards, progress bars, and timeline accents
-  should derive from the active theme's `--primary` and `--chart-*` variables.
-  Avoid neutral-only reply surfaces that make different theme presets render
-  semantic HTML with the same visual tone. For semantic variants, use
-  `--reply-item-accent` so `.card-b`, `.pros`, `.cons`, `.warn`, `.tip`, and
-  related classes inherit both their meaning and the active theme palette.
+- `.reply` broad surfaces should stay neutral and theme-adaptive through
+  `--card`, `--muted`, `--background`, and related base tokens. Use the active
+  theme's `--primary` and `--chart-*` variables mainly for borders, left rails,
+  tag outlines, timeline markers, and progress values. Avoid broad colored
+  fills on cards, badges, dialogs, tables, and details; for semantic variants,
+  use `--reply-item-accent` so `.card-b`, `.pros`, `.cons`, `.warn`, `.tip`, and
+  related classes keep vivid theme-specific borders without heavy colored
+  surfaces.
 - `allowedTags` entries replace Streamdown's tag-specific sanitizer attributes
   for the same tag. When adding visual attributes to existing Markdown tags,
   preserve renderer-critical attributes such as link `href`, footnote

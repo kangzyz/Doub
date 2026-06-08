@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Requires frontend lint, production build for broad UI changes, static export awareness, and local dev-server port discipline."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Used to verify `.reply` semantic HTML remains theme-adaptive through CSS variables and avoids artifact or sanitizer contract changes."}

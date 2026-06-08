@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Defines semantic HTML reply styling ownership, sanitizer contract, theme-adaptive CSS variables, and the neutral-surface colored-border rule updated by this task."}
+{"file": ".trellis/spec/guides/pre-implementation-checklist.md", "reason": "Confirms this task is frontend-only styling work with no API, auth, persistence, or backend contract changes."}
