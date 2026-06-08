@@ -52,6 +52,16 @@ scripts are out of sync.
 The app is configured with `output: "export"`. Avoid runtime-only Next server
 features for product APIs. Keep business API behavior in the Go backend.
 
+## Local Dev Server Review
+
+- The shared frontend test service is expected to be reachable on port `3000`.
+  Do not start duplicate dev servers on alternate ports unless the user asks for
+  that explicitly.
+- If developers access the Next.js dev server through `127.0.0.1` instead of
+  `localhost`, keep `next.config.ts` `allowedDevOrigins` in sync. Otherwise
+  Next blocks `/_next/webpack-hmr` as a cross-origin dev resource and the browser
+  reports a failed HMR WebSocket.
+
 ## Root Layout And Hydration Review
 
 - In App Router root layouts, do not render raw `<script>` tags for client-side
