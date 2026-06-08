@@ -441,3 +441,36 @@ Removed broad colored fills from semantic HTML reply components, kept neutral th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Polish reply Cherry-style visuals
+
+**Date**: 2026-06-08
+**Task**: Polish reply Cherry-style visuals
+**Branch**: `main`
+
+### Summary
+
+Reworked semantic HTML reply styling toward the pasted Cherry-style visual intent with theme-colored headings, top card rails, semantic callout rails, subtle role tints, and preserved DOUB theme-variable adaptation.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d53a563` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
