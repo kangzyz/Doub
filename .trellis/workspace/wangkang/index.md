@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
+- **Total Sessions**: 12
 - **Last Active**: 2026-06-08
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~377 | Active |
+| `journal-1.md` | ~410 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-06-08 | Reply theme color distinction | `067fdec` | `main` |
 | 11 | 2026-06-08 | Default HTML visual prompt behavior | `91e9a78` | `main` |
 | 10 | 2026-06-08 | Semantic HTML citation fix | `1ff661b` | `main` |
 | 9 | 2026-06-08 | Cherry HTML theme integration | `83fce49`, `1dad405`, `1b3eaec`, `35ba05e`, `7c583c2` | `main` |

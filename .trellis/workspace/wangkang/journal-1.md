@@ -375,3 +375,36 @@ Enabled the HTML visual prompt by default, prevented semantic chat HTML from aut
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Reply theme color distinction
+
+**Date**: 2026-06-08
+**Task**: Reply theme color distinction
+**Branch**: `main`
+
+### Summary
+
+Made semantic HTML reply surfaces and semantic components derive more strongly from active theme primary/chart variables, so cards, badges, quotes, progress, and timelines render with more distinct preset-specific color tone.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `067fdec` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
