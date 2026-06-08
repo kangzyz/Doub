@@ -37,13 +37,13 @@ const passwordHashCost = 12
 
 // Service 封装认证业务能力。
 type Service struct {
-	cfg                  *config.Runtime
-	repo                 repository.AuthRepository
-	geoResolver          *geoip.Client
-	providerHTTPClient   *http.Client
-	logger               *zap.Logger
-	storeProvider        appstorage.Provider
-	auditWriter          auditWriter
+	cfg                *config.Runtime
+	repo               repository.AuthRepository
+	geoResolver        *geoip.Client
+	providerHTTPClient *http.Client
+	logger             *zap.Logger
+	storeProvider      appstorage.Provider
+	auditWriter        auditWriter
 }
 
 type auditWriter interface {
@@ -720,7 +720,7 @@ func validateAppearancePreferences(raw string) error {
 				return ErrInvalidAppearancePreferences
 			}
 		case "preset":
-			if value != "default" && value != "azure" && value != "cobalt" && value != "graphite" && value != "lagoon" && value != "ink" && value != "ochre" && value != "sepia" {
+			if value != "default" && value != "azure" && value != "cobalt" && value != "graphite" && value != "lagoon" && value != "ink" && value != "ochre" && value != "sepia" && value != "claude" && value != "yan-yu" {
 				return ErrInvalidAppearancePreferences
 			}
 		case "chatFont":

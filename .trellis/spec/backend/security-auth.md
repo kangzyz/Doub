@@ -59,3 +59,11 @@ Security-sensitive actions should record audit context with request ID, client
 IP, user agent, action, resource, and detail. Existing references include auth
 profile changes in `transport/http/auth/handler.go` and audit writer wiring in
 `internal/app/app.go`.
+
+## Profile Preferences
+
+The authenticated profile update path validates `appearancePreferences` in
+`backend/internal/application/auth/service.go` before persistence. When adding a
+frontend theme preset or chat appearance option, update this backend validator
+and focused tests in the same change. Otherwise settings can update locally but
+fail when the frontend saves the authenticated user's profile.
