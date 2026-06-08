@@ -408,3 +408,36 @@ Made semantic HTML reply surfaces and semantic components derive more strongly f
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Simplify reply theme accents
+
+**Date**: 2026-06-08
+**Task**: Simplify reply theme accents
+**Branch**: `main`
+
+### Summary
+
+Removed broad colored fills from semantic HTML reply components, kept neutral theme-adaptive surfaces, and used vivid theme-derived borders, outlines, rails, markers, and progress values instead.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6c82cbf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
