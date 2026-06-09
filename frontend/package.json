@@ -18,7 +18,7 @@
     "check:version": "node ../scripts/sync-version.mjs --check frontend",
     "sync:icons": "node scripts/sync-lobehub-icons.mjs",
     "predev": "pnpm check:version && pnpm sync:icons",
-    "dev": "next dev --turbopack",
+    "dev": "next dev --webpack",
     "prebuild": "pnpm check:version && pnpm sync:icons",
     "build": "next build --turbopack",
     "analyze": "next experimental-analyze",

@@ -57,6 +57,10 @@ features for product APIs. Keep business API behavior in the Go backend.
 - The shared frontend test service is expected to be reachable on port `3000`.
   Do not start duplicate dev servers on alternate ports unless the user asks for
   that explicitly.
+- Use webpack for the local Next.js dev server (`next dev --webpack`). With the
+  current Next.js 16.2.6 Windows setup, `next dev --turbopack` can compile the
+  admin route group but still return 404 for nested admin routes such as
+  `/admin/channels` and `/admin/conversation`.
 - If developers access the Next.js dev server through `127.0.0.1` instead of
   `localhost`, keep `next.config.ts` `allowedDevOrigins` in sync. Otherwise
   Next blocks `/_next/webpack-hmr` as a cross-origin dev resource and the browser
