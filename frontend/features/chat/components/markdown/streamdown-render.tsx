@@ -1122,7 +1122,9 @@ const BASE_MARKDOWN_CLASSNAME = cn(
   "[&_[data-streamdown='mermaid']>div]:!w-full [&_[data-streamdown='mermaid']>div]:max-w-none [&_[data-streamdown='mermaid']>div]:min-h-[420px] [&_[data-streamdown='mermaid']>div]:min-w-0 [&_[data-streamdown='mermaid']>div]:!overflow-visible",
   "[&_[data-streamdown='mermaid']>div>div:last-child]:!w-max [&_[data-streamdown='mermaid']>div>div:last-child]:min-w-full [&_[data-streamdown='mermaid']>div>div:last-child]:!items-start [&_[data-streamdown='mermaid']>div>div:last-child]:!justify-start [&_[data-streamdown='mermaid']>div>div:last-child]:!overflow-visible",
   "[&_[data-streamdown='mermaid']_[role='img']]:!min-w-max [&_[data-streamdown='mermaid']_[role='img']]:!justify-start",
-  "[&_[data-streamdown='mermaid']_svg]:mx-0 [&_[data-streamdown='mermaid']_svg]:block [&_[data-streamdown='mermaid']_svg]:!h-auto [&_[data-streamdown='mermaid']_svg]:max-h-none [&_[data-streamdown='mermaid']_svg]:!w-auto [&_[data-streamdown='mermaid']_svg]:min-w-0 [&_[data-streamdown='mermaid']_svg]:max-w-none [&_[data-streamdown='mermaid']_svg]:bg-transparent",
+  "[&_[data-streamdown='mermaid']_svg]:mx-0 [&_[data-streamdown='mermaid']_svg]:block [&_[data-streamdown='mermaid']_svg]:!h-auto [&_[data-streamdown='mermaid']_svg]:max-h-none [&_[data-streamdown='mermaid']_svg]:!w-auto [&_[data-streamdown='mermaid']_svg]:min-w-0 [&_[data-streamdown='mermaid']_svg]:max-w-none [&_[data-streamdown='mermaid']_svg]:!overflow-visible [&_[data-streamdown='mermaid']_svg]:bg-transparent",
+  "[&_[data-streamdown='mermaid']_foreignObject]:!overflow-visible [&_[data-streamdown='mermaid']_.node]:!overflow-visible [&_[data-streamdown='mermaid']_.label]:!overflow-visible",
+  "[&_[data-streamdown='mermaid']_.nodeLabel]:!max-w-none [&_[data-streamdown='mermaid']_.nodeLabel]:!overflow-visible [&_[data-streamdown='mermaid']_.nodeLabel]:!whitespace-normal [&_[data-streamdown='mermaid']_.nodeLabel]:!leading-5",
   "[&_[data-streamdown='mermaid']>div>div:first-child]:!left-0 [&_[data-streamdown='mermaid']>div>div:first-child]:rounded-none [&_[data-streamdown='mermaid']>div>div:first-child]:border-0 [&_[data-streamdown='mermaid']>div>div:first-child]:bg-transparent [&_[data-streamdown='mermaid']>div>div:first-child]:p-0 [&_[data-streamdown='mermaid']>div>div:first-child]:shadow-none [&_[data-streamdown='mermaid']>div>div:first-child]:backdrop-blur-none",
   "[&_[data-streamdown='mermaid-block-actions']]:gap-2 [&_[data-streamdown='mermaid-block-actions']]:border-0 [&_[data-streamdown='mermaid-block-actions']]:rounded-none [&_[data-streamdown='mermaid-block-actions']]:bg-transparent [&_[data-streamdown='mermaid-block-actions']]:p-0 [&_[data-streamdown='mermaid-block-actions']]:shadow-none [&_[data-streamdown='mermaid-block-actions']]:backdrop-blur-none",
   "[&_[data-streamdown='mermaid-block-actions']_svg]:size-3",
@@ -1266,9 +1268,17 @@ async function loadStreamdownPlugins(features: StreamdownFeatureFlags): Promise<
       const { createMermaidPlugin } = await import("@streamdown/mermaid");
       plugins.mermaid = createMermaidPlugin({
         config: {
+          themeVariables: {
+            fontFamily:
+              "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif",
+            fontSize: "16px",
+          },
           flowchart: {
-            htmlLabels: false,
+            htmlLabels: true,
+            nodeSpacing: 72,
+            rankSpacing: 80,
             useMaxWidth: false,
+            wrappingWidth: 220,
           },
         },
       });
