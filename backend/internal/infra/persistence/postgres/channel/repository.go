@@ -436,14 +436,15 @@ func (r *Repo) modelListQuery(ctx context.Context) *gorm.DB {
 		Table("llm_platform_models AS m").
 		Select(
 			"m.id, m.name AS platform_model_name, m.vendor, m.kinds_json, m.icon, m.capabilities_json, m.system_prompt, m.status, m.description, m.sort_order, m.created_at, m.updated_at, " +
-				"COALESCE(stats.source_count, 0) AS source_count, COALESCE(stats.active_source_count, 0) AS active_source_count, COALESCE(stats.protocols_json, '[]') AS protocols_json",
+				"COALESCE(stats.source_count, 0) AS source_count, COALESCE(stats.active_source_count, 0) AS active_source_count, COALESCE(stats.protocols_json, '[]') AS protocols_json, COALESCE(stats.reference_model_name, '') AS reference_model_name",
 		).
 		Joins(
 			`LEFT JOIN (
 				SELECT r.platform_model_id,
 					COUNT(*) AS source_count,
 					COUNT(*) FILTER (WHERE r.status = 'active' AND um.status = 'active' AND u.status = 'active') AS active_source_count,
-					COALESCE(json_agg(DISTINCT r.protocol) FILTER (WHERE r.status = 'active' AND um.status = 'active' AND u.status = 'active' AND r.protocol != ''), '[]') AS protocols_json
+					COALESCE(json_agg(DISTINCT r.protocol) FILTER (WHERE r.status = 'active' AND um.status = 'active' AND u.status = 'active' AND r.protocol != ''), '[]') AS protocols_json,
+					(array_agg(um.upstream_model_name ORDER BY r.priority ASC, r.id ASC) FILTER (WHERE r.status = 'active' AND um.status = 'active' AND u.status = 'active' AND um.upstream_model_name != ''))[1] AS reference_model_name
 				FROM llm_model_routes r
 				JOIN llm_upstream_models um ON um.id = r.upstream_model_id
 				JOIN llm_upstreams u ON u.id = um.upstream_id

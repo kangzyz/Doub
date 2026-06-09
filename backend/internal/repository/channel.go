@@ -133,9 +133,10 @@ type ChannelUpstreamListRow struct {
 // ChannelModelListRow 定义模型列表查询结果。
 type ChannelModelListRow struct {
 	domainchannel.PlatformModel
-	SourceCount       int64
-	ActiveSourceCount int64
-	ProtocolsJSON     string
+	SourceCount        int64
+	ActiveSourceCount  int64
+	ProtocolsJSON      string
+	ReferenceModelName string
 }
 
 // ChannelUpstreamModelListRow 定义上游模型路由绑定列表查询结果。

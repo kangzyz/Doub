@@ -226,6 +226,7 @@ function ChatInputComponent({
   const selectedProtocol = selectedModel?.protocols[0]?.trim() ?? "";
   const selectedVendor = selectedModel?.vendor?.trim() ?? "";
   const selectedModelName = selectedModel?.platformModelName || selectedPlatformModelName;
+  const selectedReferenceModelName = selectedModel?.referenceModelName || selectedModelName;
   const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
   const submitTask = submitDecision.task;
   const isMediaMode = isMediaSubmitTask(submitTask);
@@ -483,7 +484,7 @@ function ChatInputComponent({
                 modelOptionPolicy={modelOptionPolicy}
                 selectedProtocol={selectedProtocol}
                 selectedVendor={selectedVendor}
-                selectedModelName={selectedModelName}
+                selectedModelName={selectedReferenceModelName}
                 isMediaMode={isMediaMode}
                 onOptionsChange={onOptionsChange}
                 onOptionsReset={onOptionsReset}

@@ -16,6 +16,7 @@ export type ChatModelOption = {
   vendor: string;
   kinds: string[];
   protocols: string[];
+  referenceModelName: string;
   defaultOptions: ConversationOptions;
 };
 

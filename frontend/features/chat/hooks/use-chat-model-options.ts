@@ -216,6 +216,7 @@ export function useChatModelOptions({
           vendor: item.vendor,
           kinds: parseKindsJSON(item.kindsJSON),
           protocols: parseProtocolsJSON(item.protocolsJSON),
+          referenceModelName: item.referenceModelName?.trim() ?? "",
           defaultOptions: resolveDefaultOptions(item.capabilitiesJSON),
         };
       }),

@@ -542,14 +542,15 @@ type CircuitResetResponse struct {
 
 // PublicModelResponse 面向前端的可用模型展示 DTO。
 type PublicModelResponse struct {
-	PlatformModelName string `json:"platformModelName"`
-	Vendor            string `json:"vendor"`
-	KindsJSON         string `json:"kindsJSON"`
-	Icon              string `json:"icon"`
-	ProtocolsJSON     string `json:"protocolsJSON"`
-	CapabilitiesJSON  string `json:"capabilitiesJSON"`
-	Description       string `json:"description"`
-	SortOrder         int    `json:"sortOrder"`
+	PlatformModelName  string `json:"platformModelName"`
+	Vendor             string `json:"vendor"`
+	KindsJSON          string `json:"kindsJSON"`
+	Icon               string `json:"icon"`
+	ProtocolsJSON      string `json:"protocolsJSON"`
+	ReferenceModelName string `json:"referenceModelName"`
+	CapabilitiesJSON   string `json:"capabilitiesJSON"`
+	Description        string `json:"description"`
+	SortOrder          int    `json:"sortOrder"`
 }
 
 // ---------- Swagger 文档类型 ----------
@@ -698,14 +699,15 @@ func toLLMSettingResponse(v domainchannel.LLMSetting) LLMSettingResponse {
 // toPublicModelResponse 将模型视图转为面向前端的响应 DTO。
 func toPublicModelResponse(v appchannel.ModelView) PublicModelResponse {
 	return PublicModelResponse{
-		PlatformModelName: v.PlatformModelName,
-		Vendor:            v.Vendor,
-		KindsJSON:         v.KindsJSON,
-		Icon:              v.Icon,
-		ProtocolsJSON:     v.ProtocolsJSON,
-		CapabilitiesJSON:  v.CapabilitiesJSON,
-		Description:       v.Description,
-		SortOrder:         v.SortOrder,
+		PlatformModelName:  v.PlatformModelName,
+		Vendor:             v.Vendor,
+		KindsJSON:          v.KindsJSON,
+		Icon:               v.Icon,
+		ProtocolsJSON:      v.ProtocolsJSON,
+		ReferenceModelName: v.ReferenceModelName,
+		CapabilitiesJSON:   v.CapabilitiesJSON,
+		Description:        v.Description,
+		SortOrder:          v.SortOrder,
 	}
 }
 

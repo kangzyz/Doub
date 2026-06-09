@@ -4,6 +4,7 @@ export type PublicModelDTO = {
   kindsJSON: string;
   icon: string;
   protocolsJSON: string;
+  referenceModelName: string;
   capabilitiesJSON: string;
   description: string;
   sortOrder: number;

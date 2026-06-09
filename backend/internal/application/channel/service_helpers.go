@@ -69,21 +69,22 @@ func displayProtocolDefaultsJSON(raw string) string {
 
 func toModelView(item repository.ChannelModelListRow) ModelView {
 	return ModelView{
-		ID:                item.ID,
-		PlatformModelName: item.PlatformModelName,
-		Vendor:            item.Vendor,
-		KindsJSON:         item.KindsJSON,
-		Icon:              item.Icon,
-		CapabilitiesJSON:  item.CapabilitiesJSON,
-		SystemPrompt:      item.SystemPrompt,
-		Status:            item.Status,
-		Description:       item.Description,
-		SortOrder:         item.SortOrder,
-		SourceCount:       item.SourceCount,
-		ActiveSourceCount: item.ActiveSourceCount,
-		ProtocolsJSON:     item.ProtocolsJSON,
-		CreatedAt:         item.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:         item.UpdatedAt.Format(time.RFC3339),
+		ID:                 item.ID,
+		PlatformModelName:  item.PlatformModelName,
+		Vendor:             item.Vendor,
+		KindsJSON:          item.KindsJSON,
+		Icon:               item.Icon,
+		CapabilitiesJSON:   item.CapabilitiesJSON,
+		SystemPrompt:       item.SystemPrompt,
+		Status:             item.Status,
+		Description:        item.Description,
+		SortOrder:          item.SortOrder,
+		SourceCount:        item.SourceCount,
+		ActiveSourceCount:  item.ActiveSourceCount,
+		ProtocolsJSON:      item.ProtocolsJSON,
+		ReferenceModelName: item.ReferenceModelName,
+		CreatedAt:          item.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:          item.UpdatedAt.Format(time.RFC3339),
 	}
 }
 

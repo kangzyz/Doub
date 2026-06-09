@@ -213,6 +213,7 @@ export function AppChatArea() {
     [modelOptions, selectedPlatformModelName],
   );
   const selectedModelName = selectedModel?.platformModelName.trim() || "";
+  const selectedReferenceModelName = selectedModel?.referenceModelName.trim() || selectedModelName;
   const selectedModelProtocol = selectedModel?.protocols[0]?.trim() ?? "";
   const selectedModelVendor = selectedModel?.vendor?.trim() ?? "";
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
@@ -245,6 +246,7 @@ export function AppChatArea() {
     ].join("\n");
     const initializationKey = [
       selectedModelName,
+      selectedReferenceModelName,
       selectedModelProtocol,
       selectedModelVendor,
       policySignature,
@@ -258,7 +260,7 @@ export function AppChatArea() {
       {
         protocol: selectedModelProtocol,
         vendor: selectedModelVendor,
-        modelName: selectedModelName,
+        modelName: selectedReferenceModelName,
         modelOptionPolicy,
       },
       cachedOptions ?? {},
@@ -267,7 +269,7 @@ export function AppChatArea() {
       writeCachedModelOptions(selectedModelName, normalized);
     }
     setOptions(normalized);
-  }, [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor]);
+  }, [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName]);
 
   const setModelOptions = React.useCallback(
     (action: React.SetStateAction<ConversationOptions>) => {
@@ -278,7 +280,7 @@ export function AppChatArea() {
           {
             protocol: selectedModelProtocol,
             vendor: selectedModelVendor,
-            modelName: selectedModelName,
+            modelName: selectedReferenceModelName,
             modelOptionPolicy,
           },
           sanitized,
@@ -289,7 +291,7 @@ export function AppChatArea() {
         return normalized;
       });
     },
-    [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor],
+    [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName],
   );
 
   const resetModelOptions = React.useCallback(() => {
