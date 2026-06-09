@@ -67,7 +67,9 @@ wrappers server-renderable when possible.
   scroll/pan behavior so flowcharts remain legible without rewriting the
   generated diagram. Use CJK-friendly font settings, HTML labels, and node
   wrapping/spacing so long labels remain visible inside their nodes instead of
-  being clipped by tight SVG text measurement.
+  being clipped by tight SVG text measurement. Avoid unbounded CSS-transform
+  panning in inline chat; default diagrams should be centered, and any movement
+  should be constrained by the scroll container's real SVG extent.
 - `streamdown-content.ts` may normalize model mistakes only when the content
   clearly contains the approved semantic HTML classes. It can unwrap fenced
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,
@@ -121,7 +123,9 @@ wrappers server-renderable when possible.
   look like real code blocks even when they originate from raw HTML rather than
   Markdown fences. Keep file-tree and ASCII-flow presets distinct, but give
   ordinary code examples borders, sunken backgrounds, padding, and preserved
-  whitespace through global `.reply` CSS.
+  whitespace through global `.reply` CSS. Fenced Markdown code blocks should
+  use the same formal surface treatment through `data-streamdown='code-block-body'`
+  so all ordinary code examples read consistently.
 - Raw HTML visual components may normalize renderer-owned color attributes into
   theme tokens during render, such as neutral SVG strokes becoming
   `var(--border)`. Ordinary semantic HTML inline styles should be stripped
