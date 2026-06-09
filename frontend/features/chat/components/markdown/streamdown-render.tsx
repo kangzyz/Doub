@@ -98,7 +98,7 @@ const STREAMDOWN_CONTROLS = {
     copy: true,
     download: false,
     fullscreen: true,
-    panZoom: false,
+    panZoom: true,
   },
   table: false,
 } as const;
@@ -109,6 +109,7 @@ const STREAMDOWN_REMEND = {
 
 const STREAMDOWN_CARET = "circle" as const;
 const STREAMDOWN_LINK_SAFETY = { enabled: false } as const;
+const MERMAID_PAN_TOLERANCE_PX = 32;
 const HTML_VISUAL_COLOR_TOKEN_RE = /#[\da-f]{3,8}\b|rgba?\([^)]*\)|\b(?:black|white)\b/gi;
 const HTML_VISUAL_STYLE_ATTRIBUTES = ["style", "title", "className"] as const;
 const HTML_VISUAL_BOX_ATTRIBUTES = [...HTML_VISUAL_STYLE_ATTRIBUTES, "align", "height", "width"];
@@ -680,6 +681,7 @@ const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
 const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[a-z*]+\}/i;
 const INLINE_MATH_RE = /(^|[^\\$])\$[^$\n]{1,400}\$/;
+const MERMAID_TRANSFORM_RE = /translate\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px\s*\)\s*scale\(\s*(\d+(?:\.\d+)?)\s*\)/;
 
 function parseColorChannel(value: string): number | null {
   const trimmed = value.trim();
@@ -1119,8 +1121,8 @@ const BASE_MARKDOWN_CLASSNAME = cn(
   "[&_[data-streamdown='mermaid-block']]:my-4 [&_[data-streamdown='mermaid-block']]:flex [&_[data-streamdown='mermaid-block']]:!w-full [&_[data-streamdown='mermaid-block']]:min-w-0 [&_[data-streamdown='mermaid-block']]:gap-2 [&_[data-streamdown='mermaid-block']]:rounded-none [&_[data-streamdown='mermaid-block']]:border-0 [&_[data-streamdown='mermaid-block']]:bg-transparent [&_[data-streamdown='mermaid-block']]:p-0 [&_[data-streamdown='mermaid-block']]:shadow-none",
   "[&_[data-streamdown='mermaid-block']>div:last-child]:!w-full [&_[data-streamdown='mermaid-block']>div:last-child]:min-w-0 [&_[data-streamdown='mermaid-block']>div:last-child]:rounded-none [&_[data-streamdown='mermaid-block']>div:last-child]:border-0 [&_[data-streamdown='mermaid-block']>div:last-child]:bg-transparent [&_[data-streamdown='mermaid-block']>div:last-child]:p-0 [&_[data-streamdown='mermaid-block']>div:last-child]:shadow-none",
   "[&_[data-streamdown='mermaid']]:my-0 [&_[data-streamdown='mermaid']]:block [&_[data-streamdown='mermaid']]:!w-full [&_[data-streamdown='mermaid']]:min-h-[420px] [&_[data-streamdown='mermaid']]:max-h-[min(78vh,720px)] [&_[data-streamdown='mermaid']]:min-w-0 [&_[data-streamdown='mermaid']]:overflow-auto [&_[data-streamdown='mermaid']]:overscroll-contain [&_[data-streamdown='mermaid']]:rounded-none [&_[data-streamdown='mermaid']]:border-0 [&_[data-streamdown='mermaid']]:bg-transparent [&_[data-streamdown='mermaid']]:shadow-none",
-  "[&_[data-streamdown='mermaid']>div]:!w-full [&_[data-streamdown='mermaid']>div]:max-w-none [&_[data-streamdown='mermaid']>div]:min-h-[420px] [&_[data-streamdown='mermaid']>div]:min-w-0 [&_[data-streamdown='mermaid']>div]:!cursor-default [&_[data-streamdown='mermaid']>div]:!overflow-visible",
-  "[&_[data-streamdown='mermaid']>div>div:last-child]:!w-max [&_[data-streamdown='mermaid']>div>div:last-child]:min-w-full [&_[data-streamdown='mermaid']>div>div:last-child]:!translate-x-0 [&_[data-streamdown='mermaid']>div>div:last-child]:!translate-y-0 [&_[data-streamdown='mermaid']>div>div:last-child]:!scale-100 [&_[data-streamdown='mermaid']>div>div:last-child]:!transform-none [&_[data-streamdown='mermaid']>div>div:last-child]:!items-center [&_[data-streamdown='mermaid']>div>div:last-child]:!justify-center [&_[data-streamdown='mermaid']>div>div:last-child]:!overflow-visible [&_[data-streamdown='mermaid']>div>div:last-child]:!pointer-events-none",
+  "[&_[data-streamdown='mermaid']>div]:!w-full [&_[data-streamdown='mermaid']>div]:max-w-none [&_[data-streamdown='mermaid']>div]:min-h-[420px] [&_[data-streamdown='mermaid']>div]:min-w-0 [&_[data-streamdown='mermaid']>div]:!overflow-visible",
+  "[&_[data-streamdown='mermaid']>div>div:last-child]:!w-max [&_[data-streamdown='mermaid']>div>div:last-child]:min-w-full [&_[data-streamdown='mermaid']>div>div:last-child]:!items-center [&_[data-streamdown='mermaid']>div>div:last-child]:!justify-center [&_[data-streamdown='mermaid']>div>div:last-child]:!overflow-visible",
   "[&_[data-streamdown='mermaid']_[role='img']]:!min-w-max [&_[data-streamdown='mermaid']_[role='img']]:!justify-center",
   "[&_[data-streamdown='mermaid']_svg]:mx-0 [&_[data-streamdown='mermaid']_svg]:block [&_[data-streamdown='mermaid']_svg]:!h-auto [&_[data-streamdown='mermaid']_svg]:max-h-none [&_[data-streamdown='mermaid']_svg]:!w-auto [&_[data-streamdown='mermaid']_svg]:min-w-0 [&_[data-streamdown='mermaid']_svg]:max-w-none [&_[data-streamdown='mermaid']_svg]:!overflow-visible [&_[data-streamdown='mermaid']_svg]:bg-transparent",
   "[&_[data-streamdown='mermaid']_foreignObject]:!overflow-visible [&_[data-streamdown='mermaid']_.node]:!overflow-visible [&_[data-streamdown='mermaid']_.label]:!overflow-visible",
@@ -1149,6 +1151,9 @@ const BASE_MARKDOWN_CLASSNAME = cn(
   "[&_[data-streamdown='code-block-body']]:!rounded-lg [&_[data-streamdown='code-block-body']]:!border [&_[data-streamdown='code-block-body']]:!border-border/60 [&_[data-streamdown='code-block-body']]:!bg-muted/45",
   "[&_pre]:group [&_pre]:my-0 [&_pre]:block [&_pre]:!w-full [&_pre]:!min-w-0 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:overflow-y-hidden [&_pre]:border-0 [&_pre]:bg-transparent [&_pre]:px-0 [&_pre]:pt-0 [&_pre]:pb-2 [&_pre]:shadow-none [&_pre]:outline-none [&_pre]:ring-0",
   "[&_pre>code]:block [&_pre>code]:w-max [&_pre>code]:min-w-full [&_pre>code]:max-w-none [&_pre>code]:border-0 [&_pre>code]:bg-transparent [&_pre>code]:py-4 [&_pre>code]:font-mono [&_pre>code]:text-[13px] [&_pre>code]:leading-5 [&_pre>code]:text-foreground/92 [&_pre>code]:shadow-none [&_pre>code]:outline-none [&_pre>code]:ring-0",
+  "[&_.reply_pre]:!rounded-lg [&_.reply_pre]:!border [&_.reply_pre]:!border-border/60 [&_.reply_pre]:!bg-muted/45",
+  "[&_.reply_pre:not(.filetree):not(.flow)]:!p-3",
+  "[&_.reply_pre>code]:!bg-transparent [&_.reply_pre>code]:!p-0",
   "[&_[data-streamdown='code-block-actions']]:gap-2 [&_[data-streamdown='code-block-actions']]:!opacity-100 [&_[data-streamdown='code-block-actions']]:border-0 [&_[data-streamdown='code-block-actions']]:rounded-none [&_[data-streamdown='code-block-actions']]:bg-transparent [&_[data-streamdown='code-block-actions']]:p-0 [&_[data-streamdown='code-block-actions']]:shadow-none [&_[data-streamdown='code-block-actions']]:backdrop-blur-none",
   "[&_[data-streamdown='code-block-actions']_button]:inline-flex [&_[data-streamdown='code-block-actions']_button]:items-center [&_[data-streamdown='code-block-actions']_button]:justify-center [&_[data-streamdown='code-block-actions']_button]:rounded-md [&_[data-streamdown='code-block-actions']_button]:border-0 [&_[data-streamdown='code-block-actions']_button]:bg-transparent [&_[data-streamdown='code-block-actions']_button]:p-1 [&_[data-streamdown='code-block-actions']_button]:text-muted-foreground [&_[data-streamdown='code-block-actions']_button]:shadow-none [&_[data-streamdown='code-block-actions']_button:hover]:bg-foreground/[0.04] [&_[data-streamdown='code-block-actions']_button:hover]:text-foreground",
   "[&_[data-streamdown='code-block-actions']_svg]:size-3",
@@ -1225,6 +1230,105 @@ function getStreamdownPluginKey(features: StreamdownFeatureFlags): string {
   return [features.code ? "code" : "", features.math ? "math" : "", features.mermaid ? "mermaid" : ""]
     .filter(Boolean)
     .join(":");
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function parseMermaidTransform(value: string): { x: number; y: number; scale: number } | null {
+  const match = value.match(MERMAID_TRANSFORM_RE);
+  if (!match) {
+    return null;
+  }
+
+  const x = Number.parseFloat(match[1] ?? "0");
+  const y = Number.parseFloat(match[2] ?? "0");
+  const scale = Number.parseFloat(match[3] ?? "1");
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(scale) || scale <= 0) {
+    return null;
+  }
+
+  return { x, y, scale };
+}
+
+function formatMermaidTransform(x: number, y: number, scale: number): string {
+  return `translate(${x}px, ${y}px) scale(${scale})`;
+}
+
+function clampMermaidPanElement(panElement: HTMLElement) {
+  const mermaidElement = panElement.closest<HTMLElement>("[data-streamdown='mermaid']");
+  const diagramElement = panElement.querySelector<HTMLElement>("[role='img']");
+  if (!mermaidElement || !diagramElement) {
+    return;
+  }
+
+  const transform = parseMermaidTransform(panElement.style.transform);
+  if (!transform) {
+    return;
+  }
+
+  const viewportRect = mermaidElement.getBoundingClientRect();
+  const diagramRect = diagramElement.getBoundingClientRect();
+  if (viewportRect.width <= 0 || viewportRect.height <= 0 || diagramRect.width <= 0 || diagramRect.height <= 0) {
+    return;
+  }
+
+  const unscaledWidth = diagramRect.width / transform.scale;
+  const unscaledHeight = diagramRect.height / transform.scale;
+  const scaledWidth = unscaledWidth * transform.scale;
+  const scaledHeight = unscaledHeight * transform.scale;
+  const maxX = Math.max(0, (scaledWidth - viewportRect.width) / 2 + MERMAID_PAN_TOLERANCE_PX);
+  const maxY = Math.max(0, (scaledHeight - viewportRect.height) / 2 + MERMAID_PAN_TOLERANCE_PX);
+  const clampedX = Math.round(clampNumber(transform.x, -maxX, maxX) * 100) / 100;
+  const clampedY = Math.round(clampNumber(transform.y, -maxY, maxY) * 100) / 100;
+
+  if (clampedX !== transform.x || clampedY !== transform.y) {
+    panElement.style.transform = formatMermaidTransform(clampedX, clampedY, transform.scale);
+  }
+}
+
+function clampMermaidPanElements(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>("[data-streamdown='mermaid'] [role='application']").forEach(clampMermaidPanElement);
+}
+
+function useBoundedMermaidPan(rootRef: React.RefObject<HTMLDivElement | null>, contentVersion: string, renderVersion: unknown) {
+  React.useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+
+    let animationFrame = 0;
+    const scheduleClamp = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => clampMermaidPanElements(root));
+    };
+
+    const observer = new MutationObserver(scheduleClamp);
+    observer.observe(root, {
+      attributeFilter: ["style"],
+      attributes: true,
+      subtree: true,
+    });
+
+    root.addEventListener("pointermove", scheduleClamp, true);
+    root.addEventListener("pointerup", scheduleClamp, true);
+    root.addEventListener("wheel", scheduleClamp, true);
+    root.addEventListener("click", scheduleClamp, true);
+    window.addEventListener("resize", scheduleClamp);
+    scheduleClamp();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+      root.removeEventListener("pointermove", scheduleClamp, true);
+      root.removeEventListener("pointerup", scheduleClamp, true);
+      root.removeEventListener("wheel", scheduleClamp, true);
+      root.removeEventListener("click", scheduleClamp, true);
+      window.removeEventListener("resize", scheduleClamp);
+    };
+  }, [contentVersion, renderVersion, rootRef]);
 }
 
 function getInitialStreamdownPlugins(features: StreamdownFeatureFlags): PluginConfig {
@@ -1440,6 +1544,7 @@ export const StreamdownRender = React.memo(function StreamdownRender({
     contentVersion: normalizedContent,
     renderVersion: plugins,
   });
+  useBoundedMermaidPan(latexRootRef, normalizedContent, plugins);
   const thinkingSegments = React.useMemo(
     () => segments.filter((segment): segment is Extract<RenderSegment, { type: "thinking" }> => segment.type === "thinking"),
     [segments],
