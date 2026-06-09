@@ -129,7 +129,11 @@ wrappers server-renderable when possible.
   ordinary code examples borders, sunken backgrounds, padding, and preserved
   whitespace through global `.reply` CSS. Fenced Markdown code blocks should
   use the same formal surface treatment through `data-streamdown='code-block-body'`
-  so all ordinary code examples read consistently.
+  so all ordinary code examples read consistently. Raw HTML `code` nodes are
+  renderer-owned semantic HTML components, not Streamdown's Markdown code
+  component, so `CollapsibleCodePre` must render them into an explicit
+  `data-streamdown='code-block'` / `data-streamdown='code-block-body'`
+  structure instead of only cloning `data-block="true"` onto the child.
 - Raw HTML visual components may normalize renderer-owned color attributes into
   theme tokens during render, such as neutral SVG strokes becoming
   `var(--border)`. Ordinary semantic HTML inline styles should be stripped

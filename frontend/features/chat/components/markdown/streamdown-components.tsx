@@ -379,6 +379,15 @@ function ensureCodeBlockLanguage(
   });
 }
 
+function isRawHtmlCodeElement(child: React.ReactElement<StreamdownCodeChildProps>): boolean {
+  if (typeof child.type === "string") {
+    return child.type === "code";
+  }
+
+  const displayName = (child.type as { displayName?: string }).displayName;
+  return displayName === "HtmlVisualcode";
+}
+
 function getLineCount(value: string): number {
   if (!value) {
     return 0;
@@ -467,6 +476,48 @@ function CodeBlockActions({
         <CodeBlockActionButton label={commonActions("copy")} onClick={() => void handleCopy()}>
           {copied ? <Check className="size-3.5" strokeWidth={1.8} /> : <Copy className="size-3.5" strokeWidth={1.8} />}
         </CodeBlockActionButton>
+      </div>
+    </div>
+  );
+}
+
+function RawHtmlCodeBlock({
+  code,
+  codeClassName,
+  language,
+}: {
+  code: string;
+  codeClassName?: string;
+  language: string;
+}) {
+  return (
+    <div
+      className="my-4 flex w-full min-w-0 flex-col gap-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none ring-0"
+      data-language={language}
+      data-streamdown="code-block"
+    >
+      <div
+        className="mt-2 flex min-h-0 items-center justify-between gap-2 border-0 bg-transparent pb-6 text-[11px] font-medium tracking-[0.06em] text-muted-foreground/85 shadow-none"
+        data-language={language}
+        data-streamdown="code-block-header"
+      >
+        <span className="ml-1 font-mono lowercase">{language}</span>
+      </div>
+      <div
+        className="w-full min-w-0 overflow-x-auto rounded-lg border border-border/60 bg-muted/45 p-0 shadow-none"
+        data-language={language}
+        data-streamdown="code-block-body"
+      >
+        <pre className="m-0 block w-full min-w-0 overflow-x-auto overflow-y-hidden border-0 bg-transparent px-0 pt-0 pb-2 shadow-none outline-none ring-0">
+          <code
+            className={cn(
+              codeClassName,
+              "block w-max min-w-full max-w-none border-0 bg-transparent py-4 font-mono text-[13px] leading-5 text-foreground/92 shadow-none outline-none ring-0",
+            )}
+          >
+            {code}
+          </code>
+        </pre>
       </div>
     </div>
   );
@@ -691,7 +742,11 @@ export function CollapsibleCodePre({ children, className, ...props }: Collapsibl
     return children;
   }
 
-  const codeBlock = React.cloneElement(childElement, { "data-block": "true" });
+  const codeBlock = isRawHtmlCodeElement(childElement) ? (
+    <RawHtmlCodeBlock code={codeContent} codeClassName={childElement.props.className} language={language} />
+  ) : (
+    React.cloneElement(childElement, { "data-block": "true" })
+  );
 
   if (!isCollapsible) {
     return (
