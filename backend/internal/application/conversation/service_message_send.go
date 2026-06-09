@@ -1045,7 +1045,27 @@ func (s *Service) sendMessageInternal(
 		assistantText, nextNativeToolRows = syncUpstreamOutputTrace(traceRecorder, upstreamOutput, runID)
 		toolCallRows = append(toolCallRows, nextNativeToolRows...)
 	}
+	upstreamText := assistantText
 	assistantText = linkCitationMarkers(assistantText, upstreamOutput.Citations)
+	if input.HTMLVisualPromptEnabled {
+		s.logHTMLVisualRawResponse(ctx, htmlVisualRawResponseLogEntry{
+			RequestID:          input.RequestID,
+			ConversationID:     input.ConversationID,
+			UserID:             input.UserID,
+			UserMessageID:      userMessage.ID,
+			AssistantMessageID: assistantMessage.ID,
+			RunID:              runID,
+			PlatformModelName:  conversation.Model,
+			UpstreamName:       route.UpstreamName,
+			UpstreamProtocol:   route.Protocol,
+			UpstreamModel:      route.UpstreamModel,
+			ResponseID:         upstreamOutput.ResponseID,
+			CitationCount:      len(upstreamOutput.Citations),
+			StreamedText:       streamedText.String(),
+			UpstreamText:       upstreamText,
+			AssistantText:      assistantText,
+		})
+	}
 
 	effectiveInputTokens := totalUsage.InputTokens
 	if effectiveInputTokens <= 0 {

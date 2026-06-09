@@ -497,6 +497,8 @@ const KATEX_SAFE_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set([
   ...SAFE_HTML_STYLE_PROPERTIES,
   "top",
 ]);
+const EMPTY_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set();
+const PROGRESS_HTML_STYLE_PROPERTIES: ReadonlySet<string> = new Set(["--pct"]);
 const UNSAFE_STYLE_VALUE_RE = /(?:url\s*\(|expression\s*\(|javascript:|@import|[<>{}])/i;
 
 function isSafeHTMLStyleValue(value: string | number): boolean {
@@ -649,6 +651,31 @@ function normalizeHtmlVisualClassName(
     .filter((item, index, items) => HTML_VISUAL_SEMANTIC_CLASS_NAMES.has(item) && items.indexOf(item) === index);
   return semanticClassNames.length > 0 ? semanticClassNames.join(" ") : undefined;
 }
+
+function hasHtmlVisualClassName(className: unknown, expectedClassName: string): boolean {
+  return (
+    typeof className === "string" &&
+    className
+      .trim()
+      .split(/\s+/)
+      .includes(expectedClassName)
+  );
+}
+
+function getHtmlVisualSafeStyleProperties(
+  tag: string,
+  className: unknown,
+  style: React.CSSProperties | string | undefined,
+): ReadonlySet<string> {
+  if (tag === "span" && isKatexSpan(className, style)) {
+    return KATEX_SAFE_HTML_STYLE_PROPERTIES;
+  }
+  if (hasHtmlVisualClassName(className, "progress-bar")) {
+    return PROGRESS_HTML_STYLE_PROPERTIES;
+  }
+  return EMPTY_HTML_STYLE_PROPERTIES;
+}
+
 const FENCED_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)(?!\s*(?:mermaid|mmd)\b)[^\n]*(?:\n|$)/i;
 const MERMAID_CODE_BLOCK_RE = /(?:^|\n)[ \t]*(?:```|~~~)\s*(?:mermaid|mmd)\b/i;
 const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[a-z*]+\}/i;
@@ -975,10 +1002,7 @@ function createHtmlVisualComponent(tag: string) {
   }: HtmlVisualComponentProps) {
     const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
     const normalizedProps: Record<string, unknown> = { ...props };
-    const safeProperties =
-      tag === "span" && isKatexSpan(props.className, style)
-        ? KATEX_SAFE_HTML_STYLE_PROPERTIES
-        : SAFE_HTML_STYLE_PROPERTIES;
+    const safeProperties = getHtmlVisualSafeStyleProperties(tag, props.className, style);
     const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
       style,
       inheritedDarkSurfaceNormalized,
@@ -1019,9 +1043,11 @@ function MarkdownVisualLink({
   ...props
 }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string; style?: React.CSSProperties | string }) {
   const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  const safeProperties = getHtmlVisualSafeStyleProperties("a", props.className, style);
   const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
     style,
     inheritedDarkSurfaceNormalized,
+    safeProperties,
   );
   const element = (
     <MarkdownLink
@@ -1042,11 +1068,12 @@ function MarkdownVisualImage({
   ...props
 }: React.ImgHTMLAttributes<HTMLImageElement> & { alt?: string; src?: string; style?: React.CSSProperties | string }) {
   const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  const safeProperties = getHtmlVisualSafeStyleProperties("img", props.className, style);
   return (
     <MarkdownImage
       {...props}
       className={normalizeHtmlVisualClassName("img", props.className, style)}
-      style={normalizeHtmlVisualStyle(style, inheritedDarkSurfaceNormalized)}
+      style={normalizeHtmlVisualStyle(style, inheritedDarkSurfaceNormalized, safeProperties)}
     />
   );
 }
@@ -1056,9 +1083,11 @@ function MarkdownVisualParagraph({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement> & { style?: React.CSSProperties | string }) {
   const inheritedDarkSurfaceNormalized = React.useContext(HtmlVisualToneContext);
+  const safeProperties = getHtmlVisualSafeStyleProperties("p", props.className, style);
   const { darkSurfaceNormalized, style: normalizedStyle } = normalizeHtmlVisualStyleWithTone(
     style,
     inheritedDarkSurfaceNormalized,
+    safeProperties,
   );
   const element = (
     <MarkdownParagraph
@@ -1089,9 +1118,10 @@ const BASE_MARKDOWN_CLASSNAME = cn(
   "[&_span]:max-w-full [&_span]:[overflow-wrap:anywhere]",
   "[&_[data-streamdown='mermaid-block']]:my-4 [&_[data-streamdown='mermaid-block']]:flex [&_[data-streamdown='mermaid-block']]:!w-full [&_[data-streamdown='mermaid-block']]:min-w-0 [&_[data-streamdown='mermaid-block']]:gap-2 [&_[data-streamdown='mermaid-block']]:rounded-none [&_[data-streamdown='mermaid-block']]:border-0 [&_[data-streamdown='mermaid-block']]:bg-transparent [&_[data-streamdown='mermaid-block']]:p-0 [&_[data-streamdown='mermaid-block']]:shadow-none",
   "[&_[data-streamdown='mermaid-block']>div:last-child]:!w-full [&_[data-streamdown='mermaid-block']>div:last-child]:min-w-0 [&_[data-streamdown='mermaid-block']>div:last-child]:rounded-none [&_[data-streamdown='mermaid-block']>div:last-child]:border-0 [&_[data-streamdown='mermaid-block']>div:last-child]:bg-transparent [&_[data-streamdown='mermaid-block']>div:last-child]:p-0 [&_[data-streamdown='mermaid-block']>div:last-child]:shadow-none",
-  "[&_[data-streamdown='mermaid']]:my-0 [&_[data-streamdown='mermaid']]:block [&_[data-streamdown='mermaid']]:!w-full [&_[data-streamdown='mermaid']]:max-h-[280px] [&_[data-streamdown='mermaid']]:min-w-0 [&_[data-streamdown='mermaid']]:overflow-hidden [&_[data-streamdown='mermaid']]:rounded-none [&_[data-streamdown='mermaid']]:border-0 [&_[data-streamdown='mermaid']]:bg-transparent [&_[data-streamdown='mermaid']]:shadow-none",
-  "[&_[data-streamdown='mermaid']>div]:!w-full [&_[data-streamdown='mermaid']>div]:max-w-none [&_[data-streamdown='mermaid']>div]:min-w-0",
-  "[&_[data-streamdown='mermaid']_svg]:mx-auto [&_[data-streamdown='mermaid']_svg]:block [&_[data-streamdown='mermaid']_svg]:h-auto [&_[data-streamdown='mermaid']_svg]:max-h-[280px] [&_[data-streamdown='mermaid']_svg]:max-w-full [&_[data-streamdown='mermaid']_svg]:bg-transparent",
+  "[&_[data-streamdown='mermaid']]:my-0 [&_[data-streamdown='mermaid']]:block [&_[data-streamdown='mermaid']]:!w-full [&_[data-streamdown='mermaid']]:min-h-[360px] [&_[data-streamdown='mermaid']]:max-h-[72vh] [&_[data-streamdown='mermaid']]:min-w-0 [&_[data-streamdown='mermaid']]:overflow-auto [&_[data-streamdown='mermaid']]:rounded-none [&_[data-streamdown='mermaid']]:border-0 [&_[data-streamdown='mermaid']]:bg-transparent [&_[data-streamdown='mermaid']]:shadow-none",
+  "[&_[data-streamdown='mermaid']>div]:!w-full [&_[data-streamdown='mermaid']>div]:max-w-none [&_[data-streamdown='mermaid']>div]:min-h-[360px] [&_[data-streamdown='mermaid']>div]:min-w-0 [&_[data-streamdown='mermaid']>div]:!overflow-auto",
+  "[&_[data-streamdown='mermaid']>div>div:last-child]:!min-w-max [&_[data-streamdown='mermaid']>div>div:last-child]:!items-start [&_[data-streamdown='mermaid']>div>div:last-child]:!justify-start",
+  "[&_[data-streamdown='mermaid']_svg]:mx-0 [&_[data-streamdown='mermaid']_svg]:block [&_[data-streamdown='mermaid']_svg]:h-auto [&_[data-streamdown='mermaid']_svg]:max-h-none [&_[data-streamdown='mermaid']_svg]:min-w-[720px] [&_[data-streamdown='mermaid']_svg]:max-w-none [&_[data-streamdown='mermaid']_svg]:bg-transparent md:[&_[data-streamdown='mermaid']_svg]:min-w-[960px]",
   "[&_[data-streamdown='mermaid']>div>div:first-child]:!left-0 [&_[data-streamdown='mermaid']>div>div:first-child]:rounded-none [&_[data-streamdown='mermaid']>div>div:first-child]:border-0 [&_[data-streamdown='mermaid']>div>div:first-child]:bg-transparent [&_[data-streamdown='mermaid']>div>div:first-child]:p-0 [&_[data-streamdown='mermaid']>div>div:first-child]:shadow-none [&_[data-streamdown='mermaid']>div>div:first-child]:backdrop-blur-none",
   "[&_[data-streamdown='mermaid-block-actions']]:gap-2 [&_[data-streamdown='mermaid-block-actions']]:border-0 [&_[data-streamdown='mermaid-block-actions']]:rounded-none [&_[data-streamdown='mermaid-block-actions']]:bg-transparent [&_[data-streamdown='mermaid-block-actions']]:p-0 [&_[data-streamdown='mermaid-block-actions']]:shadow-none [&_[data-streamdown='mermaid-block-actions']]:backdrop-blur-none",
   "[&_[data-streamdown='mermaid-block-actions']_svg]:size-3",

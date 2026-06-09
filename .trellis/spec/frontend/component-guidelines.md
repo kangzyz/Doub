@@ -61,14 +61,26 @@ wrappers server-renderable when possible.
   fragments as preview artifacts, and the artifact workspace must not
   auto-open for streamed HTML visual replies. Keep full standalone HTML pages or
   explicit demos as fenced source that users can preview manually.
+- Mermaid diagrams inside chat should render as readable canvases, not thumbnail
+  code previews. Avoid small fixed caps that compress long horizontal diagrams;
+  prefer a generous viewport, intrinsic SVG width, and scroll/pan behavior so
+  flowcharts remain legible without rewriting the generated diagram.
 - `streamdown-content.ts` may normalize model mistakes only when the content
   clearly contains the approved semantic HTML classes. It can unwrap fenced
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,
   `.pros`, `.cons`, `.card`, etc. fragments and no full-document or executable
-  tags, and it can compact blank lines before 4-space-indented HTML child tags
-  and reduce 4+ space indentation before HTML tag lines so CommonMark does not
-  turn them into indented code blocks. Do not generalize this into arbitrary
-  code-fence unwrapping; normal source/demo code blocks must stay code.
+  tags, including a trailing unclosed semantic fence during streaming. It can
+  unwrap raw `<pre><code class="language-markdown|html|text">` blocks only when
+  their decoded body is semantic visual HTML, and can convert raw
+  `<pre><code class="language-mermaid">` visual diagrams into fenced Mermaid so
+  the Mermaid plugin renders them. It can compact blank lines before
+  4-space-indented HTML child tags and reduce 4+ space indentation before HTML
+  tag lines outside raw `<pre>` content so CommonMark does not turn semantic
+  child blocks into indented code blocks. It can wrap a bare all-HTML semantic
+  fragment in `<div class="reply">...</div>` so historical or partially
+  compliant replies still receive the `.reply` CSS contract. Do not generalize
+  this into arbitrary code-fence unwrapping; normal source/demo code blocks must
+  stay code.
 - Source/citation chips inside semantic HTML must come from real anchors that
   the renderer can identify as citations: external `href` plus visible text
   `[N]`, `【N】`, or `N`. A static visual badge such as
@@ -97,17 +109,17 @@ wrappers server-renderable when possible.
   `src`, and code `className` / `metastring`.
 - Inline `style` remains a compatibility exception, not the design surface for
   new visual prompts. The semantic prompt only permits `style="--pct:75%"` on
-  progress bars; if more inline style exceptions are needed, add a targeted
-  sanitizer rule and a clear reason instead of widening the whole style
-  allowlist.
-- Raw HTML visual components should normalize obvious hard-coded neutral inline
-  colors into theme tokens during render. Examples: light neutral backgrounds
-  become `var(--card)`, dark neutral backgrounds become `var(--muted)`, dark
-  neutral text becomes `var(--foreground)`, and neutral borders become
-  `var(--border)`. When a dark neutral parent surface is normalized, normalize
-  hard-coded light neutral descendant text as well so white/gray text does not
-  become low-contrast on the softened surface. Do not globally override colored
-  accents or charts with `!important` dark-mode CSS.
+  `.progress-bar`; ordinary semantic HTML nodes should have style stripped so
+  spacing and color stay in global CSS. KaTeX renderer-owned spans are the other
+  narrow exception for formula layout. If more inline style exceptions are
+  needed, add a targeted sanitizer rule and a clear reason instead of widening
+  the whole style allowlist.
+- Raw HTML visual components may normalize renderer-owned color attributes into
+  theme tokens during render, such as neutral SVG strokes becoming
+  `var(--border)`. Ordinary semantic HTML inline styles should be stripped
+  instead of normalized; spacing, surfaces, and text color belong in
+  `globals.css`. Do not globally override colored accents or charts with
+  `!important` dark-mode CSS.
 - KaTeX output is renderer-owned structure, not ordinary prose HTML. Its nested
   `span` tree uses classes such as `katex`, `mord`, `vlist`, `reset-size*`, and
   inline `top` offsets for formula layout. Do not apply generic Markdown span

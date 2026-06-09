@@ -48,6 +48,8 @@ const INLINE_DOLLAR_MATH_RE = /(^|[^\\$])\$([^$\n]{1,800})\$/g;
 const ESCAPED_INLINE_DOLLAR_MATH_RE = /\\\$([^$\n]{1,400})\\\$/g;
 const DISPLAY_DOLLAR_MATH_RE = /(\${2,})([\s\S]*?)(\1)/g;
 const SEMANTIC_HTML_FENCE_RE = /(^|\n)([ \t]*)(```|~~~)([^\n]*)\n([\s\S]*?)\n[ \t]*\3[ \t]*(?=\n|$)/g;
+const SEMANTIC_HTML_OPEN_FENCE_RE = /(^|\n)([ \t]*)(```|~~~)([^\n]*)\n([\s\S]*)$/;
+const SEMANTIC_HTML_RAW_CODE_BLOCK_RE = /<pre\b[^>]*>\s*<code\b([^>]*)>([\s\S]*?)<\/code>\s*<\/pre>/gi;
 const SEMANTIC_HTML_TAG_RE = /<\s*(?:a|abbr|article|aside|blockquote|cite|code|dd|del|details|div|dl|dt|em|figure|figcaption|h[1-6]|hr|ins|kbd|li|mark|ol|p|pre|section|small|span|strong|sub|summary|sup|table|tbody|td|tfoot|th|thead|tr|ul)\b[^>]*>/i;
 const UNSAFE_SEMANTIC_HTML_TAG_RE = /<\/?\s*(?:body|button|embed|form|head|html|iframe|input|link|meta|object|script|select|style|textarea)\b/i;
 const SEMANTIC_HTML_FENCE_LANGUAGES: ReadonlySet<string> = new Set([
@@ -59,6 +61,10 @@ const SEMANTIC_HTML_FENCE_LANGUAGES: ReadonlySet<string> = new Set([
   "plain",
   "text",
 ]);
+const SEMANTIC_HTML_RAW_CODE_LANGUAGES: ReadonlySet<string> = new Set(["htm", "html", "markdown", "md", "plain", "text"]);
+const MERMAID_CODE_LANGUAGES: ReadonlySet<string> = new Set(["mermaid", "mmd"]);
+const MERMAID_DIAGRAM_RE =
+  /^\s*(?:architecture-beta|block-beta|classDiagram(?:-v2)?|erDiagram|flowchart|gantt|gitGraph|graph|journey|mindmap|packet-beta|pie|quadrantChart|sankey-beta|sequenceDiagram|stateDiagram(?:-v2)?|timeline|xychart-beta)\b/i;
 const SEMANTIC_HTML_CLASS_NAMES: ReadonlySet<string> = new Set([
   "badge",
   "badge-b",
@@ -166,6 +172,18 @@ function hasSemanticHtmlClass(source: string): boolean {
   return false;
 }
 
+function hasSemanticHtmlClassName(source: string, expectedClassName: string): boolean {
+  const classAttributeRe = /\bclass(?:Name)?\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  let match: RegExpExecArray | null;
+  while ((match = classAttributeRe.exec(source)) !== null) {
+    const classValue = match[1] ?? match[2] ?? "";
+    if (classValue.trim().split(/\s+/).includes(expectedClassName)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function looksLikeSemanticHtmlFragment(source: string): boolean {
   const trimmedSource = source.trim();
   return (
@@ -201,23 +219,113 @@ function dedentSemanticHtmlFragment(source: string): string {
 }
 
 function compactSemanticHtmlBlockSpacing(source: string): string {
-  if (!source.includes("\n") || /<\s*pre\b/i.test(source)) {
+  if (!source.includes("\n")) {
     return source;
   }
 
-  return source.replace(/\n[ \t]*\n(?=[ \t]{4,}<\/?[a-z][\w:-]*\b[^>\n]*>)/gi, "\n");
+  return mapOutsideRawHtmlPreBlocks(source, (fragment) =>
+    fragment.replace(/\n[ \t]*\n(?=[ \t]{4,}<\/?[a-z][\w:-]*\b[^>\n]*>)/gi, "\n"),
+  );
 }
 
 function normalizeSemanticHtmlTagIndentation(source: string): string {
-  if (!source.includes("\n") || /<\s*pre\b/i.test(source)) {
+  if (!source.includes("\n")) {
     return source;
   }
 
-  return source.replace(/^[ \t]{4,}(?=<\/?[a-z][\w:-]*\b[^>\n]*>)/gim, "  ");
+  return mapOutsideRawHtmlPreBlocks(source, (fragment) =>
+    fragment.replace(/^[ \t]{4,}(?=<\/?[a-z][\w:-]*\b[^>\n]*>)/gim, "  "),
+  );
 }
 
 function normalizeSemanticHtmlFragmentBody(source: string): string {
   return normalizeSemanticHtmlTagIndentation(compactSemanticHtmlBlockSpacing(dedentSemanticHtmlFragment(source)));
+}
+
+function mapOutsideRawHtmlPreBlocks(source: string, transform: (fragment: string) => string): string {
+  if (!/<\s*pre\b/i.test(source)) {
+    return transform(source);
+  }
+
+  const preBlockRe = /<pre\b[\s\S]*?<\/pre>/gi;
+  let result = "";
+  let consumedUntil = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = preBlockRe.exec(source)) !== null) {
+    result += transform(source.slice(consumedUntil, match.index));
+    result += match[0];
+    consumedUntil = match.index + match[0].length;
+  }
+
+  const tail = source.slice(consumedUntil);
+  const openPreIndex = tail.search(/<\s*pre\b/i);
+  if (openPreIndex >= 0) {
+    return `${result}${transform(tail.slice(0, openPreIndex))}${tail.slice(openPreIndex)}`;
+  }
+
+  return result + transform(tail);
+}
+
+function decodeHtmlCodeContent(source: string): string {
+  if (!source.includes("&")) {
+    return source;
+  }
+
+  return source.replace(
+    /&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi,
+    (match, decimal: string | undefined, hex: string | undefined, named: string | undefined) => {
+      if (decimal || hex) {
+        const codePoint = Number.parseInt(decimal ?? hex ?? "", decimal ? 10 : 16);
+        return Number.isFinite(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+          ? String.fromCodePoint(codePoint)
+          : match;
+      }
+
+      switch (named?.toLowerCase()) {
+        case "amp":
+          return "&";
+        case "apos":
+          return "'";
+        case "gt":
+          return ">";
+        case "lt":
+          return "<";
+        case "quot":
+          return "\"";
+        default:
+          return match;
+      }
+    },
+  );
+}
+
+function getRawCodeLanguage(codeAttributes: string): string {
+  const classMatch = codeAttributes.match(/\bclass(?:Name)?\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  const className = classMatch?.[1] ?? classMatch?.[2] ?? "";
+  return className.match(/(?:^|\s)language-([a-z0-9_-]+)(?:\s|$)/i)?.[1]?.toLowerCase() ?? "";
+}
+
+function normalizeMermaidCodeFenceBody(source: string): string {
+  return source.replace(/^\s*\n/, "").replace(/\s*$/, "");
+}
+
+function normalizeSemanticHtmlRawCodeBlocks(source: string): string {
+  if (!/<\s*pre\b/i.test(source) || !/<\s*code\b/i.test(source)) {
+    return source;
+  }
+
+  return source.replace(SEMANTIC_HTML_RAW_CODE_BLOCK_RE, (match: string, codeAttributes: string, body: string) => {
+    const language = getRawCodeLanguage(codeAttributes);
+    const decodedBody = decodeHtmlCodeContent(body);
+    if (SEMANTIC_HTML_RAW_CODE_LANGUAGES.has(language) && looksLikeSemanticHtmlFragment(decodedBody)) {
+      return normalizeSemanticHtmlFragmentBody(decodedBody);
+    }
+    if (MERMAID_CODE_LANGUAGES.has(language) && MERMAID_DIAGRAM_RE.test(decodedBody)) {
+      return `\n\n\`\`\`mermaid\n${normalizeMermaidCodeFenceBody(decodedBody)}\n\`\`\`\n\n`;
+    }
+    return match;
+  });
 }
 
 function normalizeSemanticHtmlCodeFences(source: string): string {
@@ -225,8 +333,18 @@ function normalizeSemanticHtmlCodeFences(source: string): string {
     return source;
   }
 
-  return source.replace(
+  const normalizedClosedFences = source.replace(
     SEMANTIC_HTML_FENCE_RE,
+    (match: string, prefix: string, _indent: string, _fence: string, info: string, body: string) => {
+      if (!isSemanticHtmlFenceLanguage(info) || !looksLikeSemanticHtmlFragment(body)) {
+        return match;
+      }
+      return `${prefix}${normalizeSemanticHtmlFragmentBody(body)}`;
+    },
+  );
+
+  return normalizedClosedFences.replace(
+    SEMANTIC_HTML_OPEN_FENCE_RE,
     (match: string, prefix: string, _indent: string, _fence: string, info: string, body: string) => {
       if (!isSemanticHtmlFenceLanguage(info) || !looksLikeSemanticHtmlFragment(body)) {
         return match;
@@ -248,12 +366,30 @@ function normalizeSemanticHtmlIndentedBlocks(source: string): string {
   );
 }
 
+function wrapBareSemanticHtmlFragment(source: string): string {
+  const trimmedSource = source.trim();
+  if (
+    !trimmedSource ||
+    !trimmedSource.startsWith("<") ||
+    hasSemanticHtmlClassName(trimmedSource, "reply") ||
+    !looksLikeSemanticHtmlFragment(trimmedSource)
+  ) {
+    return source;
+  }
+
+  const startIndex = source.indexOf(trimmedSource);
+  const endIndex = startIndex + trimmedSource.length;
+  return `${source.slice(0, startIndex)}<div class="reply">\n${trimmedSource}\n</div>${source.slice(endIndex)}`;
+}
+
 export function normalizeSemanticHtmlFragments(source: string): string {
   if (!source || !source.includes("class")) {
     return source;
   }
 
-  return normalizeSemanticHtmlIndentedBlocks(normalizeSemanticHtmlCodeFences(source));
+  return wrapBareSemanticHtmlFragment(
+    normalizeSemanticHtmlIndentedBlocks(normalizeSemanticHtmlRawCodeBlocks(normalizeSemanticHtmlCodeFences(source))),
+  );
 }
 
 function looksLikeLatexMathContent(value: string): boolean {
