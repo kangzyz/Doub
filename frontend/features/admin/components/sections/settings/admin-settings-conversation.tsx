@@ -441,12 +441,19 @@ generationConfig.safetySettings.threshold`}
 	  ],
 	  "openai_chat_completions": [
     "service_tier",
+    "reasoning.effort",
+    "reasoning_effort",
     "thinking.type"
   ],
   "anthropic_messages": [
     "speed",
+    "output_config.effort",
     "thinking.type",
     "thinking.budget_tokens"
+  ],
+  "gemini_generate_content": [
+    "generationConfig.thinkingConfig.thinkingBudget",
+    "generationConfig.thinkingConfig.thinkingLevel"
   ]
 }`}
                 </pre>

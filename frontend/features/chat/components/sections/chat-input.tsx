@@ -72,7 +72,6 @@ type ChatInputProps = {
   maxSelectedTools: number;
   toolsLoading: boolean;
   options: ConversationOptions;
-  defaultOptions: ConversationOptions;
   modelOptionPolicy: ModelOptionPolicy | null;
   modelLoading: boolean;
   modelDisabled?: boolean;
@@ -174,7 +173,6 @@ function ChatInputComponent({
   maxSelectedTools,
   toolsLoading,
   options,
-  defaultOptions,
   modelOptionPolicy,
   modelLoading,
   modelDisabled = false,
@@ -226,6 +224,7 @@ function ChatInputComponent({
     [modelOptions, selectedPlatformModelName],
   );
   const selectedProtocol = selectedModel?.protocols[0]?.trim() ?? "";
+  const selectedVendor = selectedModel?.vendor?.trim() ?? "";
   const selectedModelName = selectedModel?.platformModelName || selectedPlatformModelName;
   const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
   const submitTask = submitDecision.task;
@@ -481,9 +480,9 @@ function ChatInputComponent({
               <ChatModelConfig
                 disabled={sending || loading || uploading || modelLoading}
                 options={options}
-                defaultOptions={defaultOptions}
                 modelOptionPolicy={modelOptionPolicy}
                 selectedProtocol={selectedProtocol}
+                selectedVendor={selectedVendor}
                 selectedModelName={selectedModelName}
                 isMediaMode={isMediaMode}
                 onOptionsChange={onOptionsChange}

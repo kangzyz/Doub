@@ -35,10 +35,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  cloneConversationOptions,
   isConversationOptionsObject,
   sanitizeConversationOptions,
 } from "@/features/chat/model/conversation-options";
+import { normalizeReasoningOptionsForContext } from "@/features/chat/model/reasoning-options";
 import { useSidebarRecents } from "@/features/recent/context/sidebar-recents-context";
 import { useChatData } from "@/features/chat/hooks/use-chat-data";
 import { toPendingAttachment } from "@/features/chat/model/message-submit";
@@ -76,7 +76,12 @@ function writeCachedModelOptions(platformModelName: string, options: Conversatio
     return;
   }
   try {
-    window.localStorage.setItem(modelOptionsStorageKey(platformModelName), JSON.stringify(sanitizeConversationOptions(options)));
+    const normalized = sanitizeConversationOptions(options);
+    if (Object.keys(normalized).length === 0) {
+      window.localStorage.removeItem(modelOptionsStorageKey(platformModelName));
+      return;
+    }
+    window.localStorage.setItem(modelOptionsStorageKey(platformModelName), JSON.stringify(normalized));
   } catch {
     // localStorage may be unavailable in private browsing or strict environments.
   }
@@ -207,6 +212,9 @@ export function AppChatArea() {
     () => modelOptions.find((item) => item.platformModelName === selectedPlatformModelName) ?? null,
     [modelOptions, selectedPlatformModelName],
   );
+  const selectedModelName = selectedModel?.platformModelName.trim() || "";
+  const selectedModelProtocol = selectedModel?.protocols[0]?.trim() ?? "";
+  const selectedModelVendor = selectedModel?.vendor?.trim() ?? "";
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
   const [options, setOptions] = React.useState<ConversationOptions>({});
   const [availableTools, setAvailableTools] = React.useState<MCPToolDTO[]>([]);
@@ -225,43 +233,71 @@ export function AppChatArea() {
   }, [mcpMaxSelectedTools]);
 
   React.useEffect(() => {
-    const platformModelName = selectedModel?.platformModelName.trim() || "";
-    if (!platformModelName) {
+    if (!selectedModelName) {
       initializedOptionsModelRef.current = "";
       setOptions({});
       return;
     }
-    if (initializedOptionsModelRef.current === platformModelName) {
+    const policySignature = [
+      modelOptionPolicy?.mode ?? "",
+      modelOptionPolicy?.allowedPathsJSON ?? "",
+      modelOptionPolicy?.deniedPathsJSON ?? "",
+    ].join("\n");
+    const initializationKey = [
+      selectedModelName,
+      selectedModelProtocol,
+      selectedModelVendor,
+      policySignature,
+    ].join("\n");
+    if (initializedOptionsModelRef.current === initializationKey) {
       return;
     }
-    initializedOptionsModelRef.current = platformModelName;
-    const cachedOptions = readCachedModelOptions(platformModelName);
-    setOptions(cloneConversationOptions(cachedOptions ?? selectedModel.defaultOptions));
-  }, [selectedModel]);
+    initializedOptionsModelRef.current = initializationKey;
+    const cachedOptions = readCachedModelOptions(selectedModelName);
+    const normalized = normalizeReasoningOptionsForContext(
+      {
+        protocol: selectedModelProtocol,
+        vendor: selectedModelVendor,
+        modelName: selectedModelName,
+        modelOptionPolicy,
+      },
+      cachedOptions ?? {},
+    );
+    if (cachedOptions) {
+      writeCachedModelOptions(selectedModelName, normalized);
+    }
+    setOptions(normalized);
+  }, [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor]);
 
   const setModelOptions = React.useCallback(
     (action: React.SetStateAction<ConversationOptions>) => {
       setOptions((previous) => {
         const next = typeof action === "function" ? action(previous) : action;
-        const normalized = isConversationOptionsObject(next) ? sanitizeConversationOptions(next) : {};
-        const platformModelName = selectedModel?.platformModelName.trim() || "";
-        if (platformModelName) {
-          writeCachedModelOptions(platformModelName, normalized);
+        const sanitized = isConversationOptionsObject(next) ? sanitizeConversationOptions(next) : {};
+        const normalized = normalizeReasoningOptionsForContext(
+          {
+            protocol: selectedModelProtocol,
+            vendor: selectedModelVendor,
+            modelName: selectedModelName,
+            modelOptionPolicy,
+          },
+          sanitized,
+        );
+        if (selectedModelName) {
+          writeCachedModelOptions(selectedModelName, normalized);
         }
         return normalized;
       });
     },
-    [selectedModel?.platformModelName],
+    [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor],
   );
 
   const resetModelOptions = React.useCallback(() => {
-    const platformModelName = selectedModel?.platformModelName.trim() || "";
-    const defaults = cloneConversationOptions(selectedModel?.defaultOptions ?? {});
-    if (platformModelName) {
-      removeCachedModelOptions(platformModelName);
+    if (selectedModelName) {
+      removeCachedModelOptions(selectedModelName);
     }
-    setOptions(defaults);
-  }, [selectedModel]);
+    setOptions({});
+  }, [selectedModelName]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -633,9 +669,6 @@ export function AppChatArea() {
   }, [artifactWorkspace]);
 
   const effectiveOptions = modelOptionPolicyDisabled ? EMPTY_CONVERSATION_OPTIONS : options;
-  const selectedModelDefaultOptions = modelOptionPolicyDisabled
-    ? EMPTY_CONVERSATION_OPTIONS
-    : (selectedModel?.defaultOptions ?? EMPTY_CONVERSATION_OPTIONS);
 
   const chatInputProps = {
     draft,
@@ -657,7 +690,6 @@ export function AppChatArea() {
     maxSelectedTools: mcpMaxSelectedTools,
     toolsLoading,
     options: effectiveOptions,
-    defaultOptions: selectedModelDefaultOptions,
     modelOptionPolicy,
     modelLoading: modelsLoading,
     onDraftChange: setDraft,

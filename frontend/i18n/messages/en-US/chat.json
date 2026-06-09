@@ -338,6 +338,24 @@
     "screenshot": "Screenshot",
     "openTools": "Open tools",
     "modelOptions": "Parameters",
+    "thinkingMode": "Thinking mode",
+    "thinkingModeSelected": "Thinking mode: {mode}",
+    "thinkingModes": {
+      "default": "Default",
+      "off": "Off",
+      "float": "Light",
+      "consider": "Balanced",
+      "deep": "Deep",
+      "exhaustive": "Exhaustive"
+    },
+    "thinkingModeDescriptions": {
+      "default": "Use model defaults",
+      "off": "Disable reasoning",
+      "float": "Low reasoning effort",
+      "consider": "Medium reasoning effort",
+      "deep": "High reasoning effort",
+      "exhaustive": "Ultra-high reasoning effort"
+    },
     "mcpTools": "MCP tools",
     "mcpToolsSelected": "{count} tools enabled",
     "clear": "Clear",

@@ -101,6 +101,10 @@ func TestFilterModelOptionsDenylistAllowsUnlistedAndRemovesDenied(t *testing.T) 
 
 func TestFilterModelOptionsOpenAIChatCompletionsAllowsThinkingType(t *testing.T) {
 	filtered := filterModelOptions(map[string]interface{}{
+		"reasoning": map[string]interface{}{
+			"effort": "high",
+			"extra":  true,
+		},
 		"thinking": map[string]interface{}{
 			"type":          "enabled",
 			"budget_tokens": 1024,
@@ -118,6 +122,64 @@ func TestFilterModelOptionsOpenAIChatCompletionsAllowsThinkingType(t *testing.T)
 	if _, ok := thinking["budget_tokens"]; ok {
 		t.Fatalf("expected unlisted thinking.budget_tokens to be removed for chat completions, got %#v", filtered)
 	}
+	reasoning := filtered["reasoning"].(map[string]interface{})
+	if reasoning["effort"] != "high" {
+		t.Fatalf("expected reasoning.effort to pass for OpenAI-compatible chat, got %#v", filtered)
+	}
+	if _, ok := reasoning["extra"]; ok {
+		t.Fatalf("expected unlisted reasoning.extra to be removed for chat completions, got %#v", filtered)
+	}
+}
+
+func TestFilterModelOptionsAllowsReasoningPresetPaths(t *testing.T) {
+	t.Run("anthropic output_config effort", func(t *testing.T) {
+		filtered := filterModelOptions(map[string]interface{}{
+			"output_config": map[string]interface{}{
+				"effort": "high",
+				"extra":  true,
+			},
+			"thinking": map[string]interface{}{
+				"type": "adaptive",
+			},
+		}, llm.AdapterAnthropicMessages, modelOptionPolicyConfig{
+			Mode:             modelOptionPolicyAllowlist,
+			AllowedPathsJSON: config.DefaultModelOptionAllowedPathsJSON(),
+			DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+		})
+
+		outputConfig := filtered["output_config"].(map[string]interface{})
+		if outputConfig["effort"] != "high" {
+			t.Fatalf("expected output_config.effort to pass, got %#v", filtered)
+		}
+		if _, ok := outputConfig["extra"]; ok {
+			t.Fatalf("expected unlisted output_config.extra to be removed, got %#v", filtered)
+		}
+	})
+
+	t.Run("gemini thinking config", func(t *testing.T) {
+		filtered := filterModelOptions(map[string]interface{}{
+			"generationConfig": map[string]interface{}{
+				"thinkingConfig": map[string]interface{}{
+					"thinkingBudget": 4096,
+					"thinkingLevel":  "HIGH",
+					"includeThoughts": true,
+				},
+			},
+		}, llm.AdapterGoogleGenerateContent, modelOptionPolicyConfig{
+			Mode:             modelOptionPolicyAllowlist,
+			AllowedPathsJSON: config.DefaultModelOptionAllowedPathsJSON(),
+			DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+		})
+
+		generationConfig := filtered["generationConfig"].(map[string]interface{})
+		thinkingConfig := generationConfig["thinkingConfig"].(map[string]interface{})
+		if thinkingConfig["thinkingBudget"] != 4096 || thinkingConfig["thinkingLevel"] != "HIGH" {
+			t.Fatalf("expected Gemini thinking preset fields to pass, got %#v", filtered)
+		}
+		if _, ok := thinkingConfig["includeThoughts"]; ok {
+			t.Fatalf("expected unlisted thinkingConfig.includeThoughts to be removed, got %#v", filtered)
+		}
+	})
 }
 
 func TestFilterModelOptionsPreservesOfficialNativeToolsOutsidePathPolicy(t *testing.T) {

@@ -51,6 +51,7 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "service_tier",
     "presence_penalty",
     "frequency_penalty",
+    "reasoning.effort",
     "reasoning_effort",
     "verbosity",
     "thinking.type",
@@ -105,6 +106,7 @@ func DefaultModelOptionAllowedPathsJSON() string {
   "anthropic_messages": [
     "speed",
     "top_k",
+    "output_config.effort",
     "thinking.type",
     "thinking.budget_tokens"
   ],
@@ -127,7 +129,9 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "generationConfig.temperature",
     "generationConfig.topP",
     "generationConfig.maxOutputTokens",
-    "generationConfig.responseMimeType"
+    "generationConfig.responseMimeType",
+    "generationConfig.thinkingConfig.thinkingBudget",
+    "generationConfig.thinkingConfig.thinkingLevel"
   ]
 }`
 }

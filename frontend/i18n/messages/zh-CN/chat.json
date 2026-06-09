@@ -338,6 +338,24 @@
     "screenshot": "屏幕截图",
     "openTools": "打开工具菜单",
     "modelOptions": "模型配置",
+    "thinkingMode": "思考模式",
+    "thinkingModeSelected": "思考模式：{mode}",
+    "thinkingModes": {
+      "default": "默认",
+      "off": "关闭",
+      "float": "浮想",
+      "consider": "斟酌",
+      "deep": "沉思",
+      "exhaustive": "穷究"
+    },
+    "thinkingModeDescriptions": {
+      "default": "依赖模型默认行为",
+      "off": "禁用推理",
+      "float": "低强度推理",
+      "consider": "中强度推理",
+      "deep": "高强度推理",
+      "exhaustive": "超高强度推理"
+    },
     "mcpTools": "MCP 工具",
     "mcpToolsSelected": "已启用 {count} 个工具",
     "clear": "清空",

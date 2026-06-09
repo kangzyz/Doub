@@ -38,6 +38,7 @@ export const DEFAULT_MODEL_OPTION_ALLOWED_PATHS = `{
     "service_tier",
     "presence_penalty",
     "frequency_penalty",
+    "reasoning.effort",
     "reasoning_effort",
     "verbosity",
     "thinking.type",
@@ -91,6 +92,7 @@ export const DEFAULT_MODEL_OPTION_ALLOWED_PATHS = `{
   "anthropic_messages": [
     "speed",
     "top_k",
+    "output_config.effort",
     "thinking.type",
     "thinking.budget_tokens"
   ],
@@ -113,7 +115,9 @@ export const DEFAULT_MODEL_OPTION_ALLOWED_PATHS = `{
     "generationConfig.temperature",
     "generationConfig.topP",
     "generationConfig.maxOutputTokens",
-    "generationConfig.responseMimeType"
+    "generationConfig.responseMimeType",
+    "generationConfig.thinkingConfig.thinkingBudget",
+    "generationConfig.thinkingConfig.thinkingLevel"
   ]
 }`;
 
