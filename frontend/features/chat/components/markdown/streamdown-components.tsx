@@ -379,15 +379,6 @@ function ensureCodeBlockLanguage(
   });
 }
 
-function isRawHtmlCodeElement(child: React.ReactElement<StreamdownCodeChildProps>): boolean {
-  if (typeof child.type === "string") {
-    return child.type === "code";
-  }
-
-  const displayName = (child.type as { displayName?: string }).displayName;
-  return displayName === "HtmlVisualcode";
-}
-
 function getLineCount(value: string): number {
   if (!value) {
     return 0;
@@ -695,6 +686,18 @@ function isEmptyReactNode(node: React.ReactNode): boolean {
   return node == null || node === "";
 }
 
+function isBlankReactTextNode(node: React.ReactNode): boolean {
+  return typeof node === "string" && node.trim() === "";
+}
+
+function getOnlyCodeChildElement(children: React.ReactNode): React.ReactElement<StreamdownCodeChildProps> | null {
+  const contentChildren = React.Children.toArray(children).filter((child) => !isBlankReactTextNode(child));
+  if (contentChildren.length !== 1 || !React.isValidElement<StreamdownCodeChildProps>(contentChildren[0])) {
+    return null;
+  }
+  return ensureCodeBlockLanguage(contentChildren[0]);
+}
+
 function isCodeBlockElement(node: React.ReactNode): boolean {
   if (!React.isValidElement<{ "data-block"?: string }>(node)) {
     return false;
@@ -720,7 +723,7 @@ function isFootnoteBackrefElement(node: React.ReactNode): boolean {
 
 export function CollapsibleCodePre({ children, className, ...props }: CollapsiblePreProps) {
   const t = useTranslations("chat.markdown.codeBlock");
-  const childElement = React.isValidElement<StreamdownCodeChildProps>(children) ? ensureCodeBlockLanguage(children) : null;
+  const childElement = getOnlyCodeChildElement(children);
   const codeContent = childElement ? getCodeTextFromChild(childElement) : "";
   const lineCount = getLineCount(codeContent);
   const language = childElement ? getCodeLanguage(childElement.props.className) : "";
@@ -739,14 +742,19 @@ export function CollapsibleCodePre({ children, className, ...props }: Collapsibl
   }
 
   if (!childElement) {
-    return children;
+    return (
+      <pre {...props} className={className}>
+        {children}
+      </pre>
+    );
   }
 
-  const codeBlock = isRawHtmlCodeElement(childElement) ? (
-    <RawHtmlCodeBlock code={codeContent} codeClassName={childElement.props.className} language={language} />
-  ) : (
-    React.cloneElement(childElement, { "data-block": "true" })
-  );
+  const codeBlock =
+    language === "mermaid" ? (
+      React.cloneElement(childElement, { "data-block": "true" })
+    ) : (
+      <RawHtmlCodeBlock code={codeContent} codeClassName={childElement.props.className} language={language} />
+    );
 
   if (!isCollapsible) {
     return (
