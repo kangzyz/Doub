@@ -507,3 +507,41 @@ Aligned the HTML visual prompt with the provided format and restyled semantic re
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: Reasoning controls and renderer fixes
+
+**Date**: 2026-06-09
+**Task**: Reasoning controls and renderer fixes
+**Branch**: `main`
+
+### Summary
+
+Simplified provider-aware reasoning controls, fixed frontend dev routing, corrected OpenAI Responses model ability detection, and recorded semantic HTML rendering fixes.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c9fcace` | (see git log) |
+| `05dbda7` | (see git log) |
+| `f03fdbc` | (see git log) |
+| `f2b29f3` | (see git log) |
+| `4628624` | (see git log) |
+| `df28c1f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

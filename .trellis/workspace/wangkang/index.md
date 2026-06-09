@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 15
-- **Last Active**: 2026-06-08
+- **Total Sessions**: 16
+- **Last Active**: 2026-06-09
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~509 | Active |
+| `journal-1.md` | ~547 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 16 | 2026-06-09 | Reasoning controls and renderer fixes | `c9fcace`, `05dbda7`, `f03fdbc`, `f2b29f3`, `4628624`, `df28c1f` | `main` |
 | 15 | 2026-06-08 | Align reply prompt and Cherry CSS | `85f698b` | `main` |
 | 14 | 2026-06-08 | Polish reply Cherry-style visuals | `d53a563` | `main` |
 | 13 | 2026-06-08 | Simplify reply theme accents | `6c82cbf` | `main` |
