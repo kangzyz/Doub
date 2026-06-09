@@ -338,17 +338,24 @@ function FootnoteBackrefContent({
   );
 }
 
-function getCodeTextFromChild(child: React.ReactElement<StreamdownCodeChildProps>): string {
-  const raw = child.props.children;
-  if (typeof raw === "string") {
-    return raw;
+function getTextFromReactNode(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
   }
 
-  if (Array.isArray(raw)) {
-    return raw.filter((item): item is string => typeof item === "string").join("");
+  if (Array.isArray(node)) {
+    return node.map(getTextFromReactNode).join("");
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getTextFromReactNode(node.props.children);
   }
 
   return "";
+}
+
+function getCodeTextFromChild(child: React.ReactElement<StreamdownCodeChildProps>): string {
+  return getTextFromReactNode(child.props.children);
 }
 
 function getCodeLanguage(className?: string): string {
@@ -378,6 +385,10 @@ function getLineCount(value: string): number {
   }
 
   return value.replace(/\n$/, "").split("\n").length;
+}
+
+function hasClassName(className: string | undefined, expectedClassName: string): boolean {
+  return className?.trim().split(/\s+/).includes(expectedClassName) ?? false;
 }
 
 function CodeBlockActionButton({
@@ -656,7 +667,7 @@ function isFootnoteBackrefElement(node: React.ReactNode): boolean {
   return React.isValidElement<React.AnchorHTMLAttributes<HTMLAnchorElement>>(node) && isFootnoteBackref(node.props);
 }
 
-export function CollapsibleCodePre({ children }: CollapsiblePreProps) {
+export function CollapsibleCodePre({ children, className, ...props }: CollapsiblePreProps) {
   const t = useTranslations("chat.markdown.codeBlock");
   const childElement = React.isValidElement<StreamdownCodeChildProps>(children) ? ensureCodeBlockLanguage(children) : null;
   const codeContent = childElement ? getCodeTextFromChild(childElement) : "";
@@ -667,6 +678,14 @@ export function CollapsibleCodePre({ children }: CollapsiblePreProps) {
     childElement != null && language !== "mermaid" && lineCount > CODE_BLOCK_COLLAPSE_LINE_THRESHOLD;
   const [expanded, setExpanded] = React.useState(false);
   const [isToggleHovered, setIsToggleHovered] = React.useState(false);
+
+  if (hasClassName(className, "filetree") || hasClassName(className, "flow")) {
+    return (
+      <pre {...props} className={className}>
+        {children}
+      </pre>
+    );
+  }
 
   if (!childElement) {
     return children;

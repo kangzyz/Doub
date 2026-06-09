@@ -63,8 +63,9 @@ wrappers server-renderable when possible.
   explicit demos as fenced source that users can preview manually.
 - Mermaid diagrams inside chat should render as readable canvases, not thumbnail
   code previews. Avoid small fixed caps that compress long horizontal diagrams;
-  prefer a generous viewport, intrinsic SVG width, and scroll/pan behavior so
-  flowcharts remain legible without rewriting the generated diagram.
+  configure Mermaid to keep natural SVG width, then use a generous viewport plus
+  scroll/pan behavior so flowcharts remain legible without rewriting the
+  generated diagram.
 - `streamdown-content.ts` may normalize model mistakes only when the content
   clearly contains the approved semantic HTML classes. It can unwrap fenced
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,
