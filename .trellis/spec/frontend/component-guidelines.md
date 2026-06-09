@@ -69,7 +69,11 @@ wrappers server-renderable when possible.
   wrapping/spacing so long labels remain visible inside their nodes instead of
   being clipped by tight SVG text measurement. Avoid unbounded CSS-transform
   panning in inline chat; default diagrams should be centered, and any movement
-  should be constrained by the scroll container's real SVG extent.
+  should be constrained by the scroll container's real SVG extent. Streamdown's
+  built-in Mermaid pan stores offsets in component state, so external guards
+  must not write back to the pan element's `style.transform`; constrain incoming
+  pointer moves before they reach the built-in pan handler so DOM and internal
+  state stay synchronized.
 - `streamdown-content.ts` may normalize model mistakes only when the content
   clearly contains the approved semantic HTML classes. It can unwrap fenced
   `markdown`/`md`/`html`/`text`/`plain` blocks that contain semantic `.reply`,

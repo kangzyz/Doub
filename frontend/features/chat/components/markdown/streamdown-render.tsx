@@ -683,6 +683,16 @@ const DISPLAY_MATH_RE = /(?:^|\n)\s*\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{[
 const INLINE_MATH_RE = /(^|[^\\$])\$[^$\n]{1,400}\$/;
 const MERMAID_TRANSFORM_RE = /translate\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px\s*\)\s*scale\(\s*(\d+(?:\.\d+)?)\s*\)/;
 
+type MermaidPanGesture = {
+  initialX: number;
+  initialY: number;
+  panElement: HTMLElement;
+  pointerId: number;
+  scale: number;
+  startClientX: number;
+  startClientY: number;
+};
+
 function parseColorChannel(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -1252,44 +1262,71 @@ function parseMermaidTransform(value: string): { x: number; y: number; scale: nu
   return { x, y, scale };
 }
 
-function formatMermaidTransform(x: number, y: number, scale: number): string {
-  return `translate(${x}px, ${y}px) scale(${scale})`;
-}
-
-function clampMermaidPanElement(panElement: HTMLElement) {
+function getMermaidPanBounds(panElement: HTMLElement, scale: number): { maxX: number; maxY: number } | null {
   const mermaidElement = panElement.closest<HTMLElement>("[data-streamdown='mermaid']");
   const diagramElement = panElement.querySelector<HTMLElement>("[role='img']");
   if (!mermaidElement || !diagramElement) {
-    return;
-  }
-
-  const transform = parseMermaidTransform(panElement.style.transform);
-  if (!transform) {
-    return;
+    return null;
   }
 
   const viewportRect = mermaidElement.getBoundingClientRect();
   const diagramRect = diagramElement.getBoundingClientRect();
   if (viewportRect.width <= 0 || viewportRect.height <= 0 || diagramRect.width <= 0 || diagramRect.height <= 0) {
-    return;
+    return null;
   }
 
-  const unscaledWidth = diagramRect.width / transform.scale;
-  const unscaledHeight = diagramRect.height / transform.scale;
-  const scaledWidth = unscaledWidth * transform.scale;
-  const scaledHeight = unscaledHeight * transform.scale;
-  const maxX = Math.max(0, (scaledWidth - viewportRect.width) / 2 + MERMAID_PAN_TOLERANCE_PX);
-  const maxY = Math.max(0, (scaledHeight - viewportRect.height) / 2 + MERMAID_PAN_TOLERANCE_PX);
-  const clampedX = Math.round(clampNumber(transform.x, -maxX, maxX) * 100) / 100;
-  const clampedY = Math.round(clampNumber(transform.y, -maxY, maxY) * 100) / 100;
-
-  if (clampedX !== transform.x || clampedY !== transform.y) {
-    panElement.style.transform = formatMermaidTransform(clampedX, clampedY, transform.scale);
-  }
+  const unscaledWidth = diagramRect.width / scale;
+  const unscaledHeight = diagramRect.height / scale;
+  return {
+    maxX: Math.max(0, (unscaledWidth * scale - viewportRect.width) / 2 + MERMAID_PAN_TOLERANCE_PX),
+    maxY: Math.max(0, (unscaledHeight * scale - viewportRect.height) / 2 + MERMAID_PAN_TOLERANCE_PX),
+  };
 }
 
-function clampMermaidPanElements(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>("[data-streamdown='mermaid'] [role='application']").forEach(clampMermaidPanElement);
+function findMermaidPanElement(target: EventTarget | null, root: HTMLElement): HTMLElement | null {
+  const targetElement = target instanceof HTMLElement ? target : target instanceof Node ? target.parentElement : null;
+  const panElement = targetElement?.closest<HTMLElement>("[data-streamdown='mermaid'] [role='application']") ?? null;
+  if (!panElement || !root.contains(panElement)) {
+    return null;
+  }
+  return panElement;
+}
+
+function isMermaidPanWithinBounds(x: number, y: number, bounds: { maxX: number; maxY: number }): boolean {
+  return x >= -bounds.maxX && x <= bounds.maxX && y >= -bounds.maxY && y <= bounds.maxY;
+}
+
+function createBoundedMermaidPointerMoveEvent(
+  event: PointerEvent,
+  gesture: MermaidPanGesture,
+  x: number,
+  y: number,
+): PointerEvent {
+  const clientX = gesture.startClientX + x - gesture.initialX;
+  const clientY = gesture.startClientY + y - gesture.initialY;
+  return new PointerEvent("pointermove", {
+    altKey: event.altKey,
+    bubbles: true,
+    button: event.button,
+    buttons: event.buttons,
+    cancelable: true,
+    clientX,
+    clientY,
+    composed: true,
+    ctrlKey: event.ctrlKey,
+    isPrimary: event.isPrimary,
+    metaKey: event.metaKey,
+    pointerId: event.pointerId,
+    pointerType: event.pointerType,
+    screenX: event.screenX + clientX - event.clientX,
+    screenY: event.screenY + clientY - event.clientY,
+    shiftKey: event.shiftKey,
+  });
+}
+
+function stopMermaidPanEvent(event: PointerEvent) {
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function useBoundedMermaidPan(rootRef: React.RefObject<HTMLDivElement | null>, contentVersion: string, renderVersion: unknown) {
@@ -1299,34 +1336,70 @@ function useBoundedMermaidPan(rootRef: React.RefObject<HTMLDivElement | null>, c
       return;
     }
 
-    let animationFrame = 0;
-    const scheduleClamp = () => {
-      window.cancelAnimationFrame(animationFrame);
-      animationFrame = window.requestAnimationFrame(() => clampMermaidPanElements(root));
+    let activeGesture: MermaidPanGesture | null = null;
+    const syntheticPointerEvents = new WeakSet<PointerEvent>();
+    const clearGesture = () => {
+      activeGesture = null;
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || event.isPrimary === false) {
+        clearGesture();
+        return;
+      }
+
+      const panElement = findMermaidPanElement(event.target, root);
+      const transform = panElement ? parseMermaidTransform(panElement.style.transform) : null;
+      if (!panElement || !transform || !getMermaidPanBounds(panElement, transform.scale)) {
+        clearGesture();
+        return;
+      }
+
+      activeGesture = {
+        initialX: transform.x,
+        initialY: transform.y,
+        panElement,
+        pointerId: event.pointerId,
+        scale: transform.scale,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+      };
+    };
+    const handlePointerMove = (event: PointerEvent) => {
+      if (syntheticPointerEvents.has(event)) {
+        return;
+      }
+      if (!activeGesture || activeGesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const bounds = getMermaidPanBounds(activeGesture.panElement, activeGesture.scale);
+      if (!bounds) {
+        clearGesture();
+        return;
+      }
+
+      const nextX = activeGesture.initialX + event.clientX - activeGesture.startClientX;
+      const nextY = activeGesture.initialY + event.clientY - activeGesture.startClientY;
+      if (!isMermaidPanWithinBounds(nextX, nextY, bounds)) {
+        const boundedX = clampNumber(nextX, -bounds.maxX, bounds.maxX);
+        const boundedY = clampNumber(nextY, -bounds.maxY, bounds.maxY);
+        const boundedEvent = createBoundedMermaidPointerMoveEvent(event, activeGesture, boundedX, boundedY);
+        syntheticPointerEvents.add(boundedEvent);
+        activeGesture.panElement.dispatchEvent(boundedEvent);
+        stopMermaidPanEvent(event);
+      }
     };
 
-    const observer = new MutationObserver(scheduleClamp);
-    observer.observe(root, {
-      attributeFilter: ["style"],
-      attributes: true,
-      subtree: true,
-    });
-
-    root.addEventListener("pointermove", scheduleClamp, true);
-    root.addEventListener("pointerup", scheduleClamp, true);
-    root.addEventListener("wheel", scheduleClamp, true);
-    root.addEventListener("click", scheduleClamp, true);
-    window.addEventListener("resize", scheduleClamp);
-    scheduleClamp();
+    root.addEventListener("pointerdown", handlePointerDown, true);
+    root.addEventListener("pointermove", handlePointerMove, true);
+    root.addEventListener("pointerup", clearGesture, true);
+    root.addEventListener("pointercancel", clearGesture, true);
 
     return () => {
-      window.cancelAnimationFrame(animationFrame);
-      observer.disconnect();
-      root.removeEventListener("pointermove", scheduleClamp, true);
-      root.removeEventListener("pointerup", scheduleClamp, true);
-      root.removeEventListener("wheel", scheduleClamp, true);
-      root.removeEventListener("click", scheduleClamp, true);
-      window.removeEventListener("resize", scheduleClamp);
+      root.removeEventListener("pointerdown", handlePointerDown, true);
+      root.removeEventListener("pointermove", handlePointerMove, true);
+      root.removeEventListener("pointerup", clearGesture, true);
+      root.removeEventListener("pointercancel", clearGesture, true);
     };
   }, [contentVersion, renderVersion, rootRef]);
 }
