@@ -182,7 +182,7 @@
       "copyFailed": "Could not copy source",
       "downloadHtml": "Download HTML",
       "empty": "This code block is empty and cannot be previewed yet.",
-      "security": "The preview runs in an isolated sandbox with external network, forms, popups, parent page access, and storage access restricted."
+      "security": "The preview runs in an isolated sandbox. Declared visual assets may load, while forms, popups, parent page access, and storage access stay restricted."
     },
     "thinking": {
       "active": "Thinking",
@@ -205,7 +205,7 @@
     "close": "Close",
     "resize": "Resize Artifact",
     "empty": "This artifact is empty and cannot be previewed yet.",
-    "security": "The preview runs in an isolated sandbox with external network, forms, popups, parent page access, and storage access restricted."
+    "security": "The preview runs in an isolated sandbox. Declared visual assets may load, while forms, popups, parent page access, and storage access stay restricted."
   },
   "messages": {
     "debugRequest": "Request",

@@ -112,11 +112,11 @@ const ARTIFACT_CSP = [
   "manifest-src 'none'",
   "prefetch-src 'none'",
   "navigate-to 'none'",
-  "img-src data: blob:",
-  "media-src data: blob:",
-  "font-src data:",
-  "style-src 'unsafe-inline'",
-  "script-src 'unsafe-inline'",
+  "img-src data: blob: https:",
+  "media-src data: blob: https:",
+  "font-src data: https:",
+  "style-src 'unsafe-inline' https:",
+  "script-src 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com",
 ].join("; ");
 
 function normalizeLanguage(language: string): string {

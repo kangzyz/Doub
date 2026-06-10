@@ -158,6 +158,23 @@ wrappers server-renderable when possible.
   and `select`.
 - Full standalone HTML pages should use a dedicated artifact/iframe preview
   path instead of being rendered directly inside the chat message DOM.
+- Artifact HTML preview is the isolated executable exception to chat raw HTML
+  rules. Keep `frontend/features/chat/model/chat-artifacts.ts` responsible for
+  the preview document and CSP, and keep
+  `frontend/features/chat/components/sections/chat-artifact.tsx` responsible for
+  iframe sandboxing. If visual HTML needs CDN styles, fonts, images, or
+  Tailwind's runtime script, relax only the required CSP resource directives in
+  the preview builder; do not widen Streamdown's sanitizer and do not add
+  `allow-same-origin`, forms, popups, modals, or storage flags to the iframe.
+  When the resource policy changes, update both `chat.markdown.artifact.security`
+  and `chat.artifacts.security` in `en-US` and `zh-CN`.
+
+  ```typescript
+  // Correct shape: sandbox stays narrow; CSP carries visual-resource policy.
+  sandbox = "allow-scripts";
+  scriptSrc = "'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com";
+  styleSrc = "'unsafe-inline' https:";
+  ```
 
 ## Typography Effects
 
