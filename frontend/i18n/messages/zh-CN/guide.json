@@ -73,16 +73,16 @@
     "dark": "深色"
   },
   "themePreset": {
-    "default": "暖砂",
-    "azure": "晴空",
-    "cobalt": "曜夜",
-    "graphite": "石墨",
-    "lagoon": "极光",
-    "ink": "墨白",
-    "ochre": "活力",
-    "sepia": "暮",
-    "claude": "Claude",
-    "yan-yu": "烟雨"
+    "default": "暖砂 (极简)",
+    "azure": "蔚蓝 (清新)",
+    "cobalt": "极客蓝 (硬朗)",
+    "graphite": "石墨 (直角)",
+    "lagoon": "湖光 (圆润)",
+    "ink": "水墨 (宣纸)",
+    "ochre": "陶罐 (温暖)",
+    "sepia": "中古羊皮纸",
+    "claude": "精致书页 (Claude)",
+    "yan-yu": "烟雨 (江南)"
   },
   "states": {
     "twoFactorUnavailable": "当前环境未启用两步验证。",

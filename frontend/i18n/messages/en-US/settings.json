@@ -72,15 +72,15 @@
       "chatFontWeight": "Chat font weight",
       "preset": {
         "default": "Warm Sand",
-        "azure": "Azure",
-        "cobalt": "Midnight",
-        "graphite": "Graphite",
-        "lagoon": "Aurora",
-        "ink": "Ink",
-        "ochre": "Vivid",
-        "sepia": "Dusk",
-        "claude": "Claude",
-        "yan-yu": "Yan-yu"
+        "azure": "Azure (Airy)",
+        "cobalt": "Geek Cobalt (Sharp)",
+        "graphite": "Graphite (Block)",
+        "lagoon": "Lagoon Turquoise (Curved)",
+        "ink": "Ink Xuan (Monospace)",
+        "ochre": "Warm Ochre (Clay)",
+        "sepia": "Antique Sepia (Serif)",
+        "claude": "Claude Paper (Serif)",
+        "yan-yu": "Yan-yu Rain (Mist)"
       },
       "theme": {
         "light": "Light",
