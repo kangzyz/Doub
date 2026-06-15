@@ -17,6 +17,7 @@ import { useChatModelOptions } from "@/features/chat/hooks/use-chat-model-option
 import { useChatRuntime } from "@/features/chat/hooks/use-chat-runtime";
 import { useChatScrollController } from "@/features/chat/hooks/use-chat-scroll-controller";
 import { useChatViewerProfile } from "@/features/chat/hooks/use-chat-viewer-profile";
+import { useConversationExportAction } from "@/features/chat/hooks/use-conversation-export-action";
 import { useHTMLVisualPrompt } from "@/features/chat/hooks/use-visual-prompt";
 import { ChatInput } from "@/features/chat/components/sections/chat-input";
 import {
@@ -45,11 +46,90 @@ import { toPendingAttachment } from "@/features/chat/model/message-submit";
 import { listAvailableMCPTools } from "@/shared/api/mcp";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import type { ConversationOptions } from "@/shared/api/conversation.types";
+import type { FileObjectDTO } from "@/shared/api/file.types";
 import type { MCPToolDTO } from "@/shared/api/mcp.types";
 import { cn } from "@/lib/utils";
 
 const MODEL_OPTIONS_STORAGE_PREFIX = "doub-chat:chat-model-options:";
 const EMPTY_CONVERSATION_OPTIONS: ConversationOptions = {};
+
+function isPlainOptionObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function cloneOptionValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(cloneOptionValue);
+  }
+  if (isPlainOptionObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, cloneOptionValue(child)]),
+    );
+  }
+  return value;
+}
+
+function nativeToolIdentity(value: unknown, fallbackIndex: number): string {
+  if (!isPlainOptionObject(value)) {
+    return `invalid:${fallbackIndex}`;
+  }
+  const type = typeof value.type === "string" ? value.type.trim() : "";
+  if (type) {
+    return `type:${type}`;
+  }
+  if (isPlainOptionObject(value.google_search) || isPlainOptionObject(value.googleSearch)) {
+    return "type:google_search";
+  }
+  if (isPlainOptionObject(value.url_context) || isPlainOptionObject(value.urlContext)) {
+    return "type:url_context";
+  }
+  if (isPlainOptionObject(value.code_execution) || isPlainOptionObject(value.codeExecution)) {
+    return "type:code_execution";
+  }
+  return `json:${JSON.stringify(value)}`;
+}
+
+function mergeNativeToolPayloads(defaultTools: unknown, cachedTools: unknown): unknown[] | null {
+  const items = [
+    ...(Array.isArray(cachedTools) ? cachedTools : []),
+    ...(Array.isArray(defaultTools) ? defaultTools : []),
+  ].filter(isPlainOptionObject);
+  if (items.length === 0) {
+    return null;
+  }
+  const seen = new Set<string>();
+  const merged: unknown[] = [];
+  for (const item of items) {
+    const identity = nativeToolIdentity(item, merged.length);
+    if (seen.has(identity)) {
+      continue;
+    }
+    seen.add(identity);
+    merged.push(cloneOptionValue(item));
+  }
+  return merged;
+}
+
+function mergeModelOptionDefaults(defaultOptions: ConversationOptions, cachedOptions: ConversationOptions): ConversationOptions {
+  const next = cloneOptionValue(defaultOptions) as ConversationOptions;
+  for (const [key, value] of Object.entries(cachedOptions)) {
+    if (key === "tools") {
+      continue;
+    }
+    const current = next[key];
+    if (isPlainOptionObject(current) && isPlainOptionObject(value)) {
+      next[key] = mergeModelOptionDefaults(current, value);
+      continue;
+    }
+    next[key] = cloneOptionValue(value);
+  }
+
+  const tools = mergeNativeToolPayloads(defaultOptions.tools, cachedOptions.tools);
+  if (tools && tools.length > 0) {
+    next.tools = tools;
+  }
+  return sanitizeConversationOptions(next);
+}
 
 function modelOptionsStorageKey(platformModelName: string): string {
   return `${MODEL_OPTIONS_STORAGE_PREFIX}${encodeURIComponent(platformModelName)}`;
@@ -216,6 +296,7 @@ export function AppChatArea() {
   const selectedReferenceModelName = selectedModel?.referenceModelName.trim() || selectedModelName;
   const selectedModelProtocol = selectedModel?.protocols[0]?.trim() ?? "";
   const selectedModelVendor = selectedModel?.vendor?.trim() ?? "";
+  const selectedModelDefaultOptions = selectedModel?.defaultOptions ?? EMPTY_CONVERSATION_OPTIONS;
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
   const [options, setOptions] = React.useState<ConversationOptions>({});
   const [availableTools, setAvailableTools] = React.useState<MCPToolDTO[]>([]);
@@ -243,6 +324,7 @@ export function AppChatArea() {
       modelOptionPolicy?.mode ?? "",
       modelOptionPolicy?.allowedPathsJSON ?? "",
       modelOptionPolicy?.deniedPathsJSON ?? "",
+      modelOptionPolicy?.nativeToolAllowedTypesJSON ?? "",
     ].join("\n");
     const initializationKey = [
       selectedModelName,
@@ -256,6 +338,9 @@ export function AppChatArea() {
     }
     initializedOptionsModelRef.current = initializationKey;
     const cachedOptions = readCachedModelOptions(selectedModelName);
+    const sourceOptions = cachedOptions
+      ? mergeModelOptionDefaults(selectedModelDefaultOptions, cachedOptions)
+      : selectedModelDefaultOptions;
     const normalized = normalizeReasoningOptionsForContext(
       {
         protocol: selectedModelProtocol,
@@ -263,19 +348,20 @@ export function AppChatArea() {
         modelName: selectedReferenceModelName,
         modelOptionPolicy,
       },
-      cachedOptions ?? {},
+      sourceOptions,
     );
     if (cachedOptions) {
       writeCachedModelOptions(selectedModelName, normalized);
     }
     setOptions(normalized);
-  }, [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName]);
+  }, [modelOptionPolicy, selectedModelDefaultOptions, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName]);
 
   const setModelOptions = React.useCallback(
     (action: React.SetStateAction<ConversationOptions>) => {
       setOptions((previous) => {
         const next = typeof action === "function" ? action(previous) : action;
         const sanitized = isConversationOptionsObject(next) ? sanitizeConversationOptions(next) : {};
+        const sourceOptions = mergeModelOptionDefaults(selectedModelDefaultOptions, sanitized);
         const normalized = normalizeReasoningOptionsForContext(
           {
             protocol: selectedModelProtocol,
@@ -283,7 +369,7 @@ export function AppChatArea() {
             modelName: selectedReferenceModelName,
             modelOptionPolicy,
           },
-          sanitized,
+          sourceOptions,
         );
         if (selectedModelName) {
           writeCachedModelOptions(selectedModelName, normalized);
@@ -291,15 +377,24 @@ export function AppChatArea() {
         return normalized;
       });
     },
-    [modelOptionPolicy, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName],
+    [modelOptionPolicy, selectedModelDefaultOptions, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName],
   );
 
   const resetModelOptions = React.useCallback(() => {
     if (selectedModelName) {
       removeCachedModelOptions(selectedModelName);
     }
-    setOptions({});
-  }, [selectedModelName]);
+    const normalized = normalizeReasoningOptionsForContext(
+      {
+        protocol: selectedModelProtocol,
+        vendor: selectedModelVendor,
+        modelName: selectedReferenceModelName,
+        modelOptionPolicy,
+      },
+      selectedModelDefaultOptions,
+    );
+    setOptions(normalized);
+  }, [modelOptionPolicy, selectedModelDefaultOptions, selectedModelName, selectedModelProtocol, selectedModelVendor, selectedReferenceModelName]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -468,6 +563,49 @@ export function AppChatArea() {
     ],
   );
 
+  const onAttachExistingFile = React.useCallback(
+    (file: FileObjectDTO) => {
+      const alreadyAttached = attachments.some((item) => item.fileID === file.fileID);
+      if (alreadyAttached) {
+        return;
+      }
+      if (maxFilesPerMessage > 0 && attachments.length >= maxFilesPerMessage) {
+        toast.error(t("attachments.limitReached"), {
+          description: t("attachments.maxUploadFiles", { count: maxFilesPerMessage }),
+        });
+        return;
+      }
+      setAttachments((previous) => {
+        if (previous.some((item) => item.fileID === file.fileID)) {
+          return previous;
+        }
+        return [
+          ...previous,
+          {
+            fileID: file.fileID,
+            fileName: file.fileName,
+            mimeType: file.mimeType,
+            detectedMime: file.detectedMIME,
+            fileCategory: file.fileCategory,
+            sizeBytes: file.sizeBytes,
+            processingStatus: file.processingStatus,
+            processingReady: file.processingReady,
+            processingErrorCode: file.processingErrorCode,
+            processingErrorMessage: file.processingErrorMessage,
+            extractStatus: file.extractStatus,
+            embedStatus: file.embedStatus,
+            ragReady: false,
+            ragReason: "",
+            ocrUsed: false,
+            ragOptOut: file.ragOptOut,
+          },
+        ];
+      });
+      window.requestAnimationFrame(onScrollToLatest);
+    },
+    [attachments, maxFilesPerMessage, onScrollToLatest, setAttachments, t],
+  );
+
   React.useEffect(() => {
     setManualConversationTitle("");
   }, [conversationID]);
@@ -552,6 +690,18 @@ export function AppChatArea() {
     }
     setShareDialogOpen(true);
   }, [canOperateConversation]);
+
+  const exportActiveConversation = useConversationExportAction({
+    successMessage: t("exportJSONSuccess"),
+    failureMessage: t("exportJSONFailed"),
+  });
+
+  const onExportActiveConversation = React.useCallback(async () => {
+    if (!canOperateConversation) {
+      return;
+    }
+    await exportActiveConversation(actionConversationID);
+  }, [actionConversationID, canOperateConversation, exportActiveConversation]);
 
   const messagesWithInlineError = React.useMemo<ChatAreaMessage[]>(() => {
     const errors = [
@@ -700,6 +850,7 @@ export function AppChatArea() {
     onHTMLVisualPromptChange: htmlVisualPrompt.setEnabled,
     onOptionsChange: setModelOptions,
     onOptionsReset: resetModelOptions,
+    onAttachExistingFile,
     onUploadFiles,
     onCaptureScreenshot,
     onRemoveAttachment,
@@ -768,6 +919,7 @@ export function AppChatArea() {
                   }}
                   onShare={onShareActiveConversation}
                   shareActive={activeConversationShared}
+                  onExport={onExportActiveConversation}
                   onDelete={onRequestDeleteActiveConversation}
                   markdownRender={markdownRender}
                   showModelInfo={showModelInfo}

@@ -160,8 +160,8 @@ func TestFilterModelOptionsAllowsReasoningPresetPaths(t *testing.T) {
 		filtered := filterModelOptions(map[string]interface{}{
 			"generationConfig": map[string]interface{}{
 				"thinkingConfig": map[string]interface{}{
-					"thinkingBudget": 4096,
-					"thinkingLevel":  "HIGH",
+					"thinkingBudget":  4096,
+					"thinkingLevel":   "HIGH",
 					"includeThoughts": true,
 				},
 			},
@@ -271,19 +271,134 @@ func TestFilterModelOptionsPreservesOpenAIResponsesNativeTools(t *testing.T) {
 	})
 
 	tools, ok := filtered["tools"].([]map[string]interface{})
-	if !ok || len(tools) != 2 {
+	if !ok || len(tools) != 5 {
 		t.Fatalf("expected sanitized OpenAI native tools, got %#v", filtered)
 	}
-	if tools[0]["type"] != "web_search_preview" {
-		t.Fatalf("expected web_search_preview to pass, got %#v", tools[0])
+	previewTool, ok := toolsByType(tools, "web_search_preview")
+	if !ok {
+		t.Fatalf("expected web_search_preview to pass, got %#v", tools)
 	}
-	if _, ok := tools[0]["extra"]; ok {
-		t.Fatalf("expected arbitrary OpenAI tool fields to be removed, got %#v", tools[0])
+	if _, ok := previewTool["extra"]; ok {
+		t.Fatalf("expected arbitrary OpenAI tool fields to be removed, got %#v", previewTool)
 	}
-	environment, ok := tools[1]["environment"].(map[string]interface{})
+	shellTool, ok := toolsByType(tools, "shell")
+	if !ok {
+		t.Fatalf("expected shell to pass, got %#v", tools)
+	}
+	environment, ok := shellTool["environment"].(map[string]interface{})
 	if !ok || environment["type"] != "container_auto" {
-		t.Fatalf("expected shell environment to be normalized, got %#v", tools[1])
+		t.Fatalf("expected shell environment to be normalized, got %#v", shellTool)
 	}
+	for _, toolType := range []string{"web_search", "image_generation", "code_interpreter"} {
+		if _, ok := toolsByType(tools, toolType); !ok {
+			t.Fatalf("expected daily OpenAI tool %s, got %#v", toolType, tools)
+		}
+	}
+}
+
+func TestFilterModelOptionsInjectsDailyChatNativeToolsByProtocol(t *testing.T) {
+	t.Run("openai responses", func(t *testing.T) {
+		filtered := filterModelOptions(nil, llm.AdapterOpenAIResponses, modelOptionPolicyConfig{
+			Mode:             modelOptionPolicyAllowlist,
+			AllowedPathsJSON: `{"default":[]}`,
+			DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+		})
+
+		tools, ok := filtered["tools"].([]map[string]interface{})
+		if !ok || len(tools) != 3 {
+			t.Fatalf("expected OpenAI daily chat tools, got %#v", filtered)
+		}
+		expected := []string{"web_search", "image_generation", "code_interpreter"}
+		for index, toolType := range expected {
+			if tools[index]["type"] != toolType {
+				t.Fatalf("expected tool %d to be %q, got %#v", index, toolType, tools[index])
+			}
+		}
+		for _, tool := range tools {
+			if tool["type"] == "web_search_preview" || tool["type"] == "shell" {
+				t.Fatalf("expected preview and shell to stay out of daily defaults, got %#v", tools)
+			}
+		}
+	})
+
+	t.Run("gemini generate content", func(t *testing.T) {
+		filtered := filterModelOptions(map[string]interface{}{}, llm.AdapterGoogleGenerateContent, modelOptionPolicyConfig{
+			Mode:             modelOptionPolicyAllowlist,
+			AllowedPathsJSON: `{"default":[]}`,
+			DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+		})
+
+		tools, ok := filtered["tools"].([]map[string]interface{})
+		if !ok || len(tools) != 3 {
+			t.Fatalf("expected Gemini daily chat tools, got %#v", filtered)
+		}
+		for _, key := range []string{"google_search", "url_context", "code_execution"} {
+			if _, ok := toolsByKey(tools, key); !ok {
+				t.Fatalf("expected Gemini tool %s, got %#v", key, tools)
+			}
+		}
+	})
+}
+
+func TestFilterModelOptionsPreservesGeminiGoogleSearchNativeTool(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"tools": []interface{}{
+			map[string]interface{}{
+				"type": "google_search",
+				"google_search": map[string]interface{}{
+					"time_range_filter": "week",
+				},
+				"extra": true,
+			},
+			map[string]interface{}{"type": "web_search"},
+		},
+	}, llm.AdapterGoogleGenerateContent, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: `{"default":[]}`,
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	tools, ok := filtered["tools"].([]map[string]interface{})
+	if !ok || len(tools) != 3 {
+		t.Fatalf("expected sanitized Gemini native tool, got %#v", filtered)
+	}
+	googleSearchTool, ok := toolsByKey(tools, "google_search")
+	if !ok {
+		t.Fatalf("expected google_search tool, got %#v", tools)
+	}
+	if _, ok := googleSearchTool["type"]; ok {
+		t.Fatalf("expected Gemini google_search payload to omit internal type, got %#v", googleSearchTool)
+	}
+	googleSearch, ok := googleSearchTool["google_search"].(map[string]interface{})
+	if !ok || googleSearch["time_range_filter"] != "week" {
+		t.Fatalf("expected google_search settings to pass, got %#v", googleSearchTool)
+	}
+	if _, ok := googleSearchTool["extra"]; ok {
+		t.Fatalf("expected arbitrary Gemini tool fields to be removed, got %#v", googleSearchTool)
+	}
+	for _, key := range []string{"url_context", "code_execution"} {
+		if _, ok := toolsByKey(tools, key); !ok {
+			t.Fatalf("expected daily Gemini tool %s, got %#v", key, tools)
+		}
+	}
+}
+
+func toolsByType(tools []map[string]interface{}, toolType string) (map[string]interface{}, bool) {
+	for _, tool := range tools {
+		if tool["type"] == toolType {
+			return tool, true
+		}
+	}
+	return nil, false
+}
+
+func toolsByKey(tools []map[string]interface{}, key string) (map[string]interface{}, bool) {
+	for _, tool := range tools {
+		if _, ok := tool[key]; ok {
+			return tool, true
+		}
+	}
+	return nil, false
 }
 
 func TestFilterModelOptionsGeminiPolicyKeyMatchesGoogleAdapter(t *testing.T) {

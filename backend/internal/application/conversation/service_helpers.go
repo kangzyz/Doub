@@ -422,6 +422,193 @@ func isStreamUnsupportedError(err *llm.UpstreamError) bool {
 	return false
 }
 
+func unsupportedNativeToolTypeFromError(err error) string {
+	var upstreamErr *llm.UpstreamError
+	if !errors.As(err, &upstreamErr) {
+		return ""
+	}
+	for _, candidate := range []string{
+		upstreamErr.Message,
+		upstreamErr.Body,
+		func() string {
+			if upstreamErr.Debug == nil {
+				return ""
+			}
+			return upstreamErr.Debug.Response.Body
+		}(),
+	} {
+		if toolType := unsupportedNativeToolTypeFromText(candidate); toolType != "" {
+			return toolType
+		}
+	}
+	return ""
+}
+
+func unsupportedNativeToolTypeFromText(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	var decoded interface{}
+	if err := json.Unmarshal([]byte(value), &decoded); err == nil {
+		if toolType := unsupportedNativeToolTypeFromJSONValue(decoded); toolType != "" {
+			return toolType
+		}
+	}
+	return unsupportedNativeToolTypeFromMessage(value)
+}
+
+func unsupportedNativeToolTypeFromJSONValue(value interface{}) string {
+	switch typed := value.(type) {
+	case string:
+		return unsupportedNativeToolTypeFromMessage(typed)
+	case []interface{}:
+		for _, item := range typed {
+			if toolType := unsupportedNativeToolTypeFromJSONValue(item); toolType != "" {
+				return toolType
+			}
+		}
+	case map[string]interface{}:
+		for _, key := range []string{"detail", "message", "error", "msg", "reason"} {
+			if toolType := unsupportedNativeToolTypeFromJSONValue(typed[key]); toolType != "" {
+				return toolType
+			}
+		}
+		for _, item := range typed {
+			if toolType := unsupportedNativeToolTypeFromJSONValue(item); toolType != "" {
+				return toolType
+			}
+		}
+	}
+	return ""
+}
+
+func unsupportedNativeToolTypeFromMessage(message string) string {
+	value := strings.TrimSpace(message)
+	lower := strings.ToLower(value)
+	if !strings.Contains(lower, "unsupported") || !strings.Contains(lower, "tool") {
+		return ""
+	}
+	for _, toolType := range []string{
+		"code_interpreter",
+		"image_generation",
+		"web_search_preview",
+		"web_search",
+		"shell",
+		"google_search",
+		"url_context",
+		"code_execution",
+	} {
+		if strings.Contains(lower, toolType) {
+			return toolType
+		}
+	}
+	for _, marker := range []string{"unsupported tool type:", "unsupported tool type", "unsupported tool:"} {
+		index := strings.Index(lower, marker)
+		if index < 0 {
+			continue
+		}
+		if toolType := firstToolIdentifier(value[index+len(marker):]); toolType != "" {
+			return toolType
+		}
+	}
+	return ""
+}
+
+func firstToolIdentifier(raw string) string {
+	value := strings.TrimLeft(strings.TrimSpace(raw), ":= `\"'")
+	var builder strings.Builder
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			builder.WriteRune(r)
+			continue
+		}
+		break
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func removeNativeToolFromGenerateInput(input llm.GenerateInput, toolType string) (llm.GenerateInput, bool) {
+	toolType = strings.TrimSpace(toolType)
+	if toolType == "" || len(input.Options) == 0 {
+		return input, false
+	}
+	nextOptions := cloneModelOptionMap(input.Options)
+	rawTools, ok := nextOptions["tools"]
+	if !ok || rawTools == nil {
+		return input, false
+	}
+	tools, ok := nativeToolOptionPayloadsForRemoval(rawTools)
+	if !ok {
+		return input, false
+	}
+	kept := make([]interface{}, 0, len(tools))
+	removed := false
+	for _, tool := range tools {
+		payload, payloadOK := tool.(map[string]interface{})
+		if !payloadOK {
+			kept = append(kept, tool)
+			continue
+		}
+		if nativeToolTypeFromOptionPayload(payload) == toolType {
+			removed = true
+			continue
+		}
+		kept = append(kept, payload)
+	}
+	if !removed {
+		return input, false
+	}
+	if len(kept) == 0 {
+		delete(nextOptions, "tools")
+	} else {
+		nextOptions["tools"] = kept
+	}
+	nextInput := input
+	nextInput.Options = nextOptions
+	return nextInput, true
+}
+
+func nativeToolOptionPayloadsForRemoval(raw interface{}) ([]interface{}, bool) {
+	switch typed := raw.(type) {
+	case []interface{}:
+		return append([]interface{}(nil), typed...), true
+	case []map[string]interface{}:
+		items := make([]interface{}, 0, len(typed))
+		for _, item := range typed {
+			items = append(items, item)
+		}
+		return items, true
+	default:
+		return nil, false
+	}
+}
+
+func nativeToolTypeFromOptionPayload(tool map[string]interface{}) string {
+	if tool == nil {
+		return ""
+	}
+	if typed, ok := tool["type"].(string); ok {
+		return strings.TrimSpace(typed)
+	}
+	for _, item := range []struct {
+		key      string
+		toolType string
+	}{
+		{key: "google_search", toolType: "google_search"},
+		{key: "googleSearch", toolType: "google_search"},
+		{key: "url_context", toolType: "url_context"},
+		{key: "urlContext", toolType: "url_context"},
+		{key: "code_execution", toolType: "code_execution"},
+		{key: "codeExecution", toolType: "code_execution"},
+	} {
+		if _, ok := tool[item.key]; ok {
+			return item.toolType
+		}
+	}
+	return ""
+}
+
 func mediaImageEditPartialFallbackOutput(
 	taskType MediaImageTaskType,
 	options map[string]interface{},

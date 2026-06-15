@@ -12,6 +12,7 @@ import (
 	appruntime "github.com/kangzyz/Doub/backend/internal/application/runtime"
 	appsettings "github.com/kangzyz/Doub/backend/internal/application/settings"
 	"github.com/kangzyz/Doub/backend/internal/infra/config"
+	"github.com/kangzyz/Doub/backend/internal/shared/nativetool"
 	"github.com/kangzyz/Doub/backend/internal/shared/response"
 	"github.com/kangzyz/Doub/backend/internal/transport/http/middleware"
 )
@@ -152,6 +153,7 @@ func (h *Handler) GetModelOptionPolicy(c *gin.Context) {
 		AllowedPathsJSON:           allowedPathsJSON,
 		DeniedPathsJSON:            deniedPathsJSON,
 		NativeToolAllowedTypesJSON: nativeToolAllowedTypesJSON,
+		NativeTools:                toNativeToolDefinitionResponses(nativetool.Definitions()),
 	})
 }
 
@@ -172,6 +174,18 @@ func (h *Handler) GetMCPPolicy(c *gin.Context) {
 		limit = config.MaxMCPSelectedToolsPerMessage
 	}
 	response.Success(c, MCPPolicyResponse{MaxSelectedToolsPerMessage: limit})
+}
+
+// GetChatContextPolicy godoc
+// @Summary 查询聊天上下文策略
+// @Tags settings
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Envelope
+// @Router /settings/chat-context-policy [get]
+func (h *Handler) GetChatContextPolicy(c *gin.Context) {
+	cfg := h.runtime.Snapshot()
+	response.Success(c, ChatContextPolicyResponse{ContextCompactEnabled: cfg.ContextCompactEnabled})
 }
 
 // Patch godoc

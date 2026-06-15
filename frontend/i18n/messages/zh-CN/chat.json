@@ -7,6 +7,8 @@
   "stop": "停止",
   "shareConversation": "分享此对话",
   "manageShare": "管理分享",
+  "exportJSONSuccess": "已导出对话 JSON",
+  "exportJSONFailed": "导出对话失败",
   "model": "模型",
   "time": "时间",
   "tokens": "Token",
@@ -142,8 +144,10 @@
     "renamePlaceholder": "请输入新的会话名称",
     "moveToProject": "移至项目",
     "unassignedProject": "默认",
+    "shareAndExport": "分享 & 导出",
     "share": "分享",
     "manageShare": "管理分享",
+    "exportJSON": "导出 JSON",
     "delete": "删除"
   },
   "markdown": {
@@ -219,6 +223,8 @@
     "contextCompressed": "上下文已自动压缩",
     "scrollToBottom": "回到底部",
     "processing": "正在处理…",
+    "expandUserMessage": "展开",
+    "collapseUserMessage": "收起",
     "waitingResponse": {
       "title": "正在生成回复",
       "subtitle": "上下文已准备好，模型开始输出后会实时显示。",
@@ -362,6 +368,8 @@
     "default": "默认",
     "jsonConfig": "JSON 配置",
     "visualConfig": "可视化配置",
+    "optionControls": "模型参数",
+    "nativeToolControls": "原生工具",
     "visual": "可视化",
     "ignored": "已忽略",
     "willPass": "会透传",
@@ -400,6 +408,14 @@
     "booleanOn": "开启",
     "booleanOff": "关闭",
     "tool": "工具 {id}",
+    "mention": {
+      "fileFallback": "文件",
+      "sections": {
+        "file": "文件",
+        "tool": "MCP",
+        "model": "模型"
+      }
+    },
     "mediaMode": {
       "imageGeneration": "图像生成",
       "imageGenerationIntro": "当前为图像生成模式。",

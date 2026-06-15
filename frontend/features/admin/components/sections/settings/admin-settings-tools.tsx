@@ -393,21 +393,26 @@ export function AdminToolSettingsPage() {
   const syncTools = React.useCallback(
     async (serverID: number) => {
       setSyncingServerID(serverID);
+      const token = await resolveAccessToken();
+      if (!token) {
+        toast.error(t("toast.sessionExpired"), { description: t("toast.sessionExpiredDescription") });
+        setSyncingServerID(null);
+        return;
+      }
+
       try {
-        const token = await resolveAccessToken();
-        if (!token) {
-          toast.error(t("toast.sessionExpired"), { description: t("toast.sessionExpiredDescription") });
-          return;
-        }
         const nextTools = await syncAdminMCPServerTools(token, serverID);
         setToolSheetServerID(serverID);
         setTools(nextTools);
-        await loadServers();
         toast.success(t("toast.toolsSynced"));
       } catch (error) {
         toast.error(t("toast.toolsSyncFailed"), { description: resolveToolSettingsErrorMessage(error, t("toast.unknownError")) });
       } finally {
-        setSyncingServerID(null);
+        try {
+          await loadServers();
+        } finally {
+          setSyncingServerID(null);
+        }
       }
     },
     [loadServers, t],

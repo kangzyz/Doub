@@ -1,0 +1,5 @@
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Run frontend lint and document any unrelated failures."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Run focused backend tests for model option policy and native tool catalog."}
+{"file":".trellis/spec/backend/ai-and-conversation.md","reason":"Verify provider-native search tools survive policy filtering and adapter request building."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Confirm frontend defaults and backend policy stay aligned without public API changes."}
+{"file":".trellis/tasks/06-15-native-tools-default-integration/research/official-native-tools.md","reason":"Verify implementation matches official OpenAI/Gemini tool payloads."}

@@ -48,6 +48,14 @@ var validNativeToolTypesByProtocol = map[string]map[string]struct{}{
 		"x_search":         {},
 		"code_interpreter": {},
 	},
+	"gemini_generate_content": {
+		"google_search":  {},
+		"url_context":    {},
+		"code_execution": {},
+	},
+	"google_image_generation": {
+		"google_search": {},
+	},
 }
 
 // validateModelOptionPathsJSON 校验模型参数透传路径配置，防止保存不可解析或越界的策略。

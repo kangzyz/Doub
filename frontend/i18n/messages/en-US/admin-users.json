@@ -5,6 +5,7 @@
     "channels": "Upstreams",
     "models": "Models",
     "toolSettings": "Tools",
+    "announcements": "Announcements",
     "logs": "Logs",
     "loginSettings": "Sign-in & auth",
     "conversationSettings": "Conversation",

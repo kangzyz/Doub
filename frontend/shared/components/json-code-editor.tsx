@@ -88,6 +88,7 @@ export function JsonCodeEditor({
   const mountValueRef = React.useRef(value);
   const mountDisabledRef = React.useRef(disabled);
   const mountThemeRef = React.useRef(resolvedTheme);
+  const placeholderRef = React.useRef(placeholder);
   const [loading, setLoading] = React.useState(true);
   const [markerCount, setMarkerCount] = React.useState(0);
 
@@ -129,6 +130,11 @@ export function JsonCodeEditor({
   }, [resolvedTheme]);
 
   React.useEffect(() => {
+    placeholderRef.current = placeholder;
+    editorRef.current?.updateOptions({ placeholder: placeholder || undefined });
+  }, [placeholder]);
+
+  React.useEffect(() => {
     let disposed = false;
     let contentSubscription: Monaco.IDisposable | null = null;
     let markerSubscription: Monaco.IDisposable | null = null;
@@ -153,6 +159,7 @@ export function JsonCodeEditor({
       const editor = monaco.editor.create(containerRef.current, {
         value: mountValueRef.current,
         language: "json",
+        placeholder: placeholderRef.current || undefined,
         readOnly: mountDisabledRef.current,
         theme: mountThemeRef.current === "dark" ? "vs-dark" : "vs",
         automaticLayout: true,
@@ -165,8 +172,10 @@ export function JsonCodeEditor({
         fontSize: 12,
         lineDecorationsWidth: 8,
         lineNumbersMinChars: 3,
+        hideCursorInOverviewRuler: true,
         minimap: { enabled: false },
         overviewRulerBorder: false,
+        overviewRulerLanes: 0,
         padding: { top: 8, bottom: 8 },
         renderLineHighlight: "line",
         renderWhitespace: "selection",
@@ -276,11 +285,6 @@ export function JsonCodeEditor({
       {loading ? (
         <div className="absolute inset-x-0 bottom-0 top-8 flex items-center px-3 font-mono text-xs text-muted-foreground">
           {t("loading")}
-        </div>
-      ) : null}
-      {!loading && value.trim() === "" && placeholder ? (
-        <div className="pointer-events-none absolute left-[58px] top-[39px] font-mono text-xs text-muted-foreground/70">
-          {placeholder}
         </div>
       ) : null}
     </div>

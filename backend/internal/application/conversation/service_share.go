@@ -875,7 +875,7 @@ func (s *Service) resolveShareMessageIDs(ctx context.Context, conversationID uin
 		}
 		return allIDs, defaultIDs, nil
 	}
-	return allIDs, publicIDsFromMessages(buildLatestVisibleShareMessages(messages)), nil
+	return allIDs, publicIDsFromMessages(buildLatestVisibleMessages(messages)), nil
 }
 
 func normalizeMessagePublicIDs(values []string) []string {
@@ -923,7 +923,7 @@ func resolvePublicDefaultMessageIDs(raw string, messages []model.Message) []stri
 			return result
 		}
 	}
-	return publicIDsFromMessages(buildLatestVisibleShareMessages(messages))
+	return publicIDsFromMessages(buildLatestVisibleMessages(messages))
 }
 
 func publicIDsFromMessages(messages []model.Message) []string {
@@ -937,7 +937,7 @@ func publicIDsFromMessages(messages []model.Message) []string {
 	return result
 }
 
-func buildLatestVisibleShareMessages(messages []model.Message) []model.Message {
+func buildLatestVisibleMessages(messages []model.Message) []model.Message {
 	children := make(map[string][]model.Message)
 	for _, item := range messages {
 		parentKey := strings.TrimSpace(item.ParentPublicID)

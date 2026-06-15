@@ -404,6 +404,76 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+const REASONING_MANAGED_OPTION_PATHS = [
+  ["reasoning", "effort"],
+  ["reasoning_effort"],
+  ["thinking", "type"],
+  ["thinking", "budget_tokens"],
+  ["output_config", "effort"],
+  ["generationConfig", "thinkingConfig", "thinkingBudget"],
+  ["generationConfig", "thinkingConfig", "thinkingLevel"],
+];
+
+function cloneOptionValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(cloneOptionValue);
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, cloneOptionValue(child)]),
+    );
+  }
+  return value;
+}
+
+function deleteOptionAtPath(options: ConversationOptions, path: string[]): void {
+  if (path.length === 0) {
+    return;
+  }
+
+  const stack: Array<{ object: Record<string, unknown>; key: string }> = [];
+  let current = options as Record<string, unknown>;
+  for (const segment of path.slice(0, -1)) {
+    const child = current[segment];
+    if (!isPlainObject(child)) {
+      return;
+    }
+    stack.push({ object: current, key: segment });
+    current = child;
+  }
+
+  delete current[path[path.length - 1]];
+
+  for (let index = stack.length - 1; index >= 0; index--) {
+    const { object, key } = stack[index];
+    const child = object[key];
+    if (isPlainObject(child) && Object.keys(child).length === 0) {
+      delete object[key];
+    }
+  }
+}
+
+function stripReasoningManagedOptions(options: ConversationOptions): ConversationOptions {
+  const next = cloneOptionValue(options) as ConversationOptions;
+  for (const path of REASONING_MANAGED_OPTION_PATHS) {
+    deleteOptionAtPath(next, path);
+  }
+  return next;
+}
+
+function mergeOptionMaps(base: ConversationOptions, override: ConversationOptions): ConversationOptions {
+  const next = cloneOptionValue(base) as ConversationOptions;
+  for (const [key, value] of Object.entries(override)) {
+    const current = next[key];
+    if (isPlainObject(current) && isPlainObject(value)) {
+      next[key] = mergeOptionMaps(current, value);
+      continue;
+    }
+    next[key] = cloneOptionValue(value);
+  }
+  return next;
+}
+
 function optionPaths(value: unknown, prefix: string[] = []): string[] {
   if (!isPlainObject(value)) {
     return prefix.length > 0 ? [prefix.join(".")] : [];
@@ -579,7 +649,8 @@ export function normalizeReasoningOptionsForContext(
   const detected = detectReasoningMode(ctx, source);
   const available = availableReasoningModes(ctx);
   const mode = available.includes(detected) ? detected : "default";
-  return reasoningOptionsForMode(ctx, mode) ?? {};
+  const reasoningOptions = reasoningOptionsForMode(ctx, mode) ?? {};
+  return mergeOptionMaps(stripReasoningManagedOptions(source), reasoningOptions);
 }
 
 export function isReasoningOptionsNormalized(

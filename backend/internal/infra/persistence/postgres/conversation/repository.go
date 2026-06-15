@@ -1097,7 +1097,7 @@ func (r *Repo) ListMessagesForShare(ctx context.Context, conversationID uint, pu
 }
 
 // ListAllMessages 查询会话全部消息。
-func (r *Repo) ListAllMessages(ctx context.Context, conversationID uint) ([]models.Message, error) {
+func (r *Repo) ListAllMessages(ctx context.Context, conversationID uint) ([]domainconversation.Message, error) {
 	items := make([]models.Message, 0)
 	if err := r.db.WithContext(ctx).
 		Where("conversation_id = ?", conversationID).
@@ -1109,7 +1109,7 @@ func (r *Repo) ListAllMessages(ctx context.Context, conversationID uint) ([]mode
 	if err := r.hydrateMessageAttachments(ctx, items); err != nil {
 		return nil, err
 	}
-	return items, nil
+	return toMessageDomains(items), nil
 }
 
 // UpsertMessageFeedback 写入或更新消息反馈。
@@ -1469,6 +1469,58 @@ ORDER BY id ASC`
 		return nil, err
 	}
 	return toMessageDomains(path), nil
+}
+
+// ListMessageAncestorsUntil 从指定消息向上遍历 parent_message_id 链，直到命中 stopMessageID 或达到深度上限。
+func (r *Repo) ListMessageAncestorsUntil(ctx context.Context, conversationID uint, leafMessageID uint, stopMessageID uint, maxDepth int) ([]domainconversation.Message, bool, error) {
+	if maxDepth <= 0 {
+		maxDepth = 200
+	}
+	if leafMessageID == 0 || stopMessageID == 0 {
+		return nil, false, repository.ErrInvalidInput
+	}
+
+	const cteSQL = `
+WITH RECURSIVE ancestors AS (
+    SELECT *, 1 AS _depth
+    FROM chat_messages
+    WHERE id = ? AND conversation_id = ? AND deleted_at IS NULL
+    UNION ALL
+    SELECT m.*, a._depth + 1
+    FROM chat_messages m
+    INNER JOIN ancestors a ON m.id = a.parent_message_id
+    WHERE a.parent_message_id IS NOT NULL
+      AND a._depth < ?
+      AND a.id <> ?
+      AND m.conversation_id = ?
+      AND m.deleted_at IS NULL
+)
+SELECT id, conversation_id, user_id, public_id, parent_message_id, run_id,
+       role, content_type, content, branch_reason, source_message_id,
+       token_usage, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens,
+       latency_ms,
+       status, error_code, error_message, follow_ups_json, is_compacted,
+       created_at, updated_at, deleted_at
+FROM ancestors
+ORDER BY id ASC`
+
+	path := make([]models.Message, 0, maxDepth)
+	if err := r.db.WithContext(ctx).Raw(cteSQL, leafMessageID, conversationID, maxDepth, stopMessageID, conversationID).Scan(&path).Error; err != nil {
+		return nil, false, translateError(err)
+	}
+
+	found := false
+	for _, item := range path {
+		if item.ID == stopMessageID {
+			found = true
+			break
+		}
+	}
+	hydrateMessageRefs(path)
+	if err := r.hydrateMessageAttachments(ctx, path); err != nil {
+		return nil, false, err
+	}
+	return toMessageDomains(path), found, nil
 }
 
 // ListRecentMessages 查询会话最近消息窗口（按时间升序返回）。
@@ -2906,19 +2958,23 @@ func toConversationToolCallModel(item *domainconversation.ToolCall) models.ChatR
 
 func toContextSnapshotDomain(item models.ChatContextRecord) domainconversation.ContextSnapshot {
 	return domainconversation.ContextSnapshot{
-		ID:             item.ID,
-		ConversationID: item.ConversationID,
-		MessageID:      item.MessageID,
-		UserID:         item.UserID,
-		RunID:          item.RunID,
-		FromTurn:       item.FromTurn,
-		ToTurn:         item.ToTurn,
-		SourceTokens:   item.SourceTokens,
-		SummaryTokens:  item.SummaryTokens,
-		SummaryText:    item.SummaryText,
-		Strategy:       item.Strategy,
-		CreatedAt:      item.CreatedAt,
-		UpdatedAt:      item.UpdatedAt,
+		ID:                    item.ID,
+		ConversationID:        item.ConversationID,
+		MessageID:             item.MessageID,
+		UserID:                item.UserID,
+		RunID:                 item.RunID,
+		FromTurn:              item.FromTurn,
+		ToTurn:                item.ToTurn,
+		CoveredUntilMessageID: item.CoveredUntilMessageID,
+		CoveredUntilPublicID:  item.CoveredUntilPublicID,
+		CoveragePathHash:      item.CoveragePathHash,
+		CoveredMessageCount:   item.CoveredMessageCount,
+		SourceTokens:          item.SourceTokens,
+		SummaryTokens:         item.SummaryTokens,
+		SummaryText:           item.SummaryText,
+		Strategy:              item.Strategy,
+		CreatedAt:             item.CreatedAt,
+		UpdatedAt:             item.UpdatedAt,
 	}
 }
 
@@ -2927,17 +2983,21 @@ func toContextSnapshotModel(item *domainconversation.ContextSnapshot) models.Cha
 		return models.ChatContextRecord{}
 	}
 	return models.ChatContextRecord{
-		RecordType:     chatContextRecordSnapshot,
-		ConversationID: item.ConversationID,
-		MessageID:      item.MessageID,
-		UserID:         item.UserID,
-		RunID:          item.RunID,
-		FromTurn:       item.FromTurn,
-		ToTurn:         item.ToTurn,
-		SourceTokens:   item.SourceTokens,
-		SummaryTokens:  item.SummaryTokens,
-		SummaryText:    item.SummaryText,
-		Strategy:       item.Strategy,
+		RecordType:            chatContextRecordSnapshot,
+		ConversationID:        item.ConversationID,
+		MessageID:             item.MessageID,
+		UserID:                item.UserID,
+		RunID:                 item.RunID,
+		FromTurn:              item.FromTurn,
+		ToTurn:                item.ToTurn,
+		CoveredUntilMessageID: item.CoveredUntilMessageID,
+		CoveredUntilPublicID:  item.CoveredUntilPublicID,
+		CoveragePathHash:      item.CoveragePathHash,
+		CoveredMessageCount:   item.CoveredMessageCount,
+		SourceTokens:          item.SourceTokens,
+		SummaryTokens:         item.SummaryTokens,
+		SummaryText:           item.SummaryText,
+		Strategy:              item.Strategy,
 	}
 }
 

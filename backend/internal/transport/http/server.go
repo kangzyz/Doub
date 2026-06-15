@@ -16,6 +16,7 @@ import (
 	"github.com/kangzyz/Doub/backend/internal/shared/buildinfo"
 	"github.com/kangzyz/Doub/backend/internal/shared/response"
 	adminhttp "github.com/kangzyz/Doub/backend/internal/transport/http/admin"
+	announcementhttp "github.com/kangzyz/Doub/backend/internal/transport/http/announcement"
 	authhttp "github.com/kangzyz/Doub/backend/internal/transport/http/auth"
 	channelhttp "github.com/kangzyz/Doub/backend/internal/transport/http/channel"
 	conversationhttp "github.com/kangzyz/Doub/backend/internal/transport/http/conversation"
@@ -52,6 +53,7 @@ type Modules struct {
 	MCP          *mcphttp.Module
 	Memory       *memoryhttp.Module
 	Admin        *adminhttp.Module
+	Announcement *announcementhttp.Module
 	Settings     *settingshttp.Module
 	UserSettings *usersettingshttp.Module
 }
@@ -132,13 +134,16 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 	if modules.MCP != nil {
 		modules.MCP.RegisterRoutes(authRequired)
 	}
+	if modules.Announcement != nil {
+		modules.Announcement.RegisterRoutes(authRequired)
+	}
 	if modules.UserSettings != nil {
 		modules.UserSettings.RegisterRoutes(authRequired)
 	}
 	if modules.Settings != nil {
 		modules.Settings.RegisterRoutes(authRequired)
 	}
-	if modules.Admin != nil || modules.Auth != nil || modules.Channel != nil || modules.MCP != nil || modules.Settings != nil {
+	if modules.Admin != nil || modules.Auth != nil || modules.Channel != nil || modules.MCP != nil || modules.Settings != nil || modules.Announcement != nil {
 		adminGroup := authRequired.Group("/admin")
 		adminGroup.Use(middleware.AdminOnly())
 		if modules.Auth != nil {
@@ -155,6 +160,9 @@ func NewEngine(cfg *config.Runtime, log *zap.Logger, modules Modules, hc HealthC
 		}
 		if modules.Settings != nil {
 			modules.Settings.RegisterAdminRoutes(adminGroup)
+		}
+		if modules.Announcement != nil {
+			modules.Announcement.RegisterAdminRoutes(adminGroup)
 		}
 	}
 

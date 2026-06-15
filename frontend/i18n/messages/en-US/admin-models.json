@@ -15,6 +15,10 @@
     "inactive": "Disabled",
     "circuitOpen": "Circuit open"
   },
+  "availability": {
+    "notEnabled": "Not enabled",
+    "noSource": "No upstream"
+  },
   "kinds": {
     "chat": "Chat",
     "audio": "Audio",
@@ -198,7 +202,6 @@
     "vendorHeader": "Vendors",
     "modelHeader": "Models",
     "itemCount": "{count}",
-    "inactive": "Inactive",
     "dragVendor": "Drag to reorder vendor {name}",
     "dragModel": "Drag to reorder model {name}"
   },
@@ -219,6 +222,25 @@
     "systemPromptPlaceholder": "Enter default behavior instructions for this model",
     "systemPromptDescription": "Applies only to chat tasks. If the model does not support native system prompts, it is merged into the user prompt.",
     "capabilitiesJSON": "Model capabilities JSON",
+    "capabilitiesDescription": "Configure per-model default options, visible option controls, and provider-native tools. Unknown JSON fields are preserved.",
+    "capabilitiesQuick": {
+      "button": "Configure",
+      "title": "Model capability quick config",
+      "description": "Edit common capability fields without hand-writing the full JSON.",
+      "invalidJSON": "Invalid capabilities JSON",
+      "guide": "Guide",
+      "guideTitle": "Capability JSON guide",
+      "guideDescription": "Capabilities are stored with the model and are applied by the backend when building provider requests.",
+      "defaultsTab": "Defaults",
+      "controlsTab": "Controls",
+      "toolsTab": "Tools",
+      "controlsDescription": "Expose safe model-specific options in the chat composer. The path uses dot notation, for example reasoning.effort.",
+      "emptyControls": "No option controls configured.",
+      "labelPlaceholder": "Label",
+      "optionsPlaceholder": "Comma-separated options",
+      "emptyTools": "No native tools match the selected route protocols.",
+      "defaultEnabled": "Default on"
+    },
     "upstreamSources": "Upstream sources ({count})",
     "metadata": "Metadata",
     "createdAt": "Created at",

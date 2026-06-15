@@ -12,8 +12,8 @@ defines its `TableName`, and tables are grouped by domain prefix:
 - `chat_*` for conversations, messages, runs, traces, shares, and context.
 - `file_*` for file objects and RAG chunks.
 - `llm_*` for upstreams, platform models, routes, and model catalog data.
-- `system_settings`, `user_settings`, `audit_logs`, and `system_events` for
-  operational state.
+- `system_settings`, `system_announcements`, `announcement_user_states`,
+  `user_settings`, `audit_logs`, and `system_events` for operational state.
 
 Reference: `backend/internal/infra/persistence/models/user.go` and
 `backend/internal/infra/persistence/postgres/postgres.go`.

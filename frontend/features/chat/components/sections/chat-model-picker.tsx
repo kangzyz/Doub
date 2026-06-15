@@ -18,7 +18,7 @@ import { InputGroupButton } from "@/components/ui/input-group";
 import type { ChatModelOption } from "@/features/chat/types/chat-runtime";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { LobeHubIcon } from "@/shared/components/lobehub-icon";
-import { resolveLobeHubIconURL, resolveModelIdentity } from "@/shared/lib/model-identity";
+import { resolveLobeHubIconURL, resolveModelIdentity, resolveVendorIdentity } from "@/shared/lib/model-identity";
 import { cn } from "@/lib/utils";
 
 const MODEL_MENU_MAX_HEIGHT = 320;
@@ -179,7 +179,7 @@ function ChatModelMenuItem({
       onSelect={onSelect}
     >
       <LobeHubIcon iconUrl={iconURL} label={platformModelName} />
-      <span className="min-w-0 flex-1 truncate">
+      <span className="min-w-0 flex-1 truncate leading-4">
         {platformModelName}
       </span>
       <span className="flex size-3 shrink-0 items-center justify-center">
@@ -208,41 +208,32 @@ export function ChatModelPicker({
     if (!selectedModel) {
       return "";
     }
-    return resolveModelIdentity({
-      code: selectedModel.platformModelName,
-      vendor: selectedModel.vendor,
-      icon: selectedModel.icon,
-    }).vendorKey;
+    return resolveVendorIdentity(selectedModel.vendor).vendorKey;
   }, [selectedModel]);
   const selectedVendorLabel = React.useMemo(() => {
     if (!selectedModel) {
       return "none";
     }
-    return resolveModelIdentity({
-      code: selectedModel.platformModelName,
-      vendor: selectedModel.vendor,
-      icon: selectedModel.icon,
-    }).vendorLabel;
+    return resolveVendorIdentity(selectedModel.vendor).vendorLabel;
   }, [selectedModel]);
   const vendorGroups = React.useMemo(() => {
     const groupMap = new Map<string, ChatModelOption[]>();
     for (const item of modelOptions) {
-      const identity = resolveModelIdentity({
-        code: item.platformModelName,
-        vendor: item.vendor,
-        icon: item.icon,
-      });
+      const identity = resolveVendorIdentity(item.vendor);
       const group = groupMap.get(identity.vendorKey) ?? [];
       group.push(item);
       groupMap.set(identity.vendorKey, group);
     }
 
-    return Array.from(groupMap.entries()).map(([vendor, items]) => ({
-      vendor,
-      label: resolveModelIdentity({ vendor }).vendorLabel,
-      icon: resolveModelIdentity({ vendor }).vendorIcon,
-      items,
-    }));
+    return Array.from(groupMap.entries()).map(([vendor, items]) => {
+      const identity = resolveVendorIdentity(vendor);
+      return {
+        vendor,
+        label: identity.vendorLabel,
+        icon: identity.vendorIcon,
+        items,
+      };
+    });
   }, [modelOptions]);
   const vendorMenuMaxHeight = React.useMemo(
     () => resolveModelMenuMaxHeight(vendorGroups.length, MODEL_MENU_VENDOR_ROW_HEIGHT, 12),

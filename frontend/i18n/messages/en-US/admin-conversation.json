@@ -1,6 +1,7 @@
 {
   "sections": {
     "conversation": "Conversation settings",
+    "contextCompression": "Context compression",
     "optionPassthrough": "Option passthrough"
   },
   "taskModel": {
@@ -36,6 +37,69 @@
     "nativeToolTypes": {
       "label": "Native tool control",
       "description": "Independent from the model option allowlist. Controls enabled provider-native tools by protocol. Use an empty array to disable native tools for that protocol."
+    },
+    "contextCompactEnabled": {
+      "label": "Context compression",
+      "description": "Allow automatic context compression. When off, user-level auto compression is hidden and no snapshot summaries are generated."
+    },
+    "contextTokenBudget": {
+      "label": "Token budget truncation",
+      "description": "Automatically compute budget from the current model context window and trim sendable history."
+    },
+    "contextMaxTurns": {
+      "label": "Compression trigger turns",
+      "description": "Turn-count threshold for triggering context compression.",
+      "placeholder": "Trigger turns"
+    },
+    "contextCompactTriggerTokens": {
+      "label": "Compression token threshold",
+      "description": "Token-scale threshold for triggering context compression.",
+      "placeholder": "Token threshold"
+    },
+    "contextCompactPreserveTurns": {
+      "label": "Recent turns to preserve",
+      "description": "Recent original turns to keep during compression. Older content is summarized.",
+      "placeholder": "Turns to preserve"
+    },
+    "contextCompactHighlightsPerRole": {
+      "label": "Highlights per role",
+      "description": "Maximum summary highlights retained for each user and assistant role during template compression.",
+      "placeholder": "Highlight count"
+    },
+    "contextCompactSnippetChars": {
+      "label": "Snippet character limit",
+      "description": "Maximum characters retained in one message snippet during template compression.",
+      "placeholder": "Character limit"
+    },
+    "contextArtifactRetentionDays": {
+      "label": "Evidence retention days",
+      "description": "Retention period for context evidence, including RAG results, historical evidence, and tool results. 0 disables automatic expiry.",
+      "placeholder": "Retention days"
+    },
+    "compactAsync": {
+      "label": "Async compression",
+      "description": "Run compression tasks asynchronously in the background to reduce blocking in the current response pipeline."
+    },
+    "compactLLM": {
+      "label": "LLM compression",
+      "description": "Call a model to generate semantic summaries. When off, only template summaries are used."
+    },
+    "compactTaskModel": {
+      "label": "Compression model",
+      "description": "Chat model used to generate compression summaries. Follow current model falls back to the default chat model when the active conversation model is not chat-capable."
+    },
+    "compactMaxFailures": {
+      "label": "Circuit threshold",
+      "description": "Consecutive failure threshold for LLM compression. After reaching it, the system falls back to template summaries.",
+      "placeholder": "Circuit threshold"
+    },
+    "compactSystemPrompt": {
+      "label": "Full summary prompt",
+      "description": "Custom instruction sent to the LLM for full compression. Leave empty to use the built-in default."
+    },
+    "compactLightPrompt": {
+      "label": "Light summary prompt",
+      "description": "Custom instruction sent to the LLM for light compression. Leave empty to use the built-in default."
     },
     "titlePrompt": {
       "label": "Title generation prompt",

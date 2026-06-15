@@ -10,10 +10,12 @@ import { useLoadMoreSentinel } from "@/shared/hooks/use-load-more-sentinel";
 import { useSidebarRecents } from "@/features/recent/context/sidebar-recents-context";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import {
+  exportConversation,
   listConversations,
   revokeConversationShare,
   revokeConversationShares,
 } from "@/shared/api/conversation";
+import { downloadConversationExport } from "@/features/chat/model/conversation-export";
 import type {
   ConversationDTO,
   ConversationProjectFilter,
@@ -384,6 +386,22 @@ export function useRecentPage() {
     setShareTarget(item);
   }, []);
 
+  const onExport = React.useCallback(async (item: ConversationDTO) => {
+    const token = await resolveAccessToken();
+    if (!token) {
+      return;
+    }
+    try {
+      const data = await exportConversation(token, item.publicID);
+      downloadConversationExport(data);
+      toast.success(t("exported"));
+    } catch (error) {
+      toast.error(t("exportFailed"), {
+        description: resolveErrorMessage(error, t("exportFailed")),
+      });
+    }
+  }, [resolveErrorMessage, t]);
+
   const onSetProject = React.useCallback(
     async (publicID: string, projectID?: string) => {
       const updated = await setProjectByPublicID(publicID, projectID);
@@ -669,6 +687,7 @@ export function useRecentPage() {
     onShare,
     onSetProject,
     onRevokeShare,
+    onExport,
     onDelete,
     setRenameValue,
     onRenameCommit,

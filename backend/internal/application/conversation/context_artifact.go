@@ -53,14 +53,17 @@ type snapshotContextArtifactInput struct {
 }
 
 type historicalContextArtifactInput struct {
-	CurrentMessageID uint
-	Query            string
-	Candidates       []domainconversation.ContextArtifact
-	CurrentRAGChunks []domainconversation.RAGChunk
-	CurrentFallbacks []AttachmentInput
-	CurrentRecall    []domainconversation.MessageChunk
-	MaxItems         int
-	MaxTokens        int64
+	CurrentMessageID   uint
+	HasCurrentSnapshot bool
+	CoveredUntilID     uint
+	AllowedMessageIDs  map[uint]struct{}
+	Query              string
+	Candidates         []domainconversation.ContextArtifact
+	CurrentRAGChunks   []domainconversation.RAGChunk
+	CurrentFallbacks   []AttachmentInput
+	CurrentRecall      []domainconversation.MessageChunk
+	MaxItems           int
+	MaxTokens          int64
 }
 
 type historicalScoredArtifact struct {
@@ -166,6 +169,9 @@ func (s *Service) recallHistoricalContextArtifacts(
 	ctx context.Context,
 	conversationID uint,
 	currentMessageID uint,
+	hasCurrentSnapshot bool,
+	coveredUntilID uint,
+	allowedMessageIDs map[uint]struct{},
 	query string,
 	currentRAGChunks []domainconversation.RAGChunk,
 	currentFallbacks []AttachmentInput,
@@ -179,7 +185,9 @@ func (s *Service) recallHistoricalContextArtifacts(
 		domainconversation.ContextArtifactFileRAGFallback,
 		domainconversation.ContextArtifactToolResult,
 		domainconversation.ContextArtifactNativeTool,
-		domainconversation.ContextArtifactSummary,
+	}
+	if !hasCurrentSnapshot {
+		kinds = append(kinds, domainconversation.ContextArtifactSummary)
 	}
 	candidates, err := s.repo.ListRecentContextArtifacts(ctx, conversationID, kinds, historicalArtifactScanLimit)
 	if err != nil {
@@ -193,12 +201,15 @@ func (s *Service) recallHistoricalContextArtifacts(
 		return nil
 	}
 	return selectHistoricalContextArtifacts(historicalContextArtifactInput{
-		CurrentMessageID: currentMessageID,
-		Query:            query,
-		Candidates:       candidates,
-		CurrentRAGChunks: currentRAGChunks,
-		CurrentFallbacks: currentFallbacks,
-		CurrentRecall:    currentRecall,
+		CurrentMessageID:   currentMessageID,
+		HasCurrentSnapshot: hasCurrentSnapshot,
+		CoveredUntilID:     coveredUntilID,
+		AllowedMessageIDs:  allowedMessageIDs,
+		Query:              query,
+		Candidates:         candidates,
+		CurrentRAGChunks:   currentRAGChunks,
+		CurrentFallbacks:   currentFallbacks,
+		CurrentRecall:      currentRecall,
 	})
 }
 
@@ -395,11 +406,15 @@ func buildSnapshotContextArtifact(input snapshotContextArtifactInput) *domaincon
 		TokenEstimate:  tokenEstimate,
 		Score:          1,
 		MetadataJSON: contextArtifactMetadata(map[string]interface{}{
-			"from_turn":      input.Snapshot.FromTurn,
-			"to_turn":        input.Snapshot.ToTurn,
-			"source_tokens":  input.Snapshot.SourceTokens,
-			"summary_tokens": input.Snapshot.SummaryTokens,
-			"strategy":       strings.TrimSpace(input.Snapshot.Strategy),
+			"from_turn":                input.Snapshot.FromTurn,
+			"to_turn":                  input.Snapshot.ToTurn,
+			"covered_until_message_id": input.Snapshot.CoveredUntilMessageID,
+			"covered_until_public_id":  strings.TrimSpace(input.Snapshot.CoveredUntilPublicID),
+			"covered_message_count":    input.Snapshot.CoveredMessageCount,
+			"coverage_path_hash":       strings.TrimSpace(input.Snapshot.CoveragePathHash),
+			"source_tokens":            input.Snapshot.SourceTokens,
+			"summary_tokens":           input.Snapshot.SummaryTokens,
+			"strategy":                 strings.TrimSpace(input.Snapshot.Strategy),
 		}),
 	}
 }
@@ -423,6 +438,20 @@ func selectHistoricalContextArtifacts(input historicalContextArtifactInput) []do
 
 	scored := make([]historicalScoredArtifact, 0, len(input.Candidates))
 	for index, item := range input.Candidates {
+		if input.HasCurrentSnapshot && item.Kind == domainconversation.ContextArtifactSummary {
+			continue
+		}
+		if input.CoveredUntilID > 0 && item.MessageID > 0 && item.MessageID <= input.CoveredUntilID {
+			continue
+		}
+		if len(input.AllowedMessageIDs) > 0 {
+			if item.MessageID == 0 {
+				continue
+			}
+			if _, ok := input.AllowedMessageIDs[item.MessageID]; !ok {
+				continue
+			}
+		}
 		content := strings.TrimSpace(item.Content)
 		if content == "" || item.MessageID == input.CurrentMessageID {
 			continue

@@ -1,0 +1,12 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend ownership and pre-development checklist for chat option UI and hooks."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Cached model options live in browser state and must reconcile with backend/model defaults."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Chat model option loading is hook-driven and should preserve existing side-effect patterns."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Composer controls and model configuration dropdown must stay dense and consistent."}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"Model capabilities and cached JSON are unknown JSON boundaries."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Frontend lint/build expectations for chat UI changes."}
+{"file":".trellis/spec/backend/index.md","reason":"Backend layer ownership for model option policy and provider adapters."}
+{"file":".trellis/spec/backend/ai-and-conversation.md","reason":"Conversation runtime owns provider option filtering and native citation/search behavior."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Backend verification expectations for policy and adapter changes."}
+{"file":".trellis/spec/guides/pre-implementation-checklist.md","reason":"Cross-layer ownership, contract, and verification checklist."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Change spans frontend option state and backend provider option policy."}
+{"file":".trellis/tasks/06-15-native-tools-default-integration/research/official-native-tools.md","reason":"Official OpenAI and Gemini native search tool shapes and behavior."}

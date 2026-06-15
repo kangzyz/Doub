@@ -275,6 +275,7 @@ func (s *Service) StreamMediaImage(ctx context.Context, input MediaImageInput) (
 		AllowedPathsJSON:           cfg.ModelOptionAllowedPaths,
 		DeniedPathsJSON:            cfg.ModelOptionDeniedPaths,
 		NativeToolAllowedTypesJSON: cfg.NativeToolAllowedTypes,
+		ModelCapabilitiesJSON:      route.ModelCapabilitiesJSON,
 	})
 
 	emitMediaEvent(input.OnEvent, "running", mediaImageRunningMessage(input.TaskType))

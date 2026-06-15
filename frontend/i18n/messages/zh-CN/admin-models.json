@@ -15,6 +15,10 @@
     "inactive": "停用",
     "circuitOpen": "熔断中"
   },
+  "availability": {
+    "notEnabled": "未启用",
+    "noSource": "无上游"
+  },
   "kinds": {
     "chat": "对话",
     "audio": "语音",
@@ -198,7 +202,6 @@
     "vendorHeader": "厂商",
     "modelHeader": "模型",
     "itemCount": "{count} 个",
-    "inactive": "停用",
     "dragVendor": "拖拽调整厂商 {name} 的顺序",
     "dragModel": "拖拽调整模型 {name} 的顺序"
   },
@@ -219,6 +222,25 @@
     "systemPromptPlaceholder": "输入该模型的默认行为指令",
     "systemPromptDescription": "仅对聊天任务生效；当模型不支持原生 system prompt 时，会自动合并到用户提示词中。",
     "capabilitiesJSON": "模型能力 JSON",
+    "capabilitiesDescription": "配置该模型的默认 options、聊天输入框可见参数控件，以及厂商原生工具；未知 JSON 字段会保留。",
+    "capabilitiesQuick": {
+      "button": "快捷配置",
+      "title": "模型能力快捷配置",
+      "description": "无需手写完整 JSON，即可编辑常用能力字段。",
+      "invalidJSON": "模型能力 JSON 格式不正确",
+      "guide": "说明",
+      "guideTitle": "模型能力 JSON 说明",
+      "guideDescription": "能力配置会随模型保存，并由后端在构造上游请求时应用。",
+      "defaultsTab": "默认参数",
+      "controlsTab": "控件",
+      "toolsTab": "工具",
+      "controlsDescription": "在聊天输入框暴露安全的模型专属参数；路径使用点号，例如 reasoning.effort。",
+      "emptyControls": "尚未配置参数控件。",
+      "labelPlaceholder": "标签",
+      "optionsPlaceholder": "逗号分隔选项",
+      "emptyTools": "没有匹配当前路由协议的原生工具。",
+      "defaultEnabled": "默认开启"
+    },
     "upstreamSources": "上游来源（{count}）",
     "metadata": "元数据",
     "createdAt": "创建时间",

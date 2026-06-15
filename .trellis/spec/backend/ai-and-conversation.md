@@ -19,6 +19,121 @@ When changing chat behavior, check the related focused files and tests:
 - `prompt_plan.go` and `prompt_plan_test.go`
 - `generation_stream.go` and `generation_stream_test.go`
 
+## Scenario: Conversation JSON Export
+
+### 1. Scope / Trigger
+
+Use this contract when changing conversation export, conversation backup JSON,
+conversation message DTOs used by export, or frontend download behavior. This
+path is cross-layer: the backend authorizes and assembles the export, HTTP
+serializes existing conversation/message/run DTOs, and the frontend saves the
+exact response as a JSON file.
+
+### 2. Signatures
+
+- HTTP: `GET /api/v1/conversations/:id/export`
+- Application:
+  `Service.ExportConversation(ctx context.Context, userID uint, publicID string) (*ConversationExportResult, error)`
+- Repository:
+  - `GetConversationByPublicID(ctx, publicID, userID)`
+  - `ListAllMessages(ctx, conversationID)`
+  - `ListConversationRunsByRunIDs(ctx, userID, conversationID, runIDs)`
+- Response:
+  `ConversationExportResponse{ version, exportScope, exportedAt, conversation, messages, runs, totalMessages, totalRuns, defaultMessagePublicIDs, compatibility }`
+- Frontend:
+  `exportConversation(accessToken, conversationPublicID)` and
+  `downloadConversationExport(data)`
+
+### 3. Contracts
+
+- Export is authenticated and scoped to the requesting `userID`; a public ID
+  owned by another user must behave as not found.
+- `version` is the export schema version. `exportScope` is `full`.
+- `exportedAt` is generated in UTC by the application service.
+- `conversation` uses the normal `ConversationResponse` mapping, including
+  normalized `labelsJSON` and `shareStatus`.
+- `messages` includes all conversation messages, not only the latest visible
+  branch. Message feedback and process traces must be hydrated before response
+  mapping.
+- `runs` includes only runs referenced by trimmed, deduplicated non-empty
+  message `runID` values and must stay scoped to the same user and conversation.
+- `defaultMessagePublicIDs` is derived from the latest visible branch so an
+  importer or viewer can reconstruct the default thread while still preserving
+  all exported messages.
+- `compatibility.format` is `doub.conversation.export`. Import compatibility is
+  not promised by this response.
+- The frontend writes the response object unchanged with pretty JSON and a
+  trailing newline. The filename is based on conversation title/public ID and
+  `exportedAt`; unsafe filename characters are replaced.
+
+### 4. Validation & Error Matrix
+
+- Missing/invalid `:id` path parameter -> HTTP 400.
+- Conversation missing or not owned by user -> `ErrConversationNotFound` ->
+  HTTP 404.
+- Message listing, feedback hydration, trace hydration, or run listing failure
+  -> HTTP 500.
+- Blank message `runID` -> skipped when selecting runs.
+- Duplicate or whitespace-padded message `runID` -> trim and include once.
+- Invalid `exportedAt` on the frontend -> filename timestamp falls back to the
+  current browser time; exported JSON content is not modified.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a branched conversation exports all messages and sets
+  `defaultMessagePublicIDs` to the newest visible path.
+- Good: messages with `runID` values `" run_1 "`, `"run_1"`, and `"run_2"`
+  request runs `["run_1", "run_2"]`.
+- Base: a conversation with no message runs exports an empty `runs` array and
+  `totalRuns: 0`.
+- Base: a conversation title containing `\/:*?"<>|` saves as a sanitized
+  `.json` filename.
+- Bad: an export endpoint returns only visible branch messages and loses retry
+  history.
+- Bad: frontend mutates or filters messages before writing the JSON backup.
+
+### 6. Tests Required
+
+- Service tests should cover default visible branch ID selection and run ID
+  trimming/deduplication.
+- Application or repository tests should cover user ownership scoping, all
+  message retrieval, feedback hydration, trace hydration, and run lookup by
+  selected run IDs when practical.
+- HTTP or generated docs checks should cover the export route and response DTO.
+- Frontend lint/build must pass after changing `ConversationExportDTO`,
+  `exportConversation`, the download helper, share/export menus, or i18n keys.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+// Do not export only the currently visible branch.
+messages, _ := s.repo.ListMessages(ctx, conversation.ID, latestBranchOnly)
+```
+
+#### Correct
+
+```go
+// Export every message, then separately record the default visible branch IDs.
+messages, _ := s.repo.ListAllMessages(ctx, conversation.ID)
+defaultIDs := exportDefaultMessagePublicIDs(messages)
+```
+
+#### Wrong
+
+```typescript
+// Do not alter the backup payload before saving.
+download(JSON.stringify({ messages: data.messages.filter(isVisible) }));
+```
+
+#### Correct
+
+```typescript
+// Save the typed backend export unchanged.
+downloadConversationExport(data);
+```
+
 ## Scenario: HTML Visual Prompt Contract
 
 ### 1. Scope / Trigger
@@ -144,6 +259,88 @@ upstream, upstream model, binding code, protocol, vendor, and icon snapshots.
 
 Do not hard-code provider-private routing rules in frontend code. Frontend model
 controls should consume model capability JSON and backend-provided policy.
+
+## Scenario: Model Catalog Availability And Display Order
+
+### 1. Scope / Trigger
+
+Use this contract when changing platform model listing, admin model ordering,
+public/chat model picker ordering, or vendor grouping.
+
+### 2. Signatures
+
+- Repository: `ListModels(ctx, repository.ListChannelModelsInput)`.
+- Query input: `OnlyActive`, `OnlyAvailable`, `Query`, `Status`, `Vendor`,
+  `Protocol`, `Sort`.
+- Admin HTTP: `GET /api/v1/admin/llm/models?only_active=&only_available=&sort=`.
+- Frontend admin API: `listAdminLLMModels(token, { onlyActive, onlyAvailable, sort })`.
+
+### 3. Contracts
+
+- `OnlyAvailable` means a platform model is active and has at least one active
+  route whose upstream model and upstream are also active.
+- `OnlyAvailable` is stricter than `OnlyActive`; when set, it defines the
+  availability filter and should not rely on frontend filtering.
+- The default and `sortOrder_asc` order groups models by availability first:
+  available models, then enabled models with unavailable sources, then models
+  with no active route path.
+- Within each availability rank, vendor groups are ordered by the minimum
+  `sort_order` for that vendor key in the current result set, then by vendor
+  key, model `sort_order`, and model ID.
+- Admin reorder submits the visible available/routable model IDs only.
+  `ReorderModels` updates only submitted IDs and must not renumber hidden,
+  disabled, unroutable, or future internal-scope models.
+- Frontend grouping should use the explicit model `vendor` field through
+  `resolveVendorIdentity`; model-name inference is still valid for model icons
+  but must not move a model into a different vendor group.
+
+### 4. Validation & Error Matrix
+
+- Empty reorder list -> `ErrInvalidModelOrder`.
+- Duplicate model ID in reorder list -> `ErrInvalidModelOrder`.
+- Unknown model ID in reorder list -> `ErrModelNotFound`.
+- Missing or unknown `sort` -> default display order.
+- Blank or unknown vendor -> `unknown` vendor group in the frontend.
+
+### 5. Good/Base/Bad Cases
+
+- Good: the public chat model picker receives backend-sorted available models
+  and keeps vendor groups in that order.
+- Good: the admin order sheet loads with `only_available=true`, saves the
+  submitted IDs, and leaves unavailable models' stored `sort_order` unchanged.
+- Base: admin model table still shows disabled or unroutable rows, but marks
+  them as not enabled or no upstream instead of putting them into the order
+  sheet.
+- Bad: grouping by `resolveModelIdentity({ code })` moves a custom model into a
+  vendor inferred from its model name instead of its configured vendor.
+- Bad: a reorder call renumbers every platform model and unexpectedly changes
+  hidden or disabled rows.
+
+### 6. Tests Required
+
+- Backend tests should cover default order by availability, vendor group order,
+  `OnlyAvailable` filtering, duplicate and missing reorder IDs, and preserving
+  unsubmitted model `sort_order`.
+- HTTP or generated docs checks should include the `only_available` query
+  parameter when the admin model API contract changes.
+- Frontend lint/build must pass after changing model API options, admin model
+  table/order sheet, i18n keys, or chat model picker grouping.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+// Do not use model-name inference for vendor grouping.
+const identity = resolveModelIdentity({ code: model.platformModelName, vendor: model.vendor });
+```
+
+#### Correct
+
+```typescript
+// Vendor grouping follows the configured vendor; model icons may still infer by name.
+const vendorIdentity = resolveVendorIdentity(model.vendor);
+```
 
 ## Streaming And Trace Events
 

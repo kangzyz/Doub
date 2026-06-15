@@ -13,6 +13,7 @@ const sessionSnapshot: SessionSnapshot = {
 };
 
 let didLoadStoredSessionSnapshot = false;
+let sessionRevision = 0;
 
 function normalizeStoredSessionSnapshot(value: unknown): SessionSnapshot | null {
   if (!value || typeof value !== "object") {
@@ -120,6 +121,11 @@ export function readSessionSnapshot(): SessionSnapshot {
   };
 }
 
+export function readSessionRevision(): number {
+  loadStoredSessionSnapshotIfEmpty();
+  return sessionRevision;
+}
+
 export function writeSessionSnapshot(next: Partial<SessionSnapshot>): void {
   loadStoredSessionSnapshotIfEmpty();
   const previousAccessToken = sessionSnapshot.accessToken;
@@ -132,6 +138,7 @@ export function writeSessionSnapshot(next: Partial<SessionSnapshot>): void {
   }
   writeStoredSessionSnapshot(sessionSnapshot);
   if (sessionSnapshot.accessToken !== previousAccessToken || sessionSnapshot.sessionID !== previousSessionID) {
+    sessionRevision += 1;
     dispatchSessionSnapshotChanged();
   }
 }

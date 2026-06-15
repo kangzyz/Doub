@@ -3,6 +3,7 @@ export const ADMIN_SECTIONS = [
   { id: "channels", label: "Upstreams", href: "/channels" },
   { id: "models", label: "Models", href: "/models" },
   { id: "tool-settings", label: "Tools", href: "/tools" },
+  { id: "announcements", label: "Announcements", href: "/announcements" },
   { id: "logs", label: "Logs", href: "/logs" },
   { id: "login-settings", label: "Login & auth", href: "/login" },
   { id: "conversation-settings", label: "Conversation", href: "/conversation" },

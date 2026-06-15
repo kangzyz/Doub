@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/kangzyz/Doub/backend/internal/application/admin"
+	"github.com/kangzyz/Doub/backend/internal/application/announcement"
 	"github.com/kangzyz/Doub/backend/internal/application/audit"
 	"github.com/kangzyz/Doub/backend/internal/application/auth"
 	"github.com/kangzyz/Doub/backend/internal/application/channel"
@@ -38,6 +39,7 @@ import (
 	platformlogger "github.com/kangzyz/Doub/backend/internal/infra/observability/logger"
 	platformtracing "github.com/kangzyz/Doub/backend/internal/infra/observability/tracing"
 	platformdb "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres"
+	announcementrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/announcement"
 	auditrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/audit"
 	channelrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/channel"
 	conversationrepo "github.com/kangzyz/Doub/backend/internal/infra/persistence/postgres/conversation"
@@ -50,6 +52,7 @@ import (
 	platformruntime "github.com/kangzyz/Doub/backend/internal/infra/runtime"
 	platformhttp "github.com/kangzyz/Doub/backend/internal/transport/http"
 	adminhttp "github.com/kangzyz/Doub/backend/internal/transport/http/admin"
+	announcementhttp "github.com/kangzyz/Doub/backend/internal/transport/http/announcement"
 	authhttp "github.com/kangzyz/Doub/backend/internal/transport/http/auth"
 	channelhttp "github.com/kangzyz/Doub/backend/internal/transport/http/channel"
 	conversationhttp "github.com/kangzyz/Doub/backend/internal/transport/http/conversation"
@@ -213,6 +216,10 @@ func NewApp() (*App, error) {
 	userSettingsService := usersettings.NewService(userSettingsRepo)
 	userSettingsHandler := usersettingshttp.NewHandler(userSettingsService)
 	userSettingsModule := usersettingshttp.NewModule(userSettingsHandler)
+	announcementRepo := announcementrepo.NewRepo(db)
+	announcementService := announcement.NewService(announcementRepo)
+	announcementHandler := announcementhttp.NewHandler(announcementService)
+	announcementModule := announcementhttp.NewModule(announcementHandler)
 
 	hc := newHealthChecker(db, redisClient)
 	rateLimiter := platformcache.NewRateLimiter(redisClient)
@@ -224,6 +231,7 @@ func NewApp() (*App, error) {
 		MCP:          mcpModule,
 		Memory:       memoryModule,
 		Admin:        adminModule,
+		Announcement: announcementModule,
 		Settings:     settingsModule,
 		UserSettings: userSettingsModule,
 	}, hc, rateLimiter)

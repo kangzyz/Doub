@@ -127,6 +127,8 @@ func migrate(db *gorm.DB, cfg config.Config) error {
 		"user_memories":                  "用户长期个性化记忆表",
 		"audit_logs":                     "可追溯审计日志表",
 		"system_events":                  "后台系统事件表",
+		"system_announcements":           "站点公告表",
+		"announcement_user_states":       "用户公告展示状态表",
 		"system_settings":                "系统动态配置表",
 		"user_settings":                  "用户个人偏好配置表",
 		"file_chunks":                    "RAG文件分片表",
@@ -147,6 +149,9 @@ func migrate(db *gorm.DB, cfg config.Config) error {
 		return err
 	}
 	if err := applyLLMBaselineIndexes(db); err != nil {
+		return err
+	}
+	if err := applyAnnouncementBaseline(db); err != nil {
 		return err
 	}
 	if err := applyVectorBaseline(db, vectorBaselineRequired(cfg)); err != nil {
@@ -190,6 +195,8 @@ func applySchemaBaseline(db *gorm.DB) error {
 		&model.UserMemory{},
 		&model.AuditLog{},
 		&model.SystemEvent{},
+		&model.Announcement{},
+		&model.AnnouncementUserState{},
 		&model.SystemSetting{},
 		&model.UserSetting{},
 		&model.FileChunk{},
@@ -230,6 +237,37 @@ func applyLLMBaselineIndexes(db *gorm.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_llm_model_routes_routing
 			ON "llm_model_routes" ("platform_model_id", "status", "priority", "weight")
 			WHERE status = 'active'`,
+	}
+
+	for _, statement := range statements {
+		if err := db.Exec(statement).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyAnnouncementBaseline(db *gorm.DB) error {
+	statements := []string{
+		`ALTER TABLE "system_announcements"
+		ADD COLUMN IF NOT EXISTS "type" varchar(32) NOT NULL DEFAULT 'general'`,
+		`COMMENT ON COLUMN "system_announcements"."type" IS '公告类型(critical/warning/info/normal/general)'`,
+		`ALTER TABLE "system_announcements"
+		ADD COLUMN IF NOT EXISTS "pinned" boolean NOT NULL DEFAULT false`,
+		`COMMENT ON COLUMN "system_announcements"."pinned" IS '是否置顶'`,
+		`CREATE INDEX IF NOT EXISTS idx_system_announcements_sort
+		ON "system_announcements" ("pinned", "priority", "updated_at", "id")`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_announcement_user_states_version
+		ON "announcement_user_states" ("announcement_id", "user_id", "announcement_updated_at")`,
+		`ALTER TABLE "announcement_user_states"
+		ADD COLUMN IF NOT EXISTS "closed_at" timestamptz`,
+		`COMMENT ON COLUMN "announcement_user_states"."closed_at" IS '关闭时间'`,
+		`CREATE INDEX IF NOT EXISTS idx_announcement_user_states_user_dismissed
+		ON "announcement_user_states" ("user_id", "dismissed_until")
+		WHERE "dismissed_until" IS NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_announcement_user_states_user_closed
+		ON "announcement_user_states" ("user_id", "closed_at")
+		WHERE "closed_at" IS NOT NULL`,
 	}
 
 	for _, statement := range statements {
@@ -284,6 +322,24 @@ func applyConversationBaselineIndexes(db *gorm.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS uk_file_objects_active_user_content
 		ON "file_objects" ("user_id", "sha256", "size_bytes")
 		WHERE status = 'active' AND deleted_at IS NULL AND sha256 <> ''`,
+		`ALTER TABLE "chat_context_records"
+		ADD COLUMN IF NOT EXISTS "covered_until_message_id" bigint NOT NULL DEFAULT 0`,
+		`COMMENT ON COLUMN "chat_context_records"."covered_until_message_id" IS '快照覆盖到的最后消息ID'`,
+		`ALTER TABLE "chat_context_records"
+		ADD COLUMN IF NOT EXISTS "covered_until_public_id" varchar(32) NOT NULL DEFAULT ''`,
+		`COMMENT ON COLUMN "chat_context_records"."covered_until_public_id" IS '快照覆盖到的最后消息公开ID'`,
+		`ALTER TABLE "chat_context_records"
+		ADD COLUMN IF NOT EXISTS "coverage_path_hash" varchar(64) NOT NULL DEFAULT ''`,
+		`COMMENT ON COLUMN "chat_context_records"."coverage_path_hash" IS '快照覆盖分支路径Hash'`,
+		`ALTER TABLE "chat_context_records"
+		ADD COLUMN IF NOT EXISTS "covered_message_count" integer NOT NULL DEFAULT 0`,
+		`COMMENT ON COLUMN "chat_context_records"."covered_message_count" IS '快照覆盖消息数'`,
+		`CREATE INDEX IF NOT EXISTS idx_chat_context_records_covered_until_message_id
+		ON "chat_context_records" ("covered_until_message_id")`,
+		`CREATE INDEX IF NOT EXISTS idx_chat_context_records_covered_until_public_id
+		ON "chat_context_records" ("covered_until_public_id")`,
+		`CREATE INDEX IF NOT EXISTS idx_chat_context_records_coverage_path_hash
+		ON "chat_context_records" ("coverage_path_hash")`,
 	}
 
 	for _, statement := range statements {

@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { TaskModelField, type ModelOption } from "./model-field";
 import {
   SettingsFieldEditor,
   type ServiceRuntimeActionName,
@@ -43,7 +42,6 @@ import {
   SERVICE_LABELS,
   SERVICE_NAMES,
   SETTINGS_GROUPS,
-  TASK_MODEL_FOLLOW,
   TIKA_SERVICE_SOURCES,
   usesTika,
   type ServiceName,
@@ -57,7 +55,6 @@ import {
   getAdminDoclingRuntime,
   getAdminEmbeddingRuntime,
   getAdminEmbeddingStatus,
-  getAdminReferenceData,
   getAdminMinerURuntime,
   getAdminRapidOCRRuntime,
   getAdminTesseractRuntime,
@@ -69,7 +66,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { PatchSettingItem } from "@/shared/api/settings.types";
 import { configuredSettingsMap, settingHasValue } from "@/shared/lib/settings-meta";
-import { isRoutableChatPlatformModel, resolveModelOptionIconUrl, resolveModelOptionLabel } from "@/shared/lib/model-option-display";
 
 const SERVICE_LOADERS: Record<ServiceName, (token: string) => Promise<ServiceRuntimeData>> = {
   tika: getAdminTikaRuntime as (token: string) => Promise<ServiceRuntimeData>,
@@ -120,17 +116,6 @@ export function AdminFilesSettingsPage() {
   const [embeddingStatus, setEmbeddingStatus] = React.useState<AdminEmbeddingIndexStatus | null>(null);
   const [embeddingStatusLoading, setEmbeddingStatusLoading] = React.useState(false);
   const [reindexing, setReindexing] = React.useState(false);
-  const [modelOptions, setModelOptions] = React.useState<ModelOption[]>([
-    { label: "Follow current model", value: TASK_MODEL_FOLLOW, iconUrl: null },
-  ]);
-
-  const localizedModelOptions = React.useMemo(
-    () =>
-      modelOptions.map((item) =>
-        item.value === TASK_MODEL_FOLLOW ? { ...item, label: t("model.followCurrent") } : item,
-      ),
-    [modelOptions, t],
-  );
 
   const loadEmbeddingStatus = React.useCallback(async () => {
     setEmbeddingStatusLoading(true);
@@ -216,27 +201,9 @@ export function AdminFilesSettingsPage() {
         toast.error(t("toast.sessionExpired"), { description: t("toast.sessionExpiredDescription") });
         return;
       }
-      const [grouped, referenceData] = await Promise.all([
-        listAdminSettings(token),
-        getAdminReferenceData(token).catch(() => null),
-      ]);
-      const models = (referenceData?.models ?? []).filter((item) => isRoutableChatPlatformModel(item));
-      const nextModelOptions = [
-        { label: "Follow current model", value: TASK_MODEL_FOLLOW, iconUrl: null },
-        ...(models
-          .map((item) => ({
-            label: resolveModelOptionLabel(item.platformModelName),
-            value: item.platformModelName,
-            iconUrl: resolveModelOptionIconUrl({
-              platformModelName: item.platformModelName,
-              vendor: item.vendor ?? "",
-              icon: item.icon ?? "",
-            }),
-          }))),
-      ];
+      const grouped = await listAdminSettings(token);
       const flattened = applySettingsDefaults(flattenSettings(SETTINGS_GROUPS, grouped));
       setConfiguredMap(configuredSettingsMap(grouped));
-      setModelOptions(nextModelOptions);
       setSettingsMap(flattened);
       setSavedMap(flattened);
       syncServiceRuntimes(flattened);
@@ -571,23 +538,6 @@ export function AdminFilesSettingsPage() {
                     {visibleBlocks.map((block, blockIndex) => {
                       if (block.kind === "field") {
                         const fieldID = resolveFieldID(block.field);
-                        if (fieldID === "chat.compact_task_model") {
-                          return (
-                            <SettingsFieldItem key={fieldID} index={blockIndex}>
-                              <TaskModelField
-                                id={fieldID}
-                                label={translateOptional(t, `fields.${block.field.namespace}.${block.field.key}.label`, block.field.label)}
-                                description={translateOptional(t, `fields.${block.field.namespace}.${block.field.key}.description`, block.field.description)}
-                                value={settingsMap[fieldID] ?? ""}
-                                fallbackValue={TASK_MODEL_FOLLOW}
-                                dirty={(settingsMap[fieldID] ?? "") !== (savedMap[fieldID] ?? "")}
-                                disabled={loading || saving}
-                                modelOptions={localizedModelOptions}
-                                onChange={(value) => handleFieldChange(fieldID, value)}
-                              />
-                            </SettingsFieldItem>
-                          );
-                        }
                         return (
                           <SettingsFieldItem key={fieldID} index={blockIndex}>
                             <SettingsFieldEditor
@@ -622,22 +572,6 @@ export function AdminFilesSettingsPage() {
                                 <SettingsFieldList className="gap-3 md:gap-4">
                                   {block.fields.map((field) => {
                                     const fieldID = resolveFieldID(field);
-                                    if (fieldID === "chat.compact_task_model") {
-                                      return (
-                                        <TaskModelField
-                                          key={fieldID}
-                                          id={fieldID}
-                                          label={translateOptional(t, `fields.${field.namespace}.${field.key}.label`, field.label)}
-                                          description={translateOptional(t, `fields.${field.namespace}.${field.key}.description`, field.description)}
-                                          value={settingsMap[fieldID] ?? ""}
-                                          fallbackValue={TASK_MODEL_FOLLOW}
-                                          dirty={(settingsMap[fieldID] ?? "") !== (savedMap[fieldID] ?? "")}
-                                          disabled={loading || saving}
-                                          modelOptions={localizedModelOptions}
-                                          onChange={(value) => handleFieldChange(fieldID, value)}
-                                        />
-                                      );
-                                    }
                                     return (
                                       <SettingsFieldEditor
                                         key={fieldID}

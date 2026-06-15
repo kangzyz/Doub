@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kangzyz/Doub/backend/internal/infra/llm"
+	"github.com/kangzyz/Doub/backend/internal/shared/nativetool"
 )
 
 const (
@@ -35,13 +36,10 @@ type modelOptionPolicyConfig struct {
 	AllowedPathsJSON           string
 	DeniedPathsJSON            string
 	NativeToolAllowedTypesJSON string
+	ModelCapabilitiesJSON      string
 }
 
 func filterModelOptions(options map[string]interface{}, protocol string, cfg modelOptionPolicyConfig) map[string]interface{} {
-	if len(options) == 0 {
-		return nil
-	}
-
 	mode := strings.TrimSpace(cfg.Mode)
 	if mode == "" {
 		mode = modelOptionPolicyAllowlist
@@ -51,7 +49,7 @@ func filterModelOptions(options map[string]interface{}, protocol string, cfg mod
 	}
 
 	protocolKey := modelOptionPolicyProtocolKey(protocol)
-	nativeTools := nativeProviderToolsFromOption(protocolKey, options["tools"], cfg.NativeToolAllowedTypesJSON)
+	nativeTools := nativeProviderToolsFromOption(protocolKey, options["tools"], cfg.ModelCapabilitiesJSON, cfg.NativeToolAllowedTypesJSON)
 	policyOptions := cloneModelOptionMap(options)
 	delete(policyOptions, "tools")
 	denied := append([][]string{}, hardDeniedModelOptionPaths...)
@@ -86,10 +84,16 @@ func filterModelOptions(options map[string]interface{}, protocol string, cfg mod
 
 // nativeProviderToolsFromOption 将用户 options.tools 收敛为当前协议允许的官方原生工具。
 // 普通参数白名单不处理 tools，避免用户通过自由 JSON 绕过官方工具控制。
-func nativeProviderToolsFromOption(protocolKey string, raw interface{}, allowedTypesJSON string) []map[string]interface{} {
+func nativeProviderToolsFromOption(protocolKey string, raw interface{}, capabilitiesJSON string, allowedTypesJSON string) []map[string]interface{} {
 	rawTools := providerToolOptionPayloads(raw)
+	rawTools = append(rawTools, dailyChatDefaultNativeToolPayloads(protocolKey)...)
 	if len(rawTools) == 0 {
 		return nil
+	}
+	allowedCapabilities := dailyChatDefaultNativeToolCapabilities(protocolKey)
+	allowedCapabilities = append(allowedCapabilities, nativeToolCapabilitiesFromConfig(capabilitiesJSON, protocolKey)...)
+	if len(allowedCapabilities) > 0 {
+		return nativeProviderToolsFromCapabilities(protocolKey, rawTools, allowedCapabilities, allowedTypesJSON)
 	}
 	allowedTypes := nativeToolAllowedTypesForProtocol(protocolKey, allowedTypesJSON)
 	if len(allowedTypes) == 0 {
@@ -98,11 +102,11 @@ func nativeProviderToolsFromOption(protocolKey string, raw interface{}, allowedT
 	seen := make(map[string]struct{}, len(rawTools))
 	tools := make([]map[string]interface{}, 0, len(rawTools))
 	for _, rawTool := range rawTools {
+		toolType := nativeProviderToolType(protocolKey, rawTool)
 		tool, ok := sanitizeNativeProviderTool(protocolKey, rawTool)
 		if !ok {
 			continue
 		}
-		toolType := stringModelOptionValue(tool["type"])
 		if _, allowed := allowedTypes[toolType]; !allowed {
 			continue
 		}
@@ -113,6 +117,413 @@ func nativeProviderToolsFromOption(protocolKey string, raw interface{}, allowedT
 		tools = append(tools, tool)
 	}
 	return tools
+}
+
+func nativeProviderToolType(protocolKey string, tool map[string]interface{}) string {
+	toolType := strings.TrimSpace(stringModelOptionValue(tool["type"]))
+	if toolType != "" {
+		return toolType
+	}
+	if protocolKey == "gemini_generate_content" || protocolKey == "google_image_generation" {
+		if _, ok := tool["google_search"]; ok {
+			return "google_search"
+		}
+		if _, ok := tool["googleSearch"]; ok {
+			return "google_search"
+		}
+		if _, ok := tool["url_context"]; ok {
+			return "url_context"
+		}
+		if _, ok := tool["urlContext"]; ok {
+			return "url_context"
+		}
+		if _, ok := tool["code_execution"]; ok {
+			return "code_execution"
+		}
+		if _, ok := tool["codeExecution"]; ok {
+			return "code_execution"
+		}
+	}
+	return ""
+}
+
+func dailyChatDefaultNativeToolPayloads(protocolKey string) []map[string]interface{} {
+	definitions := nativetool.DailyChatDefaultDefinitions(protocolKey)
+	if len(definitions) == 0 {
+		return nil
+	}
+	payloads := make([]map[string]interface{}, 0, len(definitions))
+	for _, definition := range definitions {
+		payloads = append(payloads, cloneModelOptionMap(definition.Payload))
+	}
+	return payloads
+}
+
+func dailyChatDefaultNativeToolCapabilities(protocolKey string) []nativeToolCapability {
+	definitions := nativetool.DailyChatDefaultDefinitions(protocolKey)
+	if len(definitions) == 0 {
+		return nil
+	}
+	capabilities := make([]nativeToolCapability, 0, len(definitions))
+	for _, definition := range definitions {
+		capabilities = append(capabilities, nativeToolCapability{
+			Key:              definition.Key,
+			Protocol:         definition.Protocol,
+			Type:             definition.Type,
+			Payload:          definition.Payload,
+			DailyChatDefault: true,
+		})
+	}
+	return capabilities
+}
+
+func nativeProviderToolsFromCapabilities(protocolKey string, rawTools []map[string]interface{}, allowedTools []nativeToolCapability, allowedTypesJSON string) []map[string]interface{} {
+	seen := make(map[string]struct{}, len(rawTools))
+	tools := make([]map[string]interface{}, 0, len(rawTools))
+	for _, rawTool := range rawTools {
+		tool, identity, toolType, bypassTypePolicy, ok := nativeProviderToolPayload(protocolKey, rawTool, allowedTools)
+		if !ok {
+			toolType = nativeProviderToolType(protocolKey, rawTool)
+			tool, ok = sanitizeNativeProviderTool(protocolKey, rawTool)
+			if !ok {
+				continue
+			}
+			identity = toolType
+		}
+		if toolType != "" && !bypassTypePolicy && !nativeToolTypeGloballyAllowed(protocolKey, toolType, allowedTypesJSON) {
+			continue
+		}
+		if _, exists := seen[identity]; exists {
+			continue
+		}
+		seen[identity] = struct{}{}
+		tools = append(tools, tool)
+	}
+	return tools
+}
+
+func nativeProviderToolPayload(protocolKey string, rawTool map[string]interface{}, allowedTools []nativeToolCapability) (map[string]interface{}, string, string, bool, bool) {
+	definition, tool, ok := nativetool.PayloadFromOption(protocolKey, rawTool)
+	if ok {
+		if capability, allowed := nativeToolCapabilityByDefinition(allowedTools, definition); allowed {
+			payload := mergeNativeToolPayload(tool, capability.Payload)
+			if isGoogleNativeToolProtocol(protocolKey) {
+				if sanitized, ok := sanitizeNativeProviderTool(protocolKey, payload); ok {
+					payload = sanitized
+				}
+			}
+			return payload, capability.Identity(), definition.Type, capability.DailyChatDefault, true
+		}
+	}
+	for _, capability := range allowedTools {
+		if !nativeToolCapabilityMatchesRawTool(capability, rawTool) {
+			continue
+		}
+		payload := mergeNativeToolPayload(rawTool, capability.Payload)
+		if isGoogleNativeToolProtocol(protocolKey) {
+			if sanitized, ok := sanitizeNativeProviderTool(protocolKey, payload); ok {
+				payload = sanitized
+			}
+		}
+		return payload, capability.Identity(), capability.Type, capability.DailyChatDefault, true
+	}
+	return nil, "", "", false, false
+}
+
+func isGoogleNativeToolProtocol(protocolKey string) bool {
+	return protocolKey == "gemini_generate_content" || protocolKey == "google_image_generation"
+}
+
+type nativeToolCapability struct {
+	Key              string
+	Protocol         string
+	Type             string
+	Payload          map[string]interface{}
+	DailyChatDefault bool
+}
+
+func (tool nativeToolCapability) Identity() string {
+	parts := []string{
+		strings.TrimSpace(tool.Key),
+		strings.TrimSpace(tool.Protocol),
+		strings.TrimSpace(tool.Type),
+	}
+	if parts[0] != "" {
+		return strings.Join(parts, ":")
+	}
+	return strings.Join(parts[1:], ":")
+}
+
+func nativeToolCapabilitiesFromConfig(raw string, protocolKey string) []nativeToolCapability {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return nil
+	}
+	var config struct {
+		NativeTools []struct {
+			Key            string                 `json:"key"`
+			ToolKey        string                 `json:"toolKey"`
+			Protocol       string                 `json:"protocol"`
+			Protocols      []string               `json:"protocols"`
+			Type           string                 `json:"type"`
+			Enabled        *bool                  `json:"enabled"`
+			Payload        map[string]interface{} `json:"payload"`
+			DefaultEnabled bool                   `json:"defaultEnabled"`
+		} `json:"nativeTools"`
+		NativeToolKeys []string               `json:"nativeToolKeys"`
+		DefaultOptions map[string]interface{} `json:"defaultOptions"`
+	}
+	if err := json.Unmarshal([]byte(value), &config); err != nil {
+		return nil
+	}
+	capabilities := make([]nativeToolCapability, 0, len(config.NativeTools)+len(config.NativeToolKeys))
+	seen := make(map[string]struct{})
+	addCapability := func(tool nativeToolCapability) {
+		tool.Key = strings.TrimSpace(tool.Key)
+		tool.Protocol = strings.TrimSpace(tool.Protocol)
+		tool.Type = strings.TrimSpace(tool.Type)
+		if tool.Type == "" {
+			tool.Type = strings.TrimSpace(stringModelOptionValue(tool.Payload["type"]))
+		}
+		if tool.Protocol == "" {
+			tool.Protocol = protocolKey
+		}
+		if tool.Type == "" && len(tool.Payload) == 0 {
+			return
+		}
+		identity := tool.Identity()
+		if _, ok := seen[identity]; ok {
+			return
+		}
+		seen[identity] = struct{}{}
+		capabilities = append(capabilities, tool)
+	}
+
+	for _, item := range config.NativeTools {
+		if item.Enabled != nil && !*item.Enabled {
+			continue
+		}
+		key := strings.TrimSpace(item.Key)
+		if key == "" {
+			key = strings.TrimSpace(item.ToolKey)
+		}
+		protocols := nativeToolCapabilityProtocols(item.Protocols, item.Protocol)
+		definitions := nativeToolDefinitionsByKey(key)
+		if len(protocols) == 0 {
+			protocols = nativeToolDefinitionProtocols(definitions)
+		}
+		if len(protocols) == 0 {
+			protocols = []string{protocolKey}
+		}
+		if len(definitions) > 0 {
+			for _, protocol := range protocols {
+				definition, ok := nativeToolDefinitionForProtocol(definitions, protocol)
+				if !ok {
+					addCapability(nativeToolCapability{
+						Key:      key,
+						Protocol: protocol,
+						Type:     item.Type,
+						Payload:  cloneModelOptionMap(item.Payload),
+					})
+					continue
+				}
+				addCapability(nativeToolCapability{
+					Key:      key,
+					Protocol: firstNonEmpty(protocol, definition.Protocol, protocolKey),
+					Type:     firstNonEmpty(item.Type, definition.Type),
+					Payload:  mergeNativeToolPayload(definition.Payload, item.Payload),
+				})
+			}
+			continue
+		}
+		for _, protocol := range protocols {
+			addCapability(nativeToolCapability{
+				Key:      key,
+				Protocol: firstNonEmpty(protocol, protocolKey),
+				Type:     item.Type,
+				Payload:  cloneModelOptionMap(item.Payload),
+			})
+		}
+	}
+
+	for _, key := range config.NativeToolKeys {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		for _, definition := range nativetool.Definitions() {
+			if definition.Key != key {
+				continue
+			}
+			addCapability(nativeToolCapability{
+				Key:      definition.Key,
+				Protocol: definition.Protocol,
+				Type:     definition.Type,
+				Payload:  definition.Payload,
+			})
+		}
+	}
+
+	for _, tool := range providerToolOptionPayloads(config.DefaultOptions["tools"]) {
+		definition, payload, ok := nativetool.PayloadFromOption(protocolKey, tool)
+		if !ok {
+			continue
+		}
+		addCapability(nativeToolCapability{
+			Key:      definition.Key,
+			Protocol: definition.Protocol,
+			Type:     definition.Type,
+			Payload:  mergeNativeToolPayload(definition.Payload, payload),
+		})
+	}
+	return capabilities
+}
+
+func nativeToolCapabilityProtocols(values []string, single string) []string {
+	protocols := make([]string, 0, len(values)+1)
+	seen := make(map[string]struct{}, len(values)+1)
+	add := func(value string) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return
+		}
+		if _, ok := seen[value]; ok {
+			return
+		}
+		seen[value] = struct{}{}
+		protocols = append(protocols, value)
+	}
+	for _, value := range values {
+		add(value)
+	}
+	add(single)
+	return protocols
+}
+
+func nativeToolDefinitionsByKey(key string) []nativetool.Definition {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return nil
+	}
+	definitions := make([]nativetool.Definition, 0, 2)
+	for _, definition := range nativetool.Definitions() {
+		if definition.Key == key {
+			definitions = append(definitions, definition)
+		}
+	}
+	return definitions
+}
+
+func nativeToolDefinitionProtocols(definitions []nativetool.Definition) []string {
+	protocols := make([]string, 0, len(definitions))
+	seen := make(map[string]struct{}, len(definitions))
+	for _, definition := range definitions {
+		protocol := strings.TrimSpace(definition.Protocol)
+		if protocol == "" {
+			continue
+		}
+		if _, ok := seen[protocol]; ok {
+			continue
+		}
+		seen[protocol] = struct{}{}
+		protocols = append(protocols, protocol)
+	}
+	return protocols
+}
+
+func nativeToolDefinitionForProtocol(definitions []nativetool.Definition, protocol string) (nativetool.Definition, bool) {
+	protocol = strings.TrimSpace(protocol)
+	for _, definition := range definitions {
+		if definition.Protocol == protocol {
+			return definition, true
+		}
+	}
+	return nativetool.Definition{}, false
+}
+
+func nativeToolCapabilityByDefinition(items []nativeToolCapability, definition nativetool.Definition) (nativeToolCapability, bool) {
+	for _, item := range items {
+		if item.Key != "" && item.Key == definition.Key {
+			if item.Protocol == "" || item.Protocol == definition.Protocol {
+				return item, true
+			}
+		}
+		if item.Type == definition.Type && (item.Protocol == "" || item.Protocol == definition.Protocol) {
+			return item, true
+		}
+	}
+	return nativeToolCapability{}, false
+}
+
+func nativeToolCapabilityMatchesRawTool(capability nativeToolCapability, rawTool map[string]interface{}) bool {
+	rawType := strings.TrimSpace(stringModelOptionValue(rawTool["type"]))
+	if rawType != "" && capability.Type != "" {
+		return rawType == capability.Type
+	}
+	payloadType := strings.TrimSpace(stringModelOptionValue(capability.Payload["type"]))
+	if rawType != "" && payloadType != "" {
+		return rawType == payloadType
+	}
+	if capability.Type != "" {
+		return false
+	}
+	for key := range capability.Payload {
+		if key == "type" {
+			continue
+		}
+		if _, ok := rawTool[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func mergeNativeToolPayload(raw map[string]interface{}, base map[string]interface{}) map[string]interface{} {
+	payload := cloneModelOptionMap(raw)
+	if payload == nil {
+		payload = make(map[string]interface{})
+	}
+	for _, path := range hardDeniedModelOptionPaths {
+		deleteModelOptionPath(payload, path)
+	}
+	mergeModelOptionMap(payload, base)
+	return payload
+}
+
+func mergeModelOptionMap(dst map[string]interface{}, src map[string]interface{}) {
+	for key, value := range src {
+		srcMap, srcIsMap := value.(map[string]interface{})
+		dstMap, dstIsMap := dst[key].(map[string]interface{})
+		if srcIsMap && dstIsMap {
+			mergeModelOptionMap(dstMap, srcMap)
+			continue
+		}
+		dst[key] = cloneModelOptionValue(value)
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func nativeToolTypeGloballyAllowed(protocolKey string, toolType string, raw string) bool {
+	toolType = strings.TrimSpace(toolType)
+	if toolType == "" {
+		return true
+	}
+	defaults := defaultNativeToolAllowedTypes(protocolKey)
+	if _, known := defaults[toolType]; !known {
+		return true
+	}
+	allowed := nativeToolAllowedTypesForProtocol(protocolKey, raw)
+	_, ok := allowed[toolType]
+	return ok
 }
 
 // nativeToolAllowedTypesForProtocol 解析后台配置的官方工具允许列表。
@@ -151,6 +562,10 @@ func defaultNativeToolAllowedTypes(protocolKey string) map[string]struct{} {
 		types = []string{"web_search", "web_search_preview"}
 	case "xai_responses":
 		types = []string{"web_search", "x_search", "code_interpreter"}
+	case "gemini_generate_content":
+		types = []string{"google_search", "url_context", "code_execution"}
+	case "google_image_generation":
+		types = []string{"google_search"}
 	case "anthropic_messages":
 		types = []string{
 			"web_search_20250305",
@@ -191,7 +606,7 @@ func providerToolOptionPayloads(raw interface{}) []map[string]interface{} {
 
 // sanitizeNativeProviderTool 按协议选择官方工具清洗规则，未知协议和未知类型一律丢弃。
 func sanitizeNativeProviderTool(protocolKey string, tool map[string]interface{}) (map[string]interface{}, bool) {
-	toolType := strings.TrimSpace(stringModelOptionValue(tool["type"]))
+	toolType := nativeProviderToolType(protocolKey, tool)
 	if toolType == "" {
 		return nil, false
 	}
@@ -202,6 +617,8 @@ func sanitizeNativeProviderTool(protocolKey string, tool map[string]interface{})
 		return sanitizeXAINativeProviderTool(toolType)
 	case "anthropic_messages":
 		return sanitizeAnthropicNativeProviderTool(toolType, tool)
+	case "gemini_generate_content", "google_image_generation":
+		return sanitizeGoogleNativeProviderTool(toolType, tool)
 	default:
 		return nil, false
 	}
@@ -259,6 +676,48 @@ func sanitizeAnthropicNativeProviderTool(toolType string, raw map[string]interfa
 	default:
 		return nil, false
 	}
+}
+
+// sanitizeGoogleNativeProviderTool 只保留 Google 官方工具允许透传的固定字段。
+func sanitizeGoogleNativeProviderTool(toolType string, raw map[string]interface{}) (map[string]interface{}, bool) {
+	switch toolType {
+	case "google_search":
+		googleSearch := cloneModelOptionMap(asModelOptionMap(raw["google_search"]))
+		if googleSearch == nil {
+			googleSearch = cloneModelOptionMap(asModelOptionMap(raw["googleSearch"]))
+		}
+		if googleSearch == nil {
+			googleSearch = map[string]interface{}{}
+		}
+		return map[string]interface{}{"google_search": googleSearch}, true
+	case "url_context":
+		urlContext := cloneModelOptionMap(asModelOptionMap(raw["url_context"]))
+		if urlContext == nil {
+			urlContext = cloneModelOptionMap(asModelOptionMap(raw["urlContext"]))
+		}
+		if urlContext == nil {
+			urlContext = map[string]interface{}{}
+		}
+		return map[string]interface{}{"url_context": urlContext}, true
+	case "code_execution":
+		codeExecution := cloneModelOptionMap(asModelOptionMap(raw["code_execution"]))
+		if codeExecution == nil {
+			codeExecution = cloneModelOptionMap(asModelOptionMap(raw["codeExecution"]))
+		}
+		if codeExecution == nil {
+			codeExecution = map[string]interface{}{}
+		}
+		return map[string]interface{}{"code_execution": codeExecution}, true
+	default:
+		return nil, false
+	}
+}
+
+func asModelOptionMap(value interface{}) map[string]interface{} {
+	if typed, ok := value.(map[string]interface{}); ok {
+		return typed
+	}
+	return nil
 }
 
 // stringModelOptionValue 从自由 JSON 值中安全读取字符串。

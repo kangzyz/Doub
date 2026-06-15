@@ -20,9 +20,37 @@ export type ModelOptionPolicy = {
   allowedPathsJSON: string;
   deniedPathsJSON: string;
   nativeToolAllowedTypesJSON: string;
+  nativeTools: NativeToolDefinition[];
 };
 
 export type ModelOptionRuleMap = Partial<Record<ModelOptionPolicyProtocol | string, string[]>>;
+
+export type NativeToolDefinition = {
+  protocol: string;
+  provider: string;
+  type: string;
+  toolKey: string;
+  label: string;
+  description: string;
+  payload: Record<string, unknown>;
+  defaultEnabled: boolean;
+  riskLevel: string;
+  usageAliases: string[];
+};
+
+export type ModelNativeToolConfig = {
+  id: string;
+  key: string;
+  protocol: string;
+  protocols: string[];
+  provider?: string;
+  type: string;
+  label: string;
+  description?: string;
+  enabled: boolean;
+  defaultEnabled: boolean;
+  payload: Record<string, unknown>;
+};
 
 export const DEFAULT_NATIVE_TOOL_ALLOWED_TYPES = `{
   "openai_chat_completions": [
@@ -51,6 +79,14 @@ export const DEFAULT_NATIVE_TOOL_ALLOWED_TYPES = `{
     "web_search",
     "x_search",
     "code_interpreter"
+  ],
+  "gemini_generate_content": [
+    "google_search",
+    "url_context",
+    "code_execution"
+  ],
+  "google_image_generation": [
+    "google_search"
   ]
 }`;
 

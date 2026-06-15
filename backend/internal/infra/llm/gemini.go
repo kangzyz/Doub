@@ -121,6 +121,7 @@ func buildGeminiRequestBody(input GenerateInput) (map[string]interface{}, error)
 	if err != nil {
 		return nil, err
 	}
+	providerTools = normalizeGeminiProviderTools(providerTools)
 
 	var systemTextParts []string
 	contents := make([]map[string]interface{}, 0, len(messages))
@@ -163,6 +164,69 @@ func buildGeminiRequestBody(input GenerateInput) (map[string]interface{}, error)
 
 	applyProviderOptions(payload, input.Options, geminiProtectedProviderOptionKeys()...)
 	return payload, nil
+}
+
+func normalizeGeminiProviderTools(tools []map[string]interface{}) []map[string]interface{} {
+	if len(tools) == 0 {
+		return tools
+	}
+	normalized := make([]map[string]interface{}, 0, len(tools))
+	for _, tool := range tools {
+		switch geminiProviderToolType(tool) {
+		case "google_search":
+			normalized = append(normalized, map[string]interface{}{
+				"google_search": geminiNativeToolConfig(tool, "google_search", "googleSearch"),
+			})
+		case "url_context":
+			normalized = append(normalized, map[string]interface{}{
+				"url_context": geminiNativeToolConfig(tool, "url_context", "urlContext"),
+			})
+		case "code_execution":
+			normalized = append(normalized, map[string]interface{}{
+				"code_execution": geminiNativeToolConfig(tool, "code_execution", "codeExecution"),
+			})
+		default:
+			normalized = append(normalized, tool)
+		}
+	}
+	return normalized
+}
+
+func geminiNativeToolConfig(tool map[string]interface{}, snakeKey string, camelKey string) map[string]interface{} {
+	config := cloneMap(asMap(tool[snakeKey]))
+	if len(config) == 0 {
+		config = cloneMap(asMap(tool[camelKey]))
+	}
+	if config == nil {
+		config = map[string]interface{}{}
+	}
+	return config
+}
+
+func geminiProviderToolType(tool map[string]interface{}) string {
+	toolType := strings.TrimSpace(getString(tool["type"]))
+	if toolType != "" {
+		return toolType
+	}
+	if _, ok := tool["google_search"]; ok {
+		return "google_search"
+	}
+	if _, ok := tool["googleSearch"]; ok {
+		return "google_search"
+	}
+	if _, ok := tool["url_context"]; ok {
+		return "url_context"
+	}
+	if _, ok := tool["urlContext"]; ok {
+		return "url_context"
+	}
+	if _, ok := tool["code_execution"]; ok {
+		return "code_execution"
+	}
+	if _, ok := tool["codeExecution"]; ok {
+		return "code_execution"
+	}
+	return ""
 }
 
 func geminiProtectedProviderOptionKeys() []string {

@@ -44,6 +44,7 @@ func defaultSettings() []domainsettings.SystemSetting {
 		{Namespace: "chat", Key: "max_context_messages", Value: "20", ValueType: "int", Description: "上下文消息数"},
 		{Namespace: "chat", Key: "context_max_turns", Value: "48", ValueType: "int", Description: "最大对话轮次"},
 		{Namespace: "chat", Key: "context_max_input_tokens", Value: "32000", ValueType: "int", Description: "最大输入 token"},
+		{Namespace: "chat", Key: "context_compact_enabled", Value: "false", ValueType: "bool", Description: "是否允许上下文压缩功能"},
 		{Namespace: "chat", Key: "context_compact_trigger_tokens", Value: "32768", ValueType: "int", Description: "压缩触发阈值"},
 		{Namespace: "chat", Key: "context_compact_preserve_recent_turns", Value: "8", ValueType: "int", Description: "压缩保留轮次"},
 		{Namespace: "chat", Key: "conversation_task_model", Value: "follow", ValueType: "string", Description: "会话标题/标签生成任务使用的聊天模型，follow 表示跟随当前会话模型；图片模型不会用于标题/标签生成"},

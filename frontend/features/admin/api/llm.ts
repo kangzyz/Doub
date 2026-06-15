@@ -36,6 +36,7 @@ type ListAdminLLMUpstreamsOptions = AdminListQueryOptions & {
 
 type ListAdminLLMModelsOptions = AdminListQueryOptions & {
   onlyActive?: boolean;
+  onlyAvailable?: boolean;
   vendor?: string;
   protocol?: string;
 };
@@ -310,6 +311,9 @@ export async function listAdminLLMModels(
     page_size: String(pageSize),
     only_active: options.onlyActive ? "true" : "false",
   });
+  if (options.onlyAvailable) {
+    params.set("only_available", "true");
+  }
   if (options.query?.trim()) {
     params.set("q", options.query.trim());
   }

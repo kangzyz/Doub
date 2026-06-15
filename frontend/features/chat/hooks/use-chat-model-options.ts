@@ -3,7 +3,11 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 
-import type { ChatModelOption } from "@/features/chat/types/chat-runtime";
+import type {
+  ChatModelOption,
+  ModelOptionControl,
+  ModelOptionControlType,
+} from "@/features/chat/types/chat-runtime";
 import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import { parseProtocolsJSON } from "@/features/chat/model/chat-adapter-options";
 import { sanitizeConversationOptions } from "@/features/chat/model/conversation-options";
@@ -12,7 +16,11 @@ import { listPublicModels } from "@/shared/api/model";
 import { getMCPPolicy, getModelOptionPolicy } from "@/shared/api/settings";
 import { getUserSettings } from "@/shared/api/user-settings";
 import type { PublicModelDTO } from "@/shared/api/model.types";
-import type { ModelOptionPolicy } from "@/shared/lib/model-option-policy";
+import {
+  resolveModelOptionPolicyProtocol,
+  type ModelNativeToolConfig,
+  type ModelOptionPolicy,
+} from "@/shared/lib/model-option-policy";
 import { parseKindsJSON } from "@/shared/model/llm-schema";
 import type { ConversationOptions } from "@/shared/api/conversation.types";
 import type { SendShortcut } from "@/features/settings/types/settings";
@@ -34,16 +42,281 @@ function parseJSONObject(raw: string): Record<string, unknown> | null {
   }
 }
 
-function resolveDefaultOptions(raw: string): ConversationOptions {
+function normalizeNativeToolPayload(value: unknown): Record<string, unknown> {
+  if (value === null || Array.isArray(value) || typeof value !== "object") {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
+
+function normalizeNativeToolString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeNativeToolStrings(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      value
+        .map((item) => normalizeNativeToolString(item))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function nativeToolID({
+  key,
+  protocol,
+  type,
+  index,
+}: {
+  key: string;
+  protocol: string;
+  type: string;
+  index: number;
+}): string {
+  return [key, protocol, type].map((item) => item.trim()).filter(Boolean).join(":") || `native-tool-${index}`;
+}
+
+function resolveNativeTools(raw: string): ModelNativeToolConfig[] {
   const parsed = parseJSONObject(raw);
   if (!parsed) {
-    return {};
+    return [];
+  }
+  const rawTools = parsed.nativeTools;
+  if (Array.isArray(rawTools)) {
+    return rawTools.flatMap((item, index): ModelNativeToolConfig[] => {
+      if (item === null || Array.isArray(item) || typeof item !== "object") {
+        return [];
+      }
+      const source = item as Record<string, unknown>;
+      const key = normalizeNativeToolString(source.key ?? source.toolKey);
+      const payload = normalizeNativeToolPayload(source.payload);
+      const type = normalizeNativeToolString(source.type) || normalizeNativeToolString(payload.type);
+      const protocol = normalizeNativeToolString(source.protocol);
+      const protocols = normalizeNativeToolStrings(source.protocols);
+      if (!key && !type && Object.keys(payload).length === 0) {
+        return [];
+      }
+      return [{
+        id: normalizeNativeToolString(source.id) || nativeToolID({ key, protocol, type, index }),
+        key,
+        protocol,
+        protocols: protocols.length > 0 ? protocols : (protocol ? [protocol] : []),
+        provider: normalizeNativeToolString(source.provider) || undefined,
+        type,
+        label: normalizeNativeToolString(source.label) || type || key,
+        description: normalizeNativeToolString(source.description) || undefined,
+        enabled: source.enabled !== false,
+        defaultEnabled: source.defaultEnabled === true,
+        payload,
+      }];
+    }).filter((item) => item.enabled);
+  }
+  return resolveNativeToolKeys(raw).map((key, index) => ({
+    id: nativeToolID({ key, protocol: "", type: "", index }),
+    key,
+    protocol: "",
+    protocols: [],
+    type: "",
+    label: key,
+    enabled: true,
+    defaultEnabled: false,
+    payload: {},
+  }));
+}
+
+const DAILY_CHAT_NATIVE_TOOL_PAYLOADS: Partial<Record<string, Array<Record<string, unknown>>>> = {
+  openai_chat_completions: [
+    { type: "web_search" },
+  ],
+  openai_responses: [
+    { type: "web_search" },
+    { type: "image_generation" },
+    { type: "code_interpreter", container: { type: "auto" } },
+  ],
+  gemini_generate_content: [
+    { google_search: {} },
+    { url_context: {} },
+    { code_execution: {} },
+  ],
+};
+
+function nativeToolPayloadIdentity(payload: Record<string, unknown>, index: number): string {
+  const type = normalizeNativeToolString(payload.type);
+  if (type) {
+    return `type:${type}`;
+  }
+  if ("google_search" in payload || "googleSearch" in payload) {
+    return "type:google_search";
+  }
+  if ("url_context" in payload || "urlContext" in payload) {
+    return "type:url_context";
+  }
+  if ("code_execution" in payload || "codeExecution" in payload) {
+    return "type:code_execution";
+  }
+  return `json:${index}:${JSON.stringify(payload)}`;
+}
+
+function dailyChatNativeToolPayloads(protocols: string[]): Array<Record<string, unknown>> {
+  const seen = new Set<string>();
+  const payloads: Array<Record<string, unknown>> = [];
+  for (const protocol of protocols) {
+    const policyProtocol = resolveModelOptionPolicyProtocol(protocol);
+    for (const payload of DAILY_CHAT_NATIVE_TOOL_PAYLOADS[policyProtocol] ?? []) {
+      const identity = nativeToolPayloadIdentity(payload, payloads.length);
+      if (seen.has(identity)) {
+        continue;
+      }
+      seen.add(identity);
+      payloads.push({ ...payload });
+    }
+  }
+  return payloads;
+}
+
+function mergeDefaultNativeToolPayloads(defaultOptions: ConversationOptions, defaultToolPayloads: Array<Record<string, unknown>>): ConversationOptions {
+  if (defaultToolPayloads.length === 0) {
+    return defaultOptions;
+  }
+  const currentTools = Array.isArray(defaultOptions.tools)
+    ? defaultOptions.tools.filter((item) => item !== null && typeof item === "object" && !Array.isArray(item))
+    : [];
+  const seen = new Set<string>();
+  const tools = [...currentTools, ...defaultToolPayloads]
+    .map((item) => item as Record<string, unknown>)
+    .filter((item, index) => {
+      const identity = nativeToolPayloadIdentity(item, index);
+      if (seen.has(identity)) {
+        return false;
+      }
+      seen.add(identity);
+      return true;
+    });
+  return sanitizeConversationOptions({
+    ...defaultOptions,
+    tools,
+  });
+}
+
+function resolveDefaultOptions(raw: string, protocols: string[]): ConversationOptions {
+  const parsed = parseJSONObject(raw);
+  if (!parsed) {
+    return mergeDefaultNativeToolPayloads({}, dailyChatNativeToolPayloads(protocols));
   }
   const defaults = parsed.defaultOptions;
   if (defaults === null || Array.isArray(defaults) || typeof defaults !== "object") {
-    return {};
+    return mergeDefaultNativeToolPayloads({}, dailyChatNativeToolPayloads(protocols));
   }
-  return sanitizeConversationOptions(defaults as ConversationOptions);
+  const defaultOptions = sanitizeConversationOptions(defaults as ConversationOptions);
+  return mergeDefaultNativeToolPayloads(defaultOptions, dailyChatNativeToolPayloads(protocols));
+}
+
+const MODEL_OPTION_CONTROL_TYPES = new Set<ModelOptionControlType>(["boolean", "number", "select", "text"]);
+
+function normalizeOptionControlPath(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value
+    .split(".")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join(".");
+}
+
+function normalizeOptionControlType(value: unknown): ModelOptionControlType | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  if (!MODEL_OPTION_CONTROL_TYPES.has(normalized as ModelOptionControlType)) {
+    return undefined;
+  }
+  return normalized as ModelOptionControlType;
+}
+
+function normalizeOptionControlString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized || undefined;
+}
+
+function normalizeOptionControlOptions(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const options = Array.from(
+    new Set(
+      value
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
+  return options.length > 0 ? options : undefined;
+}
+
+function resolveOptionControls(raw: string): ModelOptionControl[] {
+  const parsed = parseJSONObject(raw);
+  const rawControls = parsed?.optionControls;
+  if (!Array.isArray(rawControls)) {
+    return [];
+  }
+
+  const controls = rawControls.flatMap((item): ModelOptionControl[] => {
+    if (item === null || Array.isArray(item) || typeof item !== "object") {
+      return [];
+    }
+    const source = item as Record<string, unknown>;
+    const path = normalizeOptionControlPath(source.path);
+    if (!path) {
+      return [];
+    }
+    const control: ModelOptionControl = { path };
+    const type = normalizeOptionControlType(source.type);
+    const label = normalizeOptionControlString(source.label);
+    const description = normalizeOptionControlString(source.description);
+    const placeholder = normalizeOptionControlString(source.placeholder);
+    const options = normalizeOptionControlOptions(source.options);
+    if (type) {
+      control.type = type;
+    }
+    if (label) {
+      control.label = label;
+    }
+    if (description) {
+      control.description = description;
+    }
+    if (placeholder) {
+      control.placeholder = placeholder;
+    }
+    if (options) {
+      control.options = options;
+    }
+    return [control];
+  });
+
+  return controls.filter((item, index) => controls.findIndex((candidate) => candidate.path === item.path) === index);
+}
+
+function resolveNativeToolKeys(raw: string): string[] {
+  const parsed = parseJSONObject(raw);
+  const rawKeys = parsed?.nativeToolKeys;
+  if (!Array.isArray(rawKeys)) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      rawKeys
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
 }
 
 function resolveMCPMaxSelectedTools(value: unknown): number {
@@ -52,6 +325,22 @@ function resolveMCPMaxSelectedTools(value: unknown): number {
     return 32;
   }
   return Math.min(Math.floor(numeric), 128);
+}
+
+function toChatModelOption(item: PublicModelDTO): ChatModelOption {
+  const protocols = parseProtocolsJSON(item.protocolsJSON);
+  return {
+    platformModelName: item.platformModelName,
+    icon: item.icon,
+    vendor: item.vendor,
+    kinds: parseKindsJSON(item.kindsJSON),
+    protocols,
+    referenceModelName: item.referenceModelName?.trim() ?? "",
+    defaultOptions: resolveDefaultOptions(item.capabilitiesJSON, protocols),
+    optionControls: resolveOptionControls(item.capabilitiesJSON),
+    nativeToolKeys: resolveNativeToolKeys(item.capabilitiesJSON),
+    nativeTools: resolveNativeTools(item.capabilitiesJSON),
+  };
 }
 
 export function useChatModelOptions({
@@ -209,17 +498,7 @@ export function useChatModelOptions({
 
   const modelOptions = React.useMemo<ChatModelOption[]>(
     () =>
-      availableModels.map((item) => {
-        return {
-          platformModelName: item.platformModelName,
-          icon: item.icon,
-          vendor: item.vendor,
-          kinds: parseKindsJSON(item.kindsJSON),
-          protocols: parseProtocolsJSON(item.protocolsJSON),
-          referenceModelName: item.referenceModelName?.trim() ?? "",
-          defaultOptions: resolveDefaultOptions(item.capabilitiesJSON),
-        };
-      }),
+      availableModels.map(toChatModelOption),
     [availableModels],
   );
 

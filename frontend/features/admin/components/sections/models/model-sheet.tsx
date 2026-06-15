@@ -52,8 +52,10 @@ import {
   listAdminLLMModelUpstreamSources,
   updateAdminLLMModel,
 } from "@/features/admin/api";
+import { getModelOptionPolicy } from "@/shared/api/settings";
 import { LobeHubIcon } from "@/shared/components/lobehub-icon";
-import { KNOWN_VENDOR_OPTIONS, resolveLobeHubIconURL, resolveModelIdentity } from "@/shared/lib/model-identity";
+import { KNOWN_VENDOR_OPTIONS, resolveLobeHubIconURL, resolveModelIdentity, resolveVendorIdentity } from "@/shared/lib/model-identity";
+import type { NativeToolDefinition } from "@/shared/lib/model-option-policy";
 import type {
   AdminLLMModelDTO,
   AdminLLMModelUpstreamSourceDTO,
@@ -74,6 +76,12 @@ import {
   stringifyKinds,
 } from "@/shared/model/llm-schema";
 import { JsonCodeEditor } from "@/shared/components/json-code-editor";
+import {
+  MODEL_CAPABILITIES_PLACEHOLDER,
+  ModelCapabilitiesGuideButton,
+  ModelCapabilitiesQuickConfig,
+  normalizeModelCapabilitiesJSON,
+} from "./model-capabilities-config";
 
 // ---------------------------------------------------------------------------
 // Form state
@@ -101,7 +109,7 @@ const UNKNOWN_VENDOR = "unknown";
 const MODEL_SHEET_VENDOR_OPTIONS: VendorOption[] = [
   { value: UNKNOWN_VENDOR, label: "Unknown", iconUrl: null },
   ...KNOWN_VENDOR_OPTIONS.map(({ value, label }) => {
-    const identity = resolveModelIdentity({ vendor: value });
+    const identity = resolveVendorIdentity(value);
     return {
       value,
       label,
@@ -146,7 +154,7 @@ function normalizeSupportedVendor(value: string | null | undefined): AdminLLMMod
   if (MODEL_SHEET_VENDOR_OPTIONS.some((item) => item.value === normalized)) {
     return normalized;
   }
-  const identity = resolveModelIdentity({ vendor: normalized });
+  const identity = resolveVendorIdentity(normalized);
   return MODEL_SHEET_VENDOR_OPTIONS.some((item) => item.value === identity.vendorKey)
     ? identity.vendorKey
     : UNKNOWN_VENDOR;
@@ -207,6 +215,7 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
   // Upstream sources for accordion
   const [sources, setSources] = useState<AdminLLMModelUpstreamSourceDTO[]>([]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [nativeToolCatalog, setNativeToolCatalog] = useState<NativeToolDefinition[]>([]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -232,6 +241,13 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
     ...item,
     label: item.value === UNKNOWN_VENDOR ? t("sheet.unknownVendor") : item.label,
   }));
+  const routeProtocols = Array.from(
+    new Set(
+      sources
+        .map((source) => (source.protocol || source.suggestedProtocol || "").trim())
+        .filter(Boolean),
+    ),
+  );
 
   function handleClose() {
     onClose();
@@ -268,6 +284,30 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
     })();
   }, [open, target]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await resolveAccessToken();
+        if (!token) return;
+        const policy = await getModelOptionPolicy(token);
+        if (!cancelled) {
+          setNativeToolCatalog(policy.nativeTools ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setNativeToolCatalog([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   // -------------------------------------------------------------------------
   // Submit
   // -------------------------------------------------------------------------
@@ -280,6 +320,7 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
       const token = await resolveAccessToken();
       const kindsJson =
         form.kinds.length > 0 ? stringifyKinds(form.kinds) : undefined;
+      const capabilitiesJSON = normalizeModelCapabilitiesJSON(form.capabilitiesJSON, nativeToolCatalog, routeProtocols);
 
       if (mode === "create") {
         const data = await createAdminLLMModel(token, {
@@ -287,7 +328,7 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
           vendor: form.vendor || undefined,
           kindsJSON: kindsJson,
           icon: form.icon.trim() || undefined,
-          capabilitiesJSON: normalizeCapabilitiesJSON(form.capabilitiesJSON) || undefined,
+          capabilitiesJSON: normalizeCapabilitiesJSON(capabilitiesJSON) || undefined,
           systemPrompt: form.systemPrompt.trim() || undefined,
           status: form.status,
           description: form.description.trim() || undefined,
@@ -305,7 +346,7 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
         vendor: form.vendor || undefined,
         kindsJSON: kindsJson,
         icon: form.icon.trim() || undefined,
-        capabilitiesJSON: normalizeCapabilitiesJSON(form.capabilitiesJSON) || undefined,
+        capabilitiesJSON: normalizeCapabilitiesJSON(capabilitiesJSON) || undefined,
         systemPrompt: form.systemPrompt.trim(),
         status: form.status,
         description: form.description.trim() || undefined,
@@ -538,11 +579,28 @@ export function ModelSheet({ open, mode, target, onClose, onSuccess }: ModelShee
                 <AccordionTrigger className="py-1.5 text-xs text-muted-foreground hover:no-underline">
                   {t("sheet.capabilitiesJSON")}
                 </AccordionTrigger>
-                <AccordionContent className="pt-3">
+                <AccordionContent className="pt-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      {t("sheet.capabilitiesDescription")}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <ModelCapabilitiesGuideButton t={t} />
+                      <ModelCapabilitiesQuickConfig
+                        value={form.capabilitiesJSON}
+                        disabled={pending}
+                        nativeTools={nativeToolCatalog}
+                        routeProtocols={routeProtocols}
+                        t={t}
+                        commonT={commonT}
+                        onApply={(nextValue) => setField("capabilitiesJSON", nextValue)}
+                      />
+                    </div>
+                  </div>
                   <JsonCodeEditor
                     id="model-capabilities-json"
                     value={form.capabilitiesJSON}
-                    placeholder={'{"contextWindow":1000000,"maxOutputTokens":32000,"supportsSystemPrompt":false,"defaultOptions":{"reasoning":{"effort":"high"}}}'}
+                    placeholder={MODEL_CAPABILITIES_PLACEHOLDER}
                     height={220}
                     onChange={(nextValue) => setField("capabilitiesJSON", nextValue)}
                     disabled={pending}

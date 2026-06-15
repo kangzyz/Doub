@@ -173,8 +173,8 @@ func (r *Repo) ListUpstreams(ctx context.Context, input repository.ListChannelUp
 		Joins(
 			`LEFT JOIN (
 				SELECT um.upstream_id,
-					COUNT(r.id) AS models_count,
-					COUNT(r.id) FILTER (WHERE r.status = 'active' AND um.status = 'active') AS active_models_count
+					COUNT(DISTINCT um.id) AS models_count,
+					COUNT(DISTINCT CASE WHEN r.status = 'active' AND um.status = 'active' THEN um.id END) AS active_models_count
 				FROM llm_upstream_models um
 				LEFT JOIN llm_model_routes r ON r.upstream_model_id = um.id
 				GROUP BY um.upstream_id
@@ -295,24 +295,22 @@ func (r *Repo) UpdateModel(ctx context.Context, modelID uint, input repository.U
 	return nil
 }
 
-// ReorderModels 按指定子序列调整模型顺序，并归一化全量 sort_order。
+// ReorderModels 按指定子序列调整模型顺序，仅更新提交的模型。
 func (r *Repo) ReorderModels(ctx context.Context, orderedModelIDs []uint) error {
 	if len(orderedModelIDs) == 0 {
 		return repository.ErrInvalidInput
 	}
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var rows []model.LLMPlatformModel
+		var existingRows []model.LLMPlatformModel
 		if err := tx.
 			Select("id").
-			Order("sort_order ASC, id ASC").
-			Find(&rows).Error; err != nil {
+			Where("id IN ?", orderedModelIDs).
+			Find(&existingRows).Error; err != nil {
 			return translateError(err)
 		}
 
-		allIDs := make([]uint, 0, len(rows))
-		existingIDs := make(map[uint]struct{}, len(rows))
-		for _, row := range rows {
-			allIDs = append(allIDs, row.ID)
+		existingIDs := make(map[uint]struct{}, len(existingRows))
+		for _, row := range existingRows {
 			existingIDs[row.ID] = struct{}{}
 		}
 
@@ -327,21 +325,7 @@ func (r *Repo) ReorderModels(ctx context.Context, orderedModelIDs []uint) error 
 			reorderedIDs[modelID] = struct{}{}
 		}
 
-		nextIDs := make([]uint, 0, len(allIDs))
-		reorderedIndex := 0
-		for _, modelID := range allIDs {
-			if _, exists := reorderedIDs[modelID]; exists {
-				nextIDs = append(nextIDs, orderedModelIDs[reorderedIndex])
-				reorderedIndex++
-				continue
-			}
-			nextIDs = append(nextIDs, modelID)
-		}
-		if reorderedIndex != len(orderedModelIDs) {
-			return repository.ErrInvalidInput
-		}
-
-		for index, modelID := range nextIDs {
+		for index, modelID := range orderedModelIDs {
 			sortOrder := (index + 1) * 100
 			if err := tx.
 				Model(&model.LLMPlatformModel{}).
@@ -454,7 +438,21 @@ func (r *Repo) modelListQuery(ctx context.Context) *gorm.DB {
 }
 
 func applyModelListFilters(query *gorm.DB, input repository.ListChannelModelsInput) *gorm.DB {
-	if input.OnlyActive {
+	if input.OnlyAvailable {
+		query = query.Where("m.status = ?", "active")
+		query = query.Where(
+			`EXISTS (
+				SELECT 1
+				FROM llm_model_routes r
+				JOIN llm_upstream_models um ON um.id = r.upstream_model_id
+				JOIN llm_upstreams u ON u.id = um.upstream_id
+				WHERE r.platform_model_id = m.id
+					AND r.status = 'active'
+					AND um.status = 'active'
+					AND u.status = 'active'
+			)`,
+		)
+	} else if input.OnlyActive {
 		query = query.Where("m.status = ?", "active")
 	} else if status := strings.TrimSpace(input.Status); status == "active" || status == "inactive" {
 		query = query.Where("m.status = ?", status)
@@ -494,12 +492,30 @@ func modelListOrder(sort string) string {
 	case "sourceCount_desc":
 		return "source_count DESC, m.id DESC"
 	case "sortOrder_asc":
-		return "m.sort_order ASC, m.id ASC"
+		return modelDefaultDisplayOrder()
 	case "updated_desc":
 		return "m.updated_at DESC, m.id DESC"
 	default:
-		return "m.sort_order ASC, m.id ASC"
+		return modelDefaultDisplayOrder()
 	}
+}
+
+func modelDefaultDisplayOrder() string {
+	availabilityRank := modelAvailabilityRankExpression()
+	vendorKey := modelVendorOrderKey("m.")
+	vendorGroupOrder := "MIN(m.sort_order) OVER (PARTITION BY " + availabilityRank + ", " + vendorKey + ")"
+	return availabilityRank + " ASC, " +
+		vendorGroupOrder + " ASC, " +
+		vendorKey + " ASC, " +
+		"m.sort_order ASC, m.id ASC"
+}
+
+func modelAvailabilityRankExpression() string {
+	return "CASE WHEN m.status = 'active' AND COALESCE(stats.active_source_count, 0) > 0 THEN 0 WHEN COALESCE(stats.source_count, 0) > 0 THEN 1 ELSE 2 END"
+}
+
+func modelVendorOrderKey(prefix string) string {
+	return "COALESCE(NULLIF(TRIM(LOWER(" + prefix + "vendor)), ''), LOWER(" + prefix + "name))"
 }
 
 // ---------------------------------------------------------------------------

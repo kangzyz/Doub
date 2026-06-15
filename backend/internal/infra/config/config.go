@@ -187,6 +187,14 @@ func DefaultNativeToolAllowedTypesJSON() string {
     "web_search",
     "x_search",
     "code_interpreter"
+  ],
+  "gemini_generate_content": [
+    "google_search",
+    "url_context",
+    "code_execution"
+  ],
+  "google_image_generation": [
+    "google_search"
   ]
 }`
 }
@@ -348,6 +356,7 @@ type Config struct {
 	MaxContextMessages       int
 	ContextMaxTurns          int
 	ContextMaxInputTokens    int
+	ContextCompactEnabled    bool
 	ContextCompactTrigger    int
 	ContextCompactPreserve   int
 	ConversationTaskModel    string
@@ -550,6 +559,7 @@ func Load() Config {
 		MaxContextMessages:                20,
 		ContextMaxTurns:                   48,
 		ContextMaxInputTokens:             32000,
+		ContextCompactEnabled:             false,
 		ContextCompactTrigger:             32768,
 		ContextCompactPreserve:            8,
 		ConversationTaskModel:             "follow",

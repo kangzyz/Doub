@@ -393,6 +393,42 @@ func TestBuildGeminiToolsMergesProviderAndMCPTools(t *testing.T) {
 	}
 }
 
+func TestBuildGeminiNativeGoogleSearchToolUsesOfficialShape(t *testing.T) {
+	payload := mustBuildGeminiRequestBody(t, GenerateInput{
+		Messages: []Message{{Role: "user", Content: "search"}},
+		Options: map[string]interface{}{
+			"tools": []interface{}{
+				map[string]interface{}{
+					"type": "google_search",
+					"google_search": map[string]interface{}{
+						"time_range_filter": "week",
+					},
+				},
+				map[string]interface{}{"type": "url_context"},
+				map[string]interface{}{"type": "code_execution"},
+			},
+		},
+	})
+
+	tools, ok := payload["tools"].([]map[string]interface{})
+	if !ok || len(tools) != 3 {
+		t.Fatalf("expected Gemini native tool, got %#v", payload["tools"])
+	}
+	if _, ok := tools[0]["type"]; ok {
+		t.Fatalf("expected official google_search shape without type, got %#v", tools[0])
+	}
+	googleSearch, ok := tools[0]["google_search"].(map[string]interface{})
+	if !ok || googleSearch["time_range_filter"] != "week" {
+		t.Fatalf("expected google_search config, got %#v", tools[0])
+	}
+	if _, ok := tools[1]["url_context"].(map[string]interface{}); !ok {
+		t.Fatalf("expected official url_context config, got %#v", tools[1])
+	}
+	if _, ok := tools[2]["code_execution"].(map[string]interface{}); !ok {
+		t.Fatalf("expected official code_execution config, got %#v", tools[2])
+	}
+}
+
 func TestBuildGeminiRequestBodyDisableToolsRemovesProviderAndMCPTools(t *testing.T) {
 	schema := json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)
 	payload := mustBuildGeminiRequestBody(t, GenerateInput{
