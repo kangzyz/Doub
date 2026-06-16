@@ -983,6 +983,81 @@ func TestParseResponsesCapturesOpenAINativeShellAndImageTools(t *testing.T) {
 	}
 }
 
+func TestResponsesImageGenerationStreamEventsUpdateServerToolCall(t *testing.T) {
+	result := &GenerateOutput{
+		ToolCalls:       make([]ToolCall, 0),
+		ServerToolCalls: make([]ToolCall, 0),
+	}
+	var streamed []ToolCall
+	onEvent := func(event GenerateStreamEvent) error {
+		if event.ServerToolCall != nil {
+			streamed = append(streamed, *event.ServerToolCall)
+		}
+		return nil
+	}
+
+	generating := mustDecodeObject(t, `{
+		"type":"response.image_generation_call.generating",
+		"item_id":"ig_1",
+		"output_index":0
+	}`)
+	if err := applyResponsesStreamEvent(AdapterOpenAIResponses, "response.image_generation_call.generating", generating, "", result, onEvent); err != nil {
+		t.Fatalf("apply generating event: %v", err)
+	}
+	partial := mustDecodeObject(t, `{
+		"type":"response.image_generation_call.partial_image",
+		"item_id":"ig_1",
+		"output_index":0,
+		"background":"opaque",
+		"output_format":"png",
+		"partial_image_b64":"iVBORw0KGgoAAAANSUhEUgAA"
+	}`)
+	if err := applyResponsesStreamEvent(AdapterOpenAIResponses, "response.image_generation_call.partial_image", partial, "", result, onEvent); err != nil {
+		t.Fatalf("apply partial image event: %v", err)
+	}
+
+	if len(streamed) != 2 {
+		t.Fatalf("expected streamed tool updates for generating and partial events, got %#v", streamed)
+	}
+	if len(result.ServerToolCalls) != 1 {
+		t.Fatalf("expected one merged image generation call, got %#v", result.ServerToolCalls)
+	}
+	call := result.ServerToolCalls[0]
+	if call.ToolCallID != "ig_1" || call.ToolName != "image_generation" || call.Status != "in_progress" {
+		t.Fatalf("unexpected image generation call metadata: %#v", call)
+	}
+	if !strings.Contains(call.OutputJSON, "partial_image_b64") || !strings.Contains(call.OutputJSON, "iVBORw0KGgo") {
+		t.Fatalf("expected partial image payload in output JSON, got %q", call.OutputJSON)
+	}
+}
+
+func TestResponsesImageGenerationStreamAcceptsLargePartialImageEvent(t *testing.T) {
+	largeB64 := strings.Repeat("a", 1024*1024+128)
+	payload, err := json.Marshal(map[string]interface{}{
+		"type":              "response.image_generation_call.partial_image",
+		"item_id":           "ig_large",
+		"output_index":      0,
+		"output_format":     "png",
+		"partial_image_b64": largeB64,
+	})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	stream := "event: response.image_generation_call.partial_image\n" +
+		"data: " + string(payload) + "\n\n"
+	result := &GenerateOutput{
+		ToolCalls:       make([]ToolCall, 0),
+		ServerToolCalls: make([]ToolCall, 0),
+	}
+
+	if err := consumeOpenAIGenerateStream(EndpointResponses, AdapterOpenAIResponses, strings.NewReader(stream), result, nil); err != nil {
+		t.Fatalf("expected large image stream event to parse, got %v", err)
+	}
+	if len(result.ServerToolCalls) != 1 || !strings.Contains(result.ServerToolCalls[0].OutputJSON, largeB64[:96]) {
+		t.Fatalf("expected large partial image payload to be captured, got %#v", result.ServerToolCalls)
+	}
+}
+
 func TestParseResponsesTreatsXSearchCustomCallsAsServerSide(t *testing.T) {
 	payload := mustDecodeObject(t, `{
 		"id": "resp_1",

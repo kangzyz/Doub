@@ -32,6 +32,21 @@ wrappers server-renderable when possible.
 - Avoid nested cards and decorative page sections that make operational screens
   harder to scan.
 
+## Chat Loading States
+
+- Assistant image generation and image editing should use the existing image
+  generation skeleton/animation whenever the visible work is image creation,
+  including OpenAI Responses native `image_generation` tool calls surfaced
+  through process trace payloads.
+- Do not show only a generic "tool calling" trace row while a native image
+  generation tool is actively producing an image and the assistant body is still
+  empty. Keep diagnostic trace content available once regular content or an
+  inline error appears.
+- When a native image-generation tool returns image sources through process
+  trace payloads, render those images in the formal assistant message body.
+  Tool trace panels may keep status, prompt, and diagnostics, but should not be
+  the only place users can see the generated image.
+
 ## Markdown Rendering
 
 - Chat Markdown rendering is owned by

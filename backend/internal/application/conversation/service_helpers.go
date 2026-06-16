@@ -486,7 +486,7 @@ func unsupportedNativeToolTypeFromJSONValue(value interface{}) string {
 func unsupportedNativeToolTypeFromMessage(message string) string {
 	value := strings.TrimSpace(message)
 	lower := strings.ToLower(value)
-	if !strings.Contains(lower, "unsupported") || !strings.Contains(lower, "tool") {
+	if !strings.Contains(lower, "tool") || !nativeToolUnsupportedMessage(lower) {
 		return ""
 	}
 	for _, toolType := range []string{
@@ -513,6 +513,21 @@ func unsupportedNativeToolTypeFromMessage(message string) string {
 		}
 	}
 	return ""
+}
+
+func nativeToolUnsupportedMessage(lower string) bool {
+	for _, marker := range []string{
+		"unsupported",
+		"not supported",
+		"not support",
+		"does not support",
+		"doesn't support",
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func firstToolIdentifier(raw string) string {

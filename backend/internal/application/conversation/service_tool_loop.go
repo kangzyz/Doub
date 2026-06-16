@@ -67,7 +67,7 @@ func syncUpstreamServerToolCalls(traceRecorder *messageTraceRecorder, output *ll
 		switch status {
 		case "", "completed":
 			status = "success"
-		case "in_progress", "queued":
+		case "in_progress", "queued", "generating", "partial_image":
 			status = "streaming"
 		}
 		outputJSON := strings.TrimSpace(item.OutputJSON)
@@ -96,7 +96,7 @@ func normalizeStreamServerToolStatus(status string) string {
 	switch strings.TrimSpace(status) {
 	case "", "completed", "success":
 		return "success"
-	case "in_progress", "queued", "searching":
+	case "in_progress", "queued", "searching", "generating", "partial_image":
 		return "streaming"
 	case "failed", "error":
 		return "error"
@@ -120,6 +120,100 @@ func isSearchServerToolCall(item llm.ToolCall) bool {
 	toolType := strings.ToLower(strings.TrimSpace(item.ToolType))
 	toolName := strings.ToLower(strings.TrimSpace(item.ToolName))
 	return strings.Contains(toolType, "search") || strings.Contains(toolName, "search")
+}
+
+func hasSuccessfulImageGenerationServerToolOutput(output *llm.GenerateOutput) bool {
+	if output == nil {
+		return false
+	}
+	for _, item := range output.ServerToolCalls {
+		if !isImageGenerationServerToolCall(item) {
+			continue
+		}
+		if !serverToolCallHasUsableImageOutputStatus(item.Status) {
+			continue
+		}
+		if toolOutputHasImageSource(item.OutputJSON) {
+			return true
+		}
+	}
+	return false
+}
+
+func isImageGenerationServerToolCall(item llm.ToolCall) bool {
+	toolType := strings.ToLower(strings.TrimSpace(item.ToolType))
+	toolName := strings.ToLower(strings.TrimSpace(item.ToolName))
+	return strings.Contains(toolType, "image_generation") || strings.Contains(toolName, "image_generation")
+}
+
+func serverToolCallHasUsableImageOutputStatus(status string) bool {
+	switch strings.TrimSpace(status) {
+	case "", "completed", "success", "streaming", "in_progress", "generating", "partial_image":
+		return true
+	default:
+		return false
+	}
+}
+
+func toolOutputHasImageSource(raw string) bool {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return false
+	}
+	var decoded interface{}
+	if err := json.Unmarshal([]byte(value), &decoded); err == nil {
+		return toolOutputValueHasImageSource(decoded)
+	}
+	return looksLikeImageSource(value)
+}
+
+func toolOutputValueHasImageSource(value interface{}) bool {
+	switch typed := value.(type) {
+	case string:
+		return looksLikeImageSource(typed)
+	case []interface{}:
+		for _, item := range typed {
+			if toolOutputValueHasImageSource(item) {
+				return true
+			}
+		}
+	case map[string]interface{}:
+		for _, key := range []string{"url", "uri", "image_url", "b64_json", "base64", "partial_image_b64", "result"} {
+			if toolOutputValueHasImageSource(typed[key]) {
+				return true
+			}
+		}
+		for _, item := range typed {
+			if toolOutputValueHasImageSource(item) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func looksLikeImageSource(value string) bool {
+	text := strings.TrimSpace(value)
+	lower := strings.ToLower(text)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "data:image/") || strings.HasPrefix(lower, "blob:") {
+		return true
+	}
+	compact := strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\n' || r == '\r' || r == '\t' {
+			return -1
+		}
+		return r
+	}, text)
+	if len(compact) <= 80 {
+		return false
+	}
+	for _, r := range compact {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '+' || r == '/' || r == '=' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func citationsToolOutputJSON(citations []string) string {

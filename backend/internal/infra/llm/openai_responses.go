@@ -411,7 +411,7 @@ func parseResponsesServerToolStatusEvent(eventType string, parsed map[string]int
 		return ToolCall{}, false
 	}
 	status := ""
-	for _, suffix := range []string{".in_progress", ".searching", ".completed", ".failed", ".error"} {
+	for _, suffix := range []string{".in_progress", ".searching", ".generating", ".partial_image", ".completed", ".failed", ".error"} {
 		if strings.HasSuffix(value, suffix) {
 			status = strings.TrimPrefix(suffix, ".")
 			value = strings.TrimSuffix(strings.TrimPrefix(value, "response."), suffix)
@@ -426,14 +426,23 @@ func parseResponsesServerToolStatusEvent(eventType string, parsed map[string]int
 		item = make(map[string]interface{})
 	}
 	mergeMapValueIfEmpty(item, "type", value)
-	mergeMapValueIfEmpty(item, "status", status)
+	mergeMapValueIfEmpty(item, "status", responseServerToolEventStatus(status))
 	for _, key := range responseServerToolIdentifierKeys() {
 		mergeMapValueIfEmpty(item, key, parsed[key])
 	}
-	for _, key := range []string{"action", "arguments", "input", "query", "output", "outputs", "results", "search_results", "sources", "citations", "data", "items", "content", "response", "result", "error"} {
+	for _, key := range []string{"action", "arguments", "input", "query", "output", "outputs", "results", "search_results", "sources", "citations", "data", "items", "content", "response", "result", "partial_image_b64", "b64_json", "output_format", "background", "error"} {
 		mergeMapValueIfEmpty(item, key, parsed[key])
 	}
 	return parseResponseServerToolCall(item), true
+}
+
+func responseServerToolEventStatus(status string) string {
+	switch strings.TrimSpace(status) {
+	case "generating", "partial_image":
+		return "in_progress"
+	default:
+		return strings.TrimSpace(status)
+	}
 }
 
 func responseServerToolIdentifierKeys() []string {
@@ -786,6 +795,7 @@ func parseResponseServerToolCall(item map[string]interface{}) ToolCall {
 		normalizeJSONString(item["query"]),
 	)
 	outputJSON := firstNonEmptyString(
+		responseImageGenerationToolOutputJSON(item),
 		normalizeJSONString(item["output"]),
 		normalizeJSONString(item["outputs"]),
 		normalizeJSONString(item["results"]),
@@ -808,6 +818,46 @@ func parseResponseServerToolCall(item map[string]interface{}) ToolCall {
 		Status:        status,
 		OutputJSON:    outputJSON,
 		ErrorJSON:     errorJSON,
+	}
+}
+
+func responseImageGenerationToolOutputJSON(item map[string]interface{}) string {
+	if len(item) == 0 {
+		return ""
+	}
+	itemType := strings.TrimSpace(getString(item["type"]))
+	toolName := firstNonEmptyString(getString(item["name"]), responseServerToolNameFromType(itemType))
+	if !strings.Contains(strings.ToLower(itemType+" "+toolName), "image_generation") {
+		return ""
+	}
+	payload := make(map[string]interface{})
+	hasImagePayload := false
+	for _, key := range []string{"partial_image_b64", "b64_json", "output_format", "background"} {
+		if value, ok := item[key]; ok && !jsonValueEmpty(value) {
+			payload[key] = value
+			if key == "partial_image_b64" || key == "b64_json" {
+				hasImagePayload = true
+			}
+		}
+	}
+	if !hasImagePayload {
+		return ""
+	}
+	return normalizeJSONString(payload)
+}
+
+func jsonValueEmpty(value interface{}) bool {
+	switch typed := value.(type) {
+	case nil:
+		return true
+	case string:
+		return strings.TrimSpace(typed) == ""
+	case []interface{}:
+		return len(typed) == 0
+	case map[string]interface{}:
+		return len(typed) == 0
+	default:
+		return false
 	}
 }
 

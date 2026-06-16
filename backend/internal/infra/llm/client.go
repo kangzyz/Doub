@@ -1223,7 +1223,7 @@ func toolCallStatusRank(status string) int {
 		return 4
 	case "completed", "success":
 		return 3
-	case "in_progress", "queued", "searching", "streaming", "requested":
+	case "in_progress", "queued", "searching", "generating", "partial_image", "streaming", "requested":
 		return 2
 	default:
 		return 1

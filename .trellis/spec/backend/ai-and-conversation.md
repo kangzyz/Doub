@@ -357,6 +357,109 @@ If you add or rename an event:
   `frontend/shared/api/conversation.ts`.
 - Add translations or UI handling in feature components if the event is visible.
 
+## Scenario: OpenAI Responses Native Image Generation Tool
+
+### 1. Scope / Trigger
+
+Use this contract when changing OpenAI Responses native `image_generation`
+tool handling in chat, including model compatibility fallback, stream parsing,
+process trace rendering, or the empty-response guard.
+
+### 2. Signatures
+
+- LLM adapter:
+  `applyResponsesStreamEvent(adapter, eventName, parsed, rawBody, result, onEvent)`
+- Stream event types:
+  - `response.image_generation_call.in_progress`
+  - `response.image_generation_call.generating`
+  - `response.image_generation_call.partial_image`
+  - `response.image_generation_call.completed`
+- Application trace:
+  `llm.GenerateStreamEvent.ServerToolCall -> messageTraceRecorder.syncToolSection`
+- Chat success guard:
+  `hasSuccessfulImageGenerationServerToolOutput(*llm.GenerateOutput)`
+
+### 3. Contracts
+
+- `image_generation` is a server-side OpenAI Responses tool, not a local MCP or
+  function call. It must be stored in `GenerateOutput.ServerToolCalls`.
+- Model/tool support is not uniform. If upstream returns a safe validation
+  error such as `Tool 'image_generation' is not supported with ...`, the chat
+  service may remove that named native tool and retry the same request.
+- `generating` and `partial_image` events are streaming states. They should
+  update the tool trace as in-progress/streaming, not as completed or failed.
+- `partial_image` payloads may contain `partial_image_b64`, `output_format`,
+  and `background`. Preserve these fields in tool `OutputJSON` so the frontend
+  trace renderer can show a preview.
+- Responses image-generation SSE events can carry very large base64 payloads in
+  one `data:` line. The OpenAI-compatible stream reader must allow a token size
+  up to `maxUpstreamBodyBytes`, not the small default `bufio.Scanner` limit.
+- A completed or stream-ended `image_generation` server-side tool with a real
+  image source (`url`, `image_url`, `b64_json`, `base64`, or
+  `partial_image_b64`) is a valid chat result even when assistant text is blank.
+- Do not persist Responses native image tool output as conversation image
+  attachments unless the task explicitly implements that storage path.
+
+### 4. Validation & Error Matrix
+
+- Unsupported native tool message naming `image_generation` -> remove that tool
+  from options and retry once per removed tool type.
+- `generating` or `partial_image` event -> trace status `streaming`.
+- Completed image generation tool with image output and blank assistant text ->
+  successful assistant message with process trace.
+- Stream ends successfully after a `partial_image_b64` output but without a
+  `completed` item -> successful assistant message with process trace.
+- Blank assistant text without completed image generation output ->
+  `ErrUpstreamEmptyResponse`.
+- Failed/error image generation event -> failed tool trace and normal upstream
+  error handling.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `gpt-5.5` emits `generating`, `partial_image`, then `completed`; the
+  process trace animates during generation and the turn completes even if no
+  text is returned.
+- Base: a model that rejects `image_generation` returns
+  `Tool 'image_generation' is not supported ...`; the service retries without
+  that tool instead of failing the turn.
+- Bad: frontend hard-codes OpenAI model names to decide whether to send the
+  image tool; this will drift as OpenAI changes model/tool support.
+- Bad: a partial image event is treated as final success while the stream is
+  still active or after the stream ended with an upstream error.
+
+### 6. Tests Required
+
+- Conversation helper tests must cover unsupported native tool error text,
+  including `Tool '<tool>' is not supported ...`.
+- LLM adapter tests must cover `generating` and `partial_image` stream events
+  becoming server-side tool updates with preserved image payload fields.
+- LLM adapter tests must cover an image-generation SSE `data:` line larger than
+  1 MiB so large base64 payloads do not regress to `bufio.Scanner: token too
+  long`.
+- Conversation service/helper tests must cover completed native image
+  generation output and stream-ended partial image output allowing blank
+  assistant text, while missing image output and non-image tools still reject
+  blank text.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+if strings.TrimSpace(assistantText) == "" {
+	return ErrUpstreamEmptyResponse
+}
+```
+
+#### Correct
+
+```go
+if strings.TrimSpace(assistantText) == "" &&
+	!hasSuccessfulImageGenerationServerToolOutput(upstreamOutput) {
+	return ErrUpstreamEmptyResponse
+}
+```
+
 ## RAG, Files, And Memory
 
 File processing, extraction, embeddings, RAG retrieval, and memory are backend

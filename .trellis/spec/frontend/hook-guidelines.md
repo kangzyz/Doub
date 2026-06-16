@@ -42,6 +42,30 @@ Only client components and hooks may touch `window`, `localStorage`,
 Clean up timers, event listeners, stream readers, and mounted flags in effect
 cleanup functions.
 
+## Streaming Scroll Controllers
+
+Chat auto-follow logic must be interruptible by explicit user scroll input.
+When a hook schedules `requestAnimationFrame` work to keep a live conversation
+at the bottom, wheel/touch/keyboard scroll intent should cancel pending
+auto-follow frames and clear any programmatic-scroll guard so the next `scroll`
+event is treated as user-owned. During a live generation, do not re-arm
+auto-follow merely because the viewport is still inside a generous "near
+bottom" affordance threshold; re-arm only when the user is pinned to the actual
+bottom or explicitly clicks the scroll-to-latest action.
+
+```tsx
+// Good: user scroll intent cancels a queued auto-follow before it can snap back.
+viewport.addEventListener("wheel", markUserScrollIntent, { passive: true });
+autoFollowRef.current = liveGeneration && userScrollIntent
+  ? isPinnedToBottom(viewport)
+  : isNearBottom(viewport);
+
+// Bad: a queued scroll-to-bottom runs after the wheel event and traps the user.
+if (autoFollowRef.current) {
+  requestAnimationFrame(scrollToLatest);
+}
+```
+
 ## Avoid
 
 - Large API/data effects inside route files or presentational components.

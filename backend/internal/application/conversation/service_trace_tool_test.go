@@ -385,6 +385,59 @@ func TestServerSideOnlyToolsRenderBeforeFinalThinking(t *testing.T) {
 	}
 }
 
+func TestHasSuccessfulImageGenerationServerToolOutput(t *testing.T) {
+	output := &llm.GenerateOutput{
+		ServerToolCalls: []llm.ToolCall{{
+			ToolType:   "image_generation_call",
+			ToolName:   "image_generation",
+			Status:     "completed",
+			OutputJSON: `{"result":{"type":"image","url":"https://example.com/image.png"}}`,
+		}},
+	}
+	if !hasSuccessfulImageGenerationServerToolOutput(output) {
+		t.Fatal("expected completed image generation output to allow empty assistant text")
+	}
+}
+
+func TestHasSuccessfulImageGenerationServerToolOutputAcceptsStreamEndedPartialImage(t *testing.T) {
+	output := &llm.GenerateOutput{
+		ServerToolCalls: []llm.ToolCall{{
+			ToolType:   "image_generation_call",
+			ToolName:   "image_generation",
+			Status:     "in_progress",
+			OutputJSON: `{"partial_image_b64":"` + strings.Repeat("a", 96) + `"}`,
+		}},
+	}
+	if !hasSuccessfulImageGenerationServerToolOutput(output) {
+		t.Fatal("expected stream-ended partial image output to allow empty assistant text")
+	}
+}
+
+func TestHasSuccessfulImageGenerationServerToolOutputRejectsIncompleteOrNonImageTools(t *testing.T) {
+	inProgressWithoutImage := &llm.GenerateOutput{
+		ServerToolCalls: []llm.ToolCall{{
+			ToolType: "image_generation_call",
+			ToolName: "image_generation",
+			Status:   "in_progress",
+		}},
+	}
+	if hasSuccessfulImageGenerationServerToolOutput(inProgressWithoutImage) {
+		t.Fatal("expected image generation tool without image output to remain incomplete")
+	}
+
+	webSearch := &llm.GenerateOutput{
+		ServerToolCalls: []llm.ToolCall{{
+			ToolType:   "web_search_call",
+			ToolName:   "web_search",
+			Status:     "completed",
+			OutputJSON: `[{"url":"https://example.com/result"}]`,
+		}},
+	}
+	if hasSuccessfulImageGenerationServerToolOutput(webSearch) {
+		t.Fatal("expected non-image tools not to allow empty assistant text")
+	}
+}
+
 func TestToolExecutionLedgerNormalizesArguments(t *testing.T) {
 	ledger := newToolExecutionLedger()
 	row := model.ToolCall{

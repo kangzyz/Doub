@@ -1113,7 +1113,7 @@ func (s *Service) sendMessageInternal(
 		effectiveOutputTokens = estimateTokens(assistantText)
 	}
 
-	if strings.TrimSpace(assistantText) == "" {
+	if strings.TrimSpace(assistantText) == "" && !hasSuccessfulImageGenerationServerToolOutput(upstreamOutput) {
 		retErr = ErrUpstreamEmptyResponse
 		return nil, retErr
 	}

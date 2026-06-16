@@ -4,6 +4,7 @@ import * as React from "react";
 
 const CHAT_SCROLL_STORAGE_KEY = "doub-chat:chat-scroll:v1";
 const BOTTOM_THRESHOLD_PX = 96;
+const BOTTOM_PINNED_THRESHOLD_PX = 4;
 const SCROLL_POSITION_PERSIST_DELAY_MS = 180;
 const RESTORE_RETRY_FRAMES = 3;
 const USER_SCROLL_INTENT_TTL_MS = 700;
@@ -121,6 +122,11 @@ export function useChatScrollController({
     return distanceFromBottom <= BOTTOM_THRESHOLD_PX;
   }, []);
 
+  const isPinnedToBottom = React.useCallback((viewport: HTMLDivElement) => {
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    return distanceFromBottom <= BOTTOM_PINNED_THRESHOLD_PX;
+  }, []);
+
   const updateScrollAffordance = React.useCallback(
     (viewport: HTMLDivElement | null) => {
       if (!viewport) {
@@ -143,7 +149,17 @@ export function useChatScrollController({
     userScrollIntentRef.current = false;
   }, []);
 
+  const cancelAutoFollowFrame = React.useCallback(() => {
+    if (autoFollowFrameRef.current === null) {
+      return;
+    }
+    window.cancelAnimationFrame(autoFollowFrameRef.current);
+    autoFollowFrameRef.current = null;
+  }, []);
+
   const markUserScrollIntent = React.useCallback(() => {
+    programmaticScrollRef.current = false;
+    cancelAutoFollowFrame();
     userScrollIntentRef.current = true;
     if (userScrollIntentTimerRef.current !== null) {
       window.clearTimeout(userScrollIntentTimerRef.current);
@@ -152,7 +168,7 @@ export function useChatScrollController({
       userScrollIntentTimerRef.current = null;
       userScrollIntentRef.current = false;
     }, USER_SCROLL_INTENT_TTL_MS);
-  }, []);
+  }, [cancelAutoFollowFrame]);
 
   const persistViewportPosition = React.useCallback(
     (targetConversationID: string | null, viewport: HTMLDivElement | null) => {
@@ -257,9 +273,12 @@ export function useChatScrollController({
       return;
     }
 
-    autoFollowRef.current = updateScrollAffordance(viewport);
+    const nearBottom = updateScrollAffordance(viewport);
+    autoFollowRef.current = liveGenerationRef.current && userScrollIntentRef.current
+      ? isPinnedToBottom(viewport)
+      : nearBottom;
     schedulePersistViewportPosition(currentConversationIDRef.current);
-  }, [schedulePersistViewportPosition, scheduleScrollToLatest, updateScrollAffordance]);
+  }, [isPinnedToBottom, schedulePersistViewportPosition, scheduleScrollToLatest, updateScrollAffordance]);
 
   const onScrollToLatest = React.useCallback(() => {
     scrollToLatest("smooth");

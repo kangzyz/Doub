@@ -386,7 +386,7 @@ func consumeOpenAIGenerateStream(
 	onEvent func(GenerateStreamEvent) error,
 ) error {
 	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	scanner.Buffer(make([]byte, 0, 256*1024), maxUpstreamBodyBytes)
 
 	var eventName string
 	dataLines := make([]string, 0, 4)

@@ -680,6 +680,7 @@ type NativeToolKind = "web_search" | "code_interpreter" | "image_generation" | "
 
 const TOOL_DETAIL_COLLAPSED_LINES = 8;
 const TOOL_DETAIL_LINE_HEIGHT_REM = 1.25;
+const ACTIVE_IMAGE_GENERATION_TOOL_STATUSES = new Set(["", "requested", "streaming", "queued", "in_progress", "generating", "partial_image"]);
 
 function parseToolTraceCalls(payloadJson: string | undefined): ToolTraceCall[] {
   if (!payloadJson) return [];
@@ -780,6 +781,14 @@ function collectToolImageSources(value: unknown, result: string[] = []): string[
   return Array.from(new Set(result));
 }
 
+export function extractImageGenerationTraceImageSources(block: ChatTraceBlock | undefined): string[] {
+  if (!block) return [];
+  const urls = parseToolTraceCalls(block.payloadJson)
+    .filter((call) => resolveNativeToolKind(call) === "image_generation")
+    .flatMap((call) => collectToolImageSources(toolOutputPayload(call)));
+  return Array.from(new Set(urls.map((item) => item.trim()).filter(Boolean))).slice(0, 4);
+}
+
 function normalizeToolName(value: string | undefined): string {
   return value?.trim().replace(/_call_output$/, "").replace(/_call$/, "") || "";
 }
@@ -866,6 +875,20 @@ function nativeToolStatusText(call: ToolTraceCall, labels: ProcessTraceLabels): 
     default:
       return failed ? labels.tool.nativeStatus.genericFailed : done ? labels.tool.nativeStatus.genericDone : labels.tool.nativeStatus.genericActive;
   }
+}
+
+export function hasActiveImageGenerationTraceTool(block: ChatTraceBlock | undefined): boolean {
+  if (!block) return false;
+  const blockStatus = block.status?.trim();
+  if (blockStatus === "error" || blockStatus === "failed") return false;
+  return parseToolTraceCalls(block.payloadJson).some((call) => {
+    if (resolveNativeToolKind(call) !== "image_generation") return false;
+    const status = call.status?.trim() || "";
+    if (status === "error" || status === "failed" || status === "completed" || status === "success" || status === "reused") {
+      return false;
+    }
+    return ACTIVE_IMAGE_GENERATION_TOOL_STATUSES.has(status) || blockStatus === "streaming";
+  });
 }
 
 function localizeToolTraceSummary(block: ChatTraceBlock, calls: ToolTraceCall[], labels: ProcessTraceLabels): string {
@@ -1539,6 +1562,7 @@ function ToolTraceStructuredContent({
   canExpand,
   onToggle,
   labels,
+  hideImageGenerationImages,
 }: {
   call: ToolTraceCall;
   rawDetail: string;
@@ -1547,6 +1571,7 @@ function ToolTraceStructuredContent({
   canExpand: boolean;
   onToggle: () => void;
   labels: ProcessTraceLabels;
+  hideImageGenerationImages?: boolean;
 }) {
   const kind = resolveNativeToolKind(call);
   const input = toolInputRecord(call);
@@ -1625,14 +1650,14 @@ function ToolTraceStructuredContent({
   }
 
   if (kind === "image_generation") {
-    const urls = collectToolImageSources(output);
+    const urls = hideImageGenerationImages ? [] : collectToolImageSources(output);
     const prompt = toolInputText(call, ["prompt", "input"]);
     return (
       <div className={cn("space-y-2 text-muted-foreground/84", failed && "text-destructive/80")}>
         <div>{statusText}</div>
         {prompt ? <div className="break-words">{labels.tool.detail.prompt}: {prompt}</div> : null}
         {urls.length > 0 ? <ToolImageGrid urls={urls} labels={labels} /> : null}
-        {urls.length === 0 && rawDetail ? (
+        {!hideImageGenerationImages && urls.length === 0 && rawDetail ? (
           <ToolDetailText failed={failed} open={open} canExpand={canExpand} labels={labels} onToggle={onToggle}>
             {rawDetail}
           </ToolDetailText>
@@ -1686,7 +1711,15 @@ function ToolTraceStructuredContent({
   );
 }
 
-function ToolTraceRows({ calls, labels }: { calls: ToolTraceCall[]; labels: ProcessTraceLabels }) {
+function ToolTraceRows({
+  calls,
+  labels,
+  hideImageGenerationImages,
+}: {
+  calls: ToolTraceCall[];
+  labels: ProcessTraceLabels;
+  hideImageGenerationImages?: boolean;
+}) {
   const [expanded, setExpanded] = React.useState<Set<number>>(() => new Set());
 
   if (calls.length === 0) return null;
@@ -1735,6 +1768,7 @@ function ToolTraceRows({ calls, labels }: { calls: ToolTraceCall[]; labels: Proc
                 open={open}
                 canExpand={canExpand}
                 labels={labels}
+                hideImageGenerationImages={hideImageGenerationImages}
                 onToggle={() =>
                   setExpanded((current) => {
                     const next = new Set(current);
@@ -1883,12 +1917,14 @@ export function MessageTraceEventBlocks({
   activeThinkBlock,
   messageStreaming,
   autoCollapseReady,
+  hideImageGenerationImages,
 }: {
   events: ChatTraceEvent[];
   activeToolBlock?: ChatTraceBlock;
   activeThinkBlock?: ChatTraceBlock;
   messageStreaming?: boolean;
   autoCollapseReady?: boolean;
+  hideImageGenerationImages?: boolean;
 }) {
   const displayEvents = React.useMemo(() => buildTraceDisplayEvents(traceEvents), [traceEvents]);
   const { chainEvents, finalThinkBlock } = React.useMemo(
@@ -1906,6 +1942,7 @@ export function MessageTraceEventBlocks({
         activeToolBlock={activeToolBlock}
         streaming={Boolean(messageStreaming && (activeToolBlock?.status === "streaming" || chainEvents.some((item) => item.event.status === "streaming")))}
         autoCollapseReady={autoCollapseReady || Boolean(finalThinkBlock)}
+        hideImageGenerationImages={hideImageGenerationImages}
       />
       {finalThinkBlock ? (
         <MessageUpstreamThink
@@ -2082,7 +2119,15 @@ function buildToolChainStepsFromBlock(block: ChatTraceBlock | undefined, labels:
   });
 }
 
-function ToolChainRows({ steps, labels }: { steps: ToolChainStep[]; labels: ProcessTraceLabels }) {
+function ToolChainRows({
+  steps,
+  labels,
+  hideImageGenerationImages,
+}: {
+  steps: ToolChainStep[];
+  labels: ProcessTraceLabels;
+  hideImageGenerationImages?: boolean;
+}) {
   const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set());
 
   if (steps.length === 0) return null;
@@ -2137,6 +2182,7 @@ function ToolChainRows({ steps, labels }: { steps: ToolChainStep[]; labels: Proc
                     open={open}
                     canExpand={canExpand}
                     labels={labels}
+                    hideImageGenerationImages={hideImageGenerationImages}
                     onToggle={() =>
                       setExpanded((current) => {
                         const next = new Set(current);
@@ -2186,11 +2232,13 @@ function MessageToolChainTrace({
   activeToolBlock,
   streaming,
   autoCollapseReady,
+  hideImageGenerationImages,
 }: {
   events: TraceDisplayEvent[];
   activeToolBlock?: ChatTraceBlock;
   streaming?: boolean;
   autoCollapseReady?: boolean;
+  hideImageGenerationImages?: boolean;
 }) {
   const labels = useProcessTraceLabels();
   const toolEventCount = events.filter((item) => item.kind === "tool").length + (activeToolBlock ? 1 : 0);
@@ -2254,7 +2302,7 @@ function MessageToolChainTrace({
             />
           </AccordionTrigger>
           <AccordionContent className="pb-0 pt-1.5">
-            <ToolChainRows steps={steps} labels={labels} />
+            <ToolChainRows steps={steps} labels={labels} hideImageGenerationImages={hideImageGenerationImages} />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -2350,11 +2398,13 @@ export function MessageToolTrace({
   streaming,
   autoCollapseReady,
   title,
+  hideImageGenerationImages,
 }: {
   block?: ChatTraceBlock;
   streaming?: boolean;
   autoCollapseReady?: boolean;
   title?: string;
+  hideImageGenerationImages?: boolean;
 }) {
   const labels = useProcessTraceLabels();
   const [accordionValue, setAccordionValue] = React.useState(() => (streaming ? "message-tool-trace" : ""));
@@ -2414,7 +2464,7 @@ export function MessageToolTrace({
           </AccordionTrigger>
           <AccordionContent className="pb-0 pt-1.5">
             {toolCalls.length > 0 ? (
-              <ToolTraceRows calls={toolCalls} labels={labels} />
+              <ToolTraceRows calls={toolCalls} labels={labels} hideImageGenerationImages={hideImageGenerationImages} />
             ) : (
               <TraceContent block={block} streaming={Boolean(streaming)} labels={labels} />
             )}

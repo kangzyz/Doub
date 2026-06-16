@@ -6,7 +6,14 @@ import { useTranslations } from "next-intl";
 
 import { AssistantMessageMeta } from "@/features/chat/components/message/message-meta";
 import { MessageAttachmentRow } from "@/features/chat/components/message/message-attachment";
-import { MessageProcessTrace, MessageTraceEventBlocks, MessageToolTrace, MessageUpstreamThink } from "@/features/chat/components/message/message-process-trace";
+import {
+  extractImageGenerationTraceImageSources,
+  hasActiveImageGenerationTraceTool,
+  MessageProcessTrace,
+  MessageTraceEventBlocks,
+  MessageToolTrace,
+  MessageUpstreamThink,
+} from "@/features/chat/components/message/message-process-trace";
 import { GrainientBackground } from "@/components/reactbits/backgrounds/grainient";
 import type { AssistantReaction } from "@/features/chat/components/message/message-meta";
 import type {
@@ -14,7 +21,12 @@ import type {
   ChatInlineAlert,
   MessageAttachment,
 } from "@/features/chat/types/messages";
-import type { MarkdownArtifactActions } from "@/features/chat/components/markdown/streamdown-components";
+import {
+  MarkdownImage,
+  MarkdownImageActionsContext,
+  type MarkdownArtifactActions,
+  type MarkdownImageActions,
+} from "@/features/chat/components/markdown/streamdown-components";
 import { StreamdownRender } from "@/features/chat/components/markdown/streamdown-render";
 import {
   Accordion,
@@ -99,6 +111,43 @@ type ChatMessageBotProps = {
   showFollowUps?: boolean;
 };
 
+function AssistantGeneratedImageList({
+  sources,
+  imageActions,
+}: {
+  sources: string[];
+  imageActions?: MarkdownImageActions;
+}) {
+  const t = useTranslations("chat.processTrace.tool.detail");
+  const uniqueSources = React.useMemo(
+    () => Array.from(new Set(sources.map((item) => item.trim()).filter(Boolean))).slice(0, 4),
+    [sources],
+  );
+
+  if (uniqueSources.length === 0) {
+    return null;
+  }
+
+  const content = (
+    <div className="mt-4 flex w-full max-w-[34rem] flex-col items-start gap-3">
+      {uniqueSources.map((src, index) => (
+        <MarkdownImage
+          key={`${src.slice(0, 80)}-${index}`}
+          alt={t("generatedImageAlt", { index: index + 1 })}
+          className="my-0"
+          src={src}
+        />
+      ))}
+    </div>
+  );
+
+  return (
+    <MarkdownImageActionsContext.Provider value={imageActions ?? null}>
+      {content}
+    </MarkdownImageActionsContext.Provider>
+  );
+}
+
 export function ChatMessageBot({
   item,
   busy,
@@ -141,7 +190,9 @@ export function ChatMessageBot({
     [traceEvents],
   );
   const hasTraceEvents = postProcessEvents.length > 0;
-  const isImageGenerationLoading = item.contentType === "image" && item.isStreaming && !hasStreamdownContent;
+  const nativeImageGenerationLoading = messageStreaming && !hasStreamdownContent && hasActiveImageGenerationTraceTool(toolTrace);
+  const isImageGenerationLoading = messageStreaming && !hasStreamdownContent && (item.contentType === "image" || nativeImageGenerationLoading);
+  const nativeImageGenerationSources = React.useMemo(() => extractImageGenerationTraceImageSources(toolTrace), [toolTrace]);
   const editableImageAttachments = React.useMemo(
     () => (item.attachments ?? []).filter(isEditableImageAttachment),
     [item.attachments],
@@ -171,9 +222,10 @@ export function ChatMessageBot({
     readOnly,
   ]);
   const activeThinkBlock = hasTraceEvents && upstreamThink?.status === "streaming" ? upstreamThink : undefined;
-  const activeToolBlock = hasTraceEvents && toolTrace?.status === "streaming" ? toolTrace : undefined;
-  const processAutoCollapseReady = Boolean(hasTraceEvents || upstreamThink || toolTrace || hasStreamdownContent || item.inlineAlert);
-  const toolAutoCollapseReady = Boolean(upstreamThink || hasStreamdownContent || item.inlineAlert);
+  const activeToolBlock = hasTraceEvents && toolTrace?.status === "streaming" && !nativeImageGenerationLoading ? toolTrace : undefined;
+  const showNativeImageGenerationImages = !isImageGenerationLoading && !item.inlineAlert && nativeImageGenerationSources.length > 0;
+  const processAutoCollapseReady = Boolean(hasTraceEvents || upstreamThink || toolTrace || hasStreamdownContent || item.inlineAlert || isImageGenerationLoading);
+  const toolAutoCollapseReady = Boolean(upstreamThink || hasStreamdownContent || item.inlineAlert || isImageGenerationLoading);
 
   return (
     <div className="group/assistant-message flex w-full flex-col items-start">
@@ -190,6 +242,7 @@ export function ChatMessageBot({
             activeThinkBlock={activeThinkBlock}
             messageStreaming={messageStreaming}
             autoCollapseReady={hasStreamdownContent || Boolean(item.inlineAlert)}
+            hideImageGenerationImages={showNativeImageGenerationImages}
           />
         </>
       ) : (
@@ -200,7 +253,12 @@ export function ChatMessageBot({
             autoCollapseReady={processAutoCollapseReady}
           />
 
-          <MessageToolTrace block={toolTrace} streaming={toolTraceStreaming} autoCollapseReady={toolAutoCollapseReady} />
+          <MessageToolTrace
+            block={nativeImageGenerationLoading ? undefined : toolTrace}
+            streaming={toolTraceStreaming}
+            autoCollapseReady={toolAutoCollapseReady}
+            hideImageGenerationImages={showNativeImageGenerationImages}
+          />
 
           <MessageUpstreamThink block={upstreamThink} streaming={upstreamThinkStreaming} />
         </>
@@ -223,6 +281,9 @@ export function ChatMessageBot({
           />
         ) : hasStreamdownContent ? (
           <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.content}</p>
+        ) : null}
+        {showNativeImageGenerationImages ? (
+          <AssistantGeneratedImageList sources={nativeImageGenerationSources} imageActions={markdownImageActions} />
         ) : null}
       </div>
 

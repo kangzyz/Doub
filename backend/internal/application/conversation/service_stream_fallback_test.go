@@ -118,6 +118,16 @@ func TestUnsupportedNativeToolTypeFromError(t *testing.T) {
 			want: "image_generation",
 		},
 		{
+			name: "openai tool not supported message",
+			err:  &llm.UpstreamError{StatusCode: 400, Message: "Tool 'image_generation' is not supported with gpt-5.3-codex-spark."},
+			want: "image_generation",
+		},
+		{
+			name: "nested openai tool not supported body",
+			err:  &llm.UpstreamError{StatusCode: 400, Body: `{"error":{"message":"Tool 'code_interpreter' is not supported with this model."}}`},
+			want: "code_interpreter",
+		},
+		{
 			name: "nested error message",
 			err:  &llm.UpstreamError{StatusCode: 400, Body: `{"error":{"message":"Unsupported tool type: code_interpreter"}}`},
 			want: "code_interpreter",
