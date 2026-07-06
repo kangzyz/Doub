@@ -10,14 +10,16 @@ Prevent ordinary GPT-5.5 chat requests from failing with HTTP 400 `Unsupported t
 * The backend currently auto-injects daily chat native tools for `openai_responses`.
 * Before this fix, `openai_responses` daily defaults included `web_search`, `image_generation`, and `code_interpreter`.
 * The service already has a fallback path that detects unsupported native tool errors, removes the named tool from `GenerateInput.Options.tools`, and retries.
+* The frontend also mirrors daily native tool defaults and persists chat model options in `localStorage`.
 * `code_interpreter` is marked high risk and is not required for normal text/image/search chat behavior.
 
 ## Requirements
 
 * Do not automatically attach OpenAI `code_interpreter` to ordinary `openai_responses` chat requests.
 * Preserve the catalog entry and sanitizer for explicit `code_interpreter` use where an upstream supports it.
+* Do not send stale cached frontend `code_interpreter` tools when the current daily defaults no longer include them.
 * Keep existing unsupported-native-tool retry behavior intact.
-* Update focused tests that lock the OpenAI daily default tool set.
+* Update focused tests and lint checks that lock the OpenAI daily default tool set.
 
 ## Acceptance Criteria
 
@@ -25,6 +27,9 @@ Prevent ordinary GPT-5.5 chat requests from failing with HTTP 400 `Unsupported t
 * [x] Explicit `code_interpreter` in `options.tools` can still pass policy when allowed.
 * [x] Existing unsupported-tool detection/removal tests still pass.
 * [x] Relevant Go package tests pass.
+* [x] Frontend daily defaults no longer include `code_interpreter`.
+* [x] Stale cached frontend `code_interpreter` entries are dropped unless current model defaults explicitly include them.
+* [x] Frontend lint passes.
 
 ## Definition of Done
 
@@ -34,7 +39,7 @@ Prevent ordinary GPT-5.5 chat requests from failing with HTTP 400 `Unsupported t
 
 ## Technical Approach
 
-Remove `code_interpreter` from the OpenAI Responses daily chat default set in `backend/internal/shared/nativetool/catalog.go`. Keep the OpenAI native tool definition, policy allowlist, and sanitizer unchanged so admins or model capabilities can still opt into it explicitly.
+Remove `code_interpreter` from the OpenAI Responses daily chat default set in `backend/internal/shared/nativetool/catalog.go` and the frontend daily default mirror. Keep the OpenAI native tool definition, policy allowlist, and sanitizer unchanged so admins or model capabilities can still opt into it explicitly. Scrub stale cached frontend model options for removed daily defaults during option merge so already-deployed browsers stop sending the unsupported tool.
 
 ## Decision (ADR-lite)
 
@@ -48,7 +53,7 @@ Remove `code_interpreter` from the OpenAI Responses daily chat default set in `b
 
 * Removing `code_interpreter` from the global allowed-tool configuration.
 * Implementing per-model live capability probing for OpenAI native tools.
-* Changing frontend native tool controls beyond what backend tests require.
+* Removing explicit admin/model capability opt-in paths for `code_interpreter`.
 
 ## Technical Notes
 
@@ -59,6 +64,8 @@ Remove `code_interpreter` from the OpenAI Responses daily chat default set in `b
   * `backend/internal/application/conversation/service_helpers.go`
   * `backend/internal/application/conversation/service_stream_fallback_test.go`
   * `backend/internal/infra/config/config.go`
+  * `frontend/features/chat/hooks/use-chat-model-options.ts`
+  * `frontend/features/chat/components/app-chat-area.tsx`
 * Relevant specs:
   * `.trellis/spec/backend/index.md`
   * `.trellis/spec/backend/ai-and-conversation.md`

@@ -135,7 +135,6 @@ const DAILY_CHAT_NATIVE_TOOL_PAYLOADS: Partial<Record<string, Array<Record<strin
   openai_responses: [
     { type: "web_search" },
     { type: "image_generation" },
-    { type: "code_interpreter", container: { type: "auto" } },
   ],
   gemini_generate_content: [
     { google_search: {} },

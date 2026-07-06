@@ -484,6 +484,8 @@ default native tools, or the model option policy that injects OpenAI Responses
   `backend/internal/shared/nativetool.DailyChatDefaultDefinitions(protocol string)`
 - Application policy:
   `nativeProviderToolsFromOption(protocolKey, rawTools, capabilitiesJSON, allowedTypesJSON)`
+- Frontend default-options mirror:
+  `frontend/features/chat/hooks/use-chat-model-options.ts::DAILY_CHAT_NATIVE_TOOL_PAYLOADS`
 - OpenAI Responses request field:
   `tools: [{"type":"web_search"}, {"type":"image_generation"}, ...]`
 
@@ -491,6 +493,12 @@ default native tools, or the model option policy that injects OpenAI Responses
 
 - `openai_responses` daily chat defaults are safe, broadly useful tools only.
   The default set is `web_search` and `image_generation`.
+- Keep backend daily defaults and the frontend `DAILY_CHAT_NATIVE_TOOL_PAYLOADS`
+  mirror in sync; otherwise the frontend can still send a tool explicitly after
+  the backend default injector stops adding it.
+- When removing a daily default native tool, scrub stale frontend
+  `doub-chat:chat-model-options:*` cached `tools` entries during default-option
+  merge unless the current model defaults still explicitly include that tool.
 - `code_interpreter` is high risk and upstream/model support is not uniform; it
   must remain explicit opt-in through model capabilities or `options.tools`.
 - Keep the `code_interpreter` catalog definition, sanitizer, and global
@@ -507,6 +515,8 @@ default native tools, or the model option policy that injects OpenAI Responses
   `container.type=auto`.
 - Upstream `Unsupported tool type: code_interpreter` -> remove
   `code_interpreter` from request options and retry when present.
+- Stale frontend model-options cache contains `code_interpreter` while current
+  model defaults do not -> drop cached `code_interpreter` before sending.
 - Unsupported tool is not present in request options -> return the upstream
   error; do not invent a fallback payload.
 
@@ -516,6 +526,11 @@ default native tools, or the model option policy that injects OpenAI Responses
   `code_interpreter`.
 - Base: an admin configures a model capability with `openai.code_interpreter`;
   the policy preserves the tool after sanitizing unsafe fields.
+- Bad: fixing only `nativetool.DailyChatDefaultDefinitions` while leaving the
+  frontend daily default mirror unchanged still sends `code_interpreter` in
+  `options.tools`.
+- Bad: fixing both default lists but preserving old browser cached
+  `code_interpreter` entries still sends the unsupported tool after deploy.
 - Bad: adding every known OpenAI Responses hosted tool to daily defaults causes
   model-specific HTTP 400 failures for normal chat.
 
@@ -523,6 +538,8 @@ default native tools, or the model option policy that injects OpenAI Responses
 
 - `model_option_policy_test.go` must assert the OpenAI Responses daily default
   tool list and explicitly reject `code_interpreter` in that default list.
+- Frontend lint must pass after changing
+  `DAILY_CHAT_NATIVE_TOOL_PAYLOADS`.
 - Tests must also cover explicit `code_interpreter` preservation and sanitizer
   behavior.
 - Helper tests must continue to cover unsupported native tool error parsing and

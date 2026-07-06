@@ -90,10 +90,19 @@ function nativeToolIdentity(value: unknown, fallbackIndex: number): string {
 }
 
 function mergeNativeToolPayloads(defaultTools: unknown, cachedTools: unknown): unknown[] | null {
+  const defaultItems = (Array.isArray(defaultTools) ? defaultTools : []).filter(isPlainOptionObject);
+  const defaultIdentities = new Set(defaultItems.map((item, index) => nativeToolIdentity(item, index)));
+  const cachedItems = (Array.isArray(cachedTools) ? cachedTools : []).filter((item, index) => {
+    if (!isPlainOptionObject(item)) {
+      return false;
+    }
+    const identity = nativeToolIdentity(item, index);
+    return identity !== "type:code_interpreter" || defaultIdentities.has(identity);
+  });
   const items = [
-    ...(Array.isArray(cachedTools) ? cachedTools : []),
-    ...(Array.isArray(defaultTools) ? defaultTools : []),
-  ].filter(isPlainOptionObject);
+    ...cachedItems,
+    ...defaultItems,
+  ];
   if (items.length === 0) {
     return null;
   }
