@@ -344,8 +344,12 @@ func normalizeToolType(raw string) string {
 }
 
 func inferAttachmentKind(mimeType string) string {
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
+	mime := strings.ToLower(strings.TrimSpace(mimeType))
+	if strings.HasPrefix(mime, "image/") {
 		return "image"
+	}
+	if strings.HasPrefix(mime, "video/") {
+		return "video"
 	}
 	return "file"
 }

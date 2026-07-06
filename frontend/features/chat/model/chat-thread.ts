@@ -14,7 +14,7 @@ function parseAttachments(raw: string): MessageAttachment[] {
         detectedMime: String(item.detected_mime ?? ""),
         fileCategory: String(item.file_category ?? ""),
         sizeBytes: Number(item.file_size ?? 0),
-        kind: item.kind === "image" ? ("image" as const) : ("file" as const),
+        kind: item.kind === "image" ? ("image" as const) : item.kind === "video" ? ("video" as const) : ("file" as const),
         processingStatus: String(item.processing_status ?? ""),
         processingReady: Boolean(item.processing_ready),
         processingErrorCode: String(item.processing_error_code ?? ""),
@@ -157,7 +157,7 @@ const ROOT_BRANCH_KEY = "__root__";
 
 export function mapServerMessage(
   item: MessageDTO,
-  labels: { generationInterrupted: string; streamInterrupted?: string; imageRunning?: string } = {
+  labels: { generationInterrupted: string; streamInterrupted?: string; imageRunning?: string; videoRunning?: string } = {
     generationInterrupted: "Generation interrupted",
   },
 ): ChatAreaMessage {
@@ -214,7 +214,12 @@ export function mapServerMessage(
     if (item.status === "pending") {
       msg.isPending = true;
       msg.isStreaming = true;
-      msg.activityLabel = item.contentType === "image" ? labels.imageRunning : undefined;
+      msg.activityLabel =
+        item.contentType === "video"
+          ? labels.videoRunning
+          : item.contentType === "image"
+            ? labels.imageRunning
+            : undefined;
     }
   }
   return msg;

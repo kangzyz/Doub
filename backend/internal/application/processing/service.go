@@ -128,7 +128,7 @@ func (s *Service) InitializeUploadedFile(ctx context.Context, fileObj *domaincon
 		return nil
 	}
 	now := time.Now()
-	if fileObj.FileCategory == "image" && !s.snapshot().ExtractImageOCREnabled {
+	if (fileObj.FileCategory == "image" && !s.snapshot().ExtractImageOCREnabled) || fileObj.FileCategory == "video" {
 		fileObj.ProcessingStatus = "ready"
 		fileObj.ProcessingReady = true
 		fileObj.ExtractStatus = "none"
@@ -154,7 +154,7 @@ func (s *Service) InitializeUploadedFile(ctx context.Context, fileObj *domaincon
 			ProcessingStatus: "ready",
 			ExtractStatus:    "none",
 			RAGReady:         false,
-			RAGReason:        "image_not_applicable",
+			RAGReason:        nonRAGFileReason(fileObj.FileCategory),
 			ExtractorVersion: s.version(),
 			StartedAt:        &now,
 			CompletedAt:      &now,
@@ -988,6 +988,13 @@ func supportsExtraction(category string) bool {
 	default:
 		return false
 	}
+}
+
+func nonRAGFileReason(category string) string {
+	if strings.TrimSpace(category) == "video" {
+		return "video_not_applicable"
+	}
+	return "image_not_applicable"
 }
 
 func supportsRAG(category string) bool {

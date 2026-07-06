@@ -110,6 +110,14 @@ export const DEFAULT_MODEL_OPTION_ALLOWED_PATHS = `{
     "size",
     "user"
   ],
+  "openai_video_generations": [
+    "aspect_ratio",
+    "aspectRatio",
+    "duration",
+    "resolution",
+    "seconds",
+    "size"
+  ],
   "google_image_generation": [
     "aspect_ratio",
     "aspectRatio",

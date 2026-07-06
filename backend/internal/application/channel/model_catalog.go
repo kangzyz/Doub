@@ -14,6 +14,8 @@ const (
 	TaskTypeImageGeneration = "image_generation"
 	// TaskTypeImageEdit 表示图片编辑任务。
 	TaskTypeImageEdit = "image_edit"
+	// TaskTypeVideoGeneration 表示视频生成任务。
+	TaskTypeVideoGeneration = "video_generation"
 
 	modelKindChat      = "chat"
 	modelKindAudio     = "audio"
@@ -30,7 +32,7 @@ const (
 
 	protocolOpenAIImageGenerations = llm.AdapterOpenAIImageGenerations
 	protocolOpenAIImageEdits       = llm.AdapterOpenAIImageEdits
-	protocolOpenAIVideoGenerations = "openai_video_generations"
+	protocolOpenAIVideoGenerations = llm.AdapterOpenAIVideoGenerations
 	protocolGoogleImageGeneration  = llm.AdapterGoogleImageGeneration
 	protocolXAIImage               = llm.AdapterXAIImage
 	protocolXAIImageEdits          = llm.AdapterXAIImageEdits
@@ -377,6 +379,8 @@ func NormalizeTaskType(raw string) string {
 		return TaskTypeImageGeneration
 	case TaskTypeImageEdit:
 		return TaskTypeImageEdit
+	case TaskTypeVideoGeneration:
+		return TaskTypeVideoGeneration
 	default:
 		return TaskTypeChat
 	}
@@ -408,6 +412,11 @@ func routeProtocolForTask(taskType string, kindsJSON string, protocol string) (s
 				return protocol, true
 			}
 			return "", false
+		case TaskTypeVideoGeneration:
+			if isProtocolAllowedForKind(modelKindVideoGen, protocol) {
+				return protocol, true
+			}
+			return "", false
 		default:
 			if isProtocolAllowedForKind(modelKindChat, protocol) || isProtocolAllowedForKind(modelKindAudio, protocol) {
 				return protocol, true
@@ -432,6 +441,14 @@ func routeProtocolForTask(taskType string, kindsJSON string, protocol string) (s
 			return protocol, true
 		}
 		return deriveDualImageRouteProtocol(kinds, protocol, TaskTypeImageEdit)
+	case TaskTypeVideoGeneration:
+		if !hasModelKind(kinds, modelKindVideoGen) {
+			return "", false
+		}
+		if isProtocolAllowedForKind(modelKindVideoGen, protocol) {
+			return protocol, true
+		}
+		return "", false
 	default:
 		for _, kind := range kinds {
 			if (kind == modelKindChat || kind == modelKindAudio) && isProtocolAllowedForKind(kind, protocol) {
@@ -492,7 +509,7 @@ func inferKindsJSON(platformModelName string) string {
 		return `["image_gen","image_edit"]`
 	case code == "dall-e-3", strings.HasPrefix(code, "imagen-"):
 		return `["image_gen"]`
-	case code == "sora", code == "veo-2", strings.HasPrefix(code, "kling"):
+	case code == "sora", strings.HasPrefix(code, "sora-"), code == "veo-2", strings.HasPrefix(code, "kling"):
 		return `["video_gen"]`
 	case strings.HasPrefix(code, "gpt-4o-audio"):
 		return `["audio"]`

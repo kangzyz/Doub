@@ -4,7 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, FileText, Image, ImageOff, ImagePlus, Wrench } from "lucide-react";
+import { Check, FileText, Image, ImageOff, ImagePlus, Video, Wrench } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -32,6 +32,7 @@ import {
 import { ChatMCP } from "@/features/chat/components/sections/chat-mcp";
 import { ChatModelPicker } from "@/features/chat/components/sections/chat-model-picker";
 import { ChatModelConfig } from "@/features/chat/components/sections/chat-model-config";
+import { ChatMediaOptions } from "@/features/chat/components/sections/chat-media-options";
 import { formatBytes, resolveFileIcon } from "@/features/files/utils/file-display";
 import type { ChatSubmitDecision } from "@/features/chat/model/chat-task";
 import { isMediaSubmitTask, resolveChatSubmitDecision } from "@/features/chat/model/chat-task";
@@ -231,13 +232,32 @@ function resolveComposerModeIndicator(
   decision: ChatSubmitDecision,
   t: (key: string) => string,
 ): ComposerModeIndicator | null {
-  if (decision.blockedReason === "image_task_rejects_non_image_attachments") {
+  if (
+    decision.blockedReason === "image_task_rejects_non_image_attachments" ||
+    decision.blockedReason === "video_generation_rejects_multiple_attachments" ||
+    decision.blockedReason === "video_generation_rejects_non_image_attachment"
+  ) {
+    const isVideoBlock = decision.task === "video_generation";
     return {
       label: t("mediaMode.invalidFile"),
-      intro: t("mediaMode.invalidFileIntro"),
+      intro: isVideoBlock ? t("mediaMode.invalidVideoFileIntro") : t("mediaMode.invalidFileIntro"),
       description: t(`mediaMode.blockedDescriptions.${decision.blockedReason}`),
-      icon: ImageOff,
+      icon: isVideoBlock ? Video : ImageOff,
       tone: "warning",
+    };
+  }
+  if (decision.task === "video_generation") {
+    return {
+      label: t("mediaMode.videoGeneration"),
+      intro: t("mediaMode.videoGenerationIntro"),
+      description:
+        decision.videoAttachmentCount > 0
+          ? t("mediaMode.videoExtensionDescription")
+          : decision.attachmentCount > 0
+            ? t("mediaMode.videoReferenceDescription")
+          : t("mediaMode.videoGenerationDescription"),
+      icon: Video,
+      tone: "default",
     };
   }
   if (decision.task === "image_generation") {
@@ -364,6 +384,10 @@ function ChatInputComponent({
   const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
   const submitTask = submitDecision.task;
   const isMediaMode = isMediaSubmitTask(submitTask);
+  const textareaPlaceholder =
+    !speechInput.active && submitTask === "video_generation"
+      ? tComposer("videoPlaceholder")
+      : speechInput.placeholder;
   const composerModeIndicator = resolveComposerModeIndicator(submitDecision, tComposer);
   const ComposerModeIcon = composerModeIndicator?.icon;
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
@@ -496,6 +520,17 @@ function ChatInputComponent({
                     {(() => {
                       const badge = resolveFileProcessingBadge(item, (key, values) => tFileStatus(key, values));
                       const FileIcon = resolveFileIcon(item);
+                      const attachmentMimeType = (item.detectedMime || item.mimeType).toLowerCase();
+                      const isVideoReferenceImage =
+                        submitTask === "video_generation" &&
+                        attachments.length === 1 &&
+                        (attachmentMimeType === "image/jpeg" ||
+                          attachmentMimeType === "image/png" ||
+                          attachmentMimeType === "image/webp");
+                      const isVideoReferenceVideo =
+                        submitTask === "video_generation" &&
+                        attachments.length === 1 &&
+                        attachmentMimeType === "video/mp4";
                       return (
                         <>
                           <div className="flex size-6 shrink-0 items-center justify-center">
@@ -518,6 +553,14 @@ function ChatInputComponent({
                               >
                                 <span className="truncate">{badge.label}</span>
                               </span>
+                              {isVideoReferenceImage || isVideoReferenceVideo ? (
+                                <span
+                                  className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary"
+                                  title={isVideoReferenceVideo ? tComposer("videoReferenceVideoTitle") : tComposer("videoReferenceFrameTitle")}
+                                >
+                                  {isVideoReferenceVideo ? tComposer("videoReferenceVideo") : tComposer("videoReferenceFrame")}
+                                </span>
+                              ) : null}
                               {item.ragOptOut && item.fileCategory !== "image" ? (
                                 <span
                                   className="shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground/65"
@@ -611,7 +654,7 @@ function ChatInputComponent({
           value={draft}
           disabled={sending || loading || uploading}
           readOnly={speechInput.active}
-          placeholder={speechInput.placeholder}
+          placeholder={textareaPlaceholder}
           rows={1}
           aria-controls={showMentionMenu ? mentionMenuID : undefined}
           aria-expanded={showMentionMenu}
@@ -669,7 +712,7 @@ function ChatInputComponent({
         />
 
         <InputGroupAddon align="block-end" className="items-center justify-between pt-2">
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <InputGroupButton
@@ -716,7 +759,20 @@ function ChatInputComponent({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {!modelOptionPolicyDisabled ? (
+            {!modelOptionPolicyDisabled && (submitTask === "image_generation" || submitTask === "video_generation") ? (
+              <ChatMediaOptions
+                disabled={sending || loading || uploading || modelLoading}
+                options={options}
+                selectedProtocol={selectedProtocol}
+                selectedVendor={selectedVendor}
+                selectedModelName={selectedReferenceModelName}
+                mediaTask={submitTask}
+                isVideoExtension={submitDecision.videoAttachmentCount > 0}
+                onOptionsChange={onOptionsChange}
+              />
+            ) : null}
+
+            {!modelOptionPolicyDisabled && !isMediaMode ? (
               <ChatModelConfig
                 disabled={sending || loading || uploading || modelLoading}
                 options={options}
@@ -725,6 +781,7 @@ function ChatInputComponent({
                 selectedProtocol={selectedProtocol}
                 selectedVendor={selectedVendor}
                 selectedModelName={selectedReferenceModelName}
+                mediaTask={submitTask}
                 isMediaMode={isMediaMode}
                 onOptionsChange={onOptionsChange}
                 onOptionsReset={onOptionsReset}

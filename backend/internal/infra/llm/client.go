@@ -27,6 +27,8 @@ const (
 	EndpointImageGenerations = "image_generations"
 	// EndpointImageEdits 表示 OpenAI Images API 编辑端点。
 	EndpointImageEdits = "image_edits"
+	// EndpointVideoGenerations 表示 OpenAI Videos API 生成端点。
+	EndpointVideoGenerations = "video_generations"
 )
 
 // 超时默认值。
@@ -57,6 +59,8 @@ type RouteConfig struct {
 	StreamIdleTimeoutMS int // 流式两个 chunk 之间最大间隔（默认 60s）
 	Endpoint            string
 	UpstreamModel       string
+	ModelVendor         string
+	UpstreamModelVendor string
 	AttributionReferer  string
 	AttributionTitle    string
 }
@@ -90,15 +94,16 @@ func resolveStreamIdleTimeout(ms int) time.Duration {
 const (
 	ContentPartText  = "text"  // 纯文本
 	ContentPartImage = "image" // 图片（原始字节，序列化时 base64 编码）
+	ContentPartVideo = "video" // 视频（原始字节，序列化时按目标协议编码）
 	ContentPartFile  = "file"  // 文件提取文本（前端解析后注入）
 )
 
 // ContentPart 表示多模态消息中的一个内容片段。
 type ContentPart struct {
-	Kind         string        // text | image | file
+	Kind         string        // text | image | video | file
 	Text         string        // Kind=text 或 Kind=file 时的文本内容
-	MimeType     string        // Kind=image 时的 MIME 类型（如 "image/jpeg"）
-	Data         []byte        // Kind=image 时的原始字节（发送时 base64 编码）
+	MimeType     string        // Kind=image/video 时的 MIME 类型（如 "image/jpeg"、"video/mp4"）
+	Data         []byte        // Kind=image/video 时的原始字节（发送时按协议编码）
 	FileName     string        // Kind=file 时的文件显示名
 	CacheControl *CacheControl // 支持块级缓存的 adapter 可读取该提示
 }
@@ -547,6 +552,7 @@ type GenerateOutput struct {
 	ServerSideToolUsage map[string]int64
 	Citations           []string
 	GeneratedImages     []GeneratedImage
+	GeneratedVideos     []GeneratedVideo
 	RawJSON             string
 	Debug               *UpstreamDebugSnapshot `json:"-"`
 }
@@ -557,6 +563,13 @@ type GeneratedImage struct {
 	B64JSON       string
 	MIMEType      string
 	RevisedPrompt string
+}
+
+// GeneratedVideo 表示视频生成接口返回的一个视频。
+type GeneratedVideo struct {
+	ID       string
+	Data     []byte
+	MIMEType string
 }
 
 // ReasoningDelta 定义流式 reasoning 增量。
@@ -650,6 +663,7 @@ func NewClientWithEnv(env string, ssrfProtectionEnabled bool) *Client {
 		AdapterOpenAIChatCompletions:  &openAIChatCompletionsAdapter{client: client},
 		AdapterOpenAIImageGenerations: &openAIImageGenerationsAdapter{client: client},
 		AdapterOpenAIImageEdits:       &openAIImageEditsAdapter{client: client},
+		AdapterOpenAIVideoGenerations: &openAIVideoGenerationsAdapter{client: client},
 		AdapterXAIResponses:           &xAIResponsesAdapter{client: client},
 		AdapterXAIImage:               &xAIImageAdapter{client: client},
 		AdapterXAIImageEdits:          &xAIImageEditsAdapter{client: client},
@@ -1395,6 +1409,8 @@ func normalizeEndpoint(raw string) string {
 		return EndpointImageGenerations
 	case EndpointImageEdits:
 		return EndpointImageEdits
+	case EndpointVideoGenerations:
+		return EndpointVideoGenerations
 	default:
 		return EndpointResponses
 	}

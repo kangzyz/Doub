@@ -16,6 +16,7 @@ import (
 )
 
 const maxMediaImageEditInputPixels = 64 * 1024 * 1024
+const maxMediaVideoReferencePixels = 64 * 1024 * 1024
 
 // resizeImageIfNeeded 在图片尺寸超过 maxDim 时进行缩放并重新编码。
 // 若解码/编码失败则返回原始字节，不报错，保证降级可用。
@@ -133,4 +134,106 @@ func mediaImageEditInputFileName(fileName string, mimeType string) string {
 		base = "image-edit-input"
 	}
 	return base + imageFileExtension(mimeType)
+}
+
+func normalizeMediaVideoReferenceInput(data []byte, declaredMIME string, targetSize string) ([]byte, string, error) {
+	detected := detectGeneratedImageMIME(data)
+	switch detected {
+	case "image/jpeg", "image/png", "image/webp":
+	default:
+		if detected == "" {
+			detected = strings.TrimSpace(declaredMIME)
+		}
+		return nil, detected, fmt.Errorf("video reference input is not a supported image")
+	}
+
+	src, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, detected, err
+	}
+	bounds := src.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width <= 0 || height <= 0 {
+		return nil, detected, fmt.Errorf("video reference input has invalid dimensions")
+	}
+	if int64(width)*int64(height) > maxMediaVideoReferencePixels {
+		return nil, detected, fmt.Errorf("video reference input dimensions exceed limit")
+	}
+	targetWidth, targetHeight, err := parseMediaVideoTargetSize(targetSize)
+	if err != nil {
+		return nil, detected, err
+	}
+
+	dst := image.NewNRGBA(image.Rect(0, 0, targetWidth, targetHeight))
+	scale := math.Max(float64(targetWidth)/float64(width), float64(targetHeight)/float64(height))
+	centerX := float64(bounds.Min.X) + float64(width)/2
+	centerY := float64(bounds.Min.Y) + float64(height)/2
+	for dy := 0; dy < targetHeight; dy++ {
+		sy := int(math.Floor(centerY + (float64(dy)+0.5-float64(targetHeight)/2)/scale))
+		if sy < bounds.Min.Y {
+			sy = bounds.Min.Y
+		}
+		if sy >= bounds.Max.Y {
+			sy = bounds.Max.Y - 1
+		}
+		for dx := 0; dx < targetWidth; dx++ {
+			sx := int(math.Floor(centerX + (float64(dx)+0.5-float64(targetWidth)/2)/scale))
+			if sx < bounds.Min.X {
+				sx = bounds.Min.X
+			}
+			if sx >= bounds.Max.X {
+				sx = bounds.Max.X - 1
+			}
+			dst.Set(dx, dy, src.At(sx, sy))
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, dst); err != nil {
+		return nil, detected, err
+	}
+	return buf.Bytes(), "image/png", nil
+}
+
+func normalizeMediaVideoReferenceVideoInput(data []byte, declaredMIME string) ([]byte, string, error) {
+	if len(data) >= 12 && bytes.Equal(data[4:8], []byte("ftyp")) {
+		return data, "video/mp4", nil
+	}
+	return nil, strings.TrimSpace(declaredMIME), fmt.Errorf("video reference input is not a supported mp4")
+}
+
+func parseMediaVideoTargetSize(value string) (int, int, error) {
+	switch strings.TrimSpace(value) {
+	case "720x1280":
+		return 720, 1280, nil
+	case "1280x720":
+		return 1280, 720, nil
+	case "1024x1792":
+		return 1024, 1792, nil
+	case "1792x1024":
+		return 1792, 1024, nil
+	default:
+		return 0, 0, fmt.Errorf("unsupported video size: %s", strings.TrimSpace(value))
+	}
+}
+
+func mediaVideoReferenceInputFileName(fileName string) string {
+	normalizedName := strings.TrimSpace(fileName)
+	ext := filepath.Ext(normalizedName)
+	base := strings.TrimSuffix(normalizedName, ext)
+	if strings.TrimSpace(base) == "" {
+		base = "video-reference-input"
+	}
+	return base + ".png"
+}
+
+func mediaVideoReferenceVideoFileName(fileName string) string {
+	normalizedName := strings.TrimSpace(fileName)
+	ext := filepath.Ext(normalizedName)
+	base := strings.TrimSuffix(normalizedName, ext)
+	if strings.TrimSpace(base) == "" {
+		base = "video-reference-input"
+	}
+	return base + ".mp4"
 }

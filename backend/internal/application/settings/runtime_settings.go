@@ -379,6 +379,7 @@ func (r *RuntimeSettings) normalizeConfig(cfg *config.Config) {
 	if strings.TrimSpace(cfg.ModelOptionAllowedPaths) == "" {
 		cfg.ModelOptionAllowedPaths = config.DefaultModelOptionAllowedPathsJSON()
 	}
+	cfg.ModelOptionAllowedPaths = config.NormalizeModelOptionAllowedPathsJSON(cfg.ModelOptionAllowedPaths)
 	if strings.TrimSpace(cfg.ModelOptionDeniedPaths) == "" {
 		cfg.ModelOptionDeniedPaths = config.DefaultModelOptionDeniedPathsJSON()
 	}

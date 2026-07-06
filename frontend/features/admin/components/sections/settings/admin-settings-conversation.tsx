@@ -52,6 +52,7 @@ import {
   uniqueModelOptionPaths,
   type ModelOptionRuleMap,
 } from "@/shared/lib/model-option-policy";
+import { parseKindsJSON } from "@/shared/model/llm-schema";
 import { cn } from "@/lib/utils";
 
 function isModelOptionPolicyField(field: ConversationSettingsField): boolean {
@@ -536,7 +537,9 @@ export function AdminConversationSettingsPage() {
       const nextModelOptions = [
         { label: t("taskModel.follow"), value: CONVERSATION_TASK_MODEL_FOLLOW, iconUrl: null },
         ...(models
-          .map((item) => ({
+          .map((item) => {
+            const kinds = parseKindsJSON(item.kindsJSON);
+            return {
             label: resolveModelOptionLabel(item.platformModelName),
             value: item.platformModelName,
             iconUrl: resolveModelOptionIconUrl({
@@ -544,7 +547,9 @@ export function AdminConversationSettingsPage() {
               vendor: item.vendor ?? "",
               icon: item.icon ?? "",
             }),
-          }))),
+            kinds,
+          };
+          })),
       ];
       const flattened = flattenConversationSettings(grouped);
       setModelOptions(nextModelOptions);

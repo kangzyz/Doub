@@ -221,6 +221,25 @@ func TestUploadFileRetriesCreateAfterStaleDuplicateConflict(t *testing.T) {
 	}
 }
 
+func TestNormalizeDetectedMIMEUsesImageExtensionFallback(t *testing.T) {
+	tests := []struct {
+		detected string
+		fileName string
+		want     string
+	}{
+		{detected: "application/octet-stream", fileName: "frame.jpg", want: "image/jpeg"},
+		{detected: "application/octet-stream", fileName: "frame.jpeg", want: "image/jpeg"},
+		{detected: "application/octet-stream", fileName: "frame.png", want: "image/png"},
+		{detected: "application/octet-stream", fileName: "frame.webp", want: "image/webp"},
+		{detected: "application/octet-stream", fileName: "frame.gif", want: "image/gif"},
+	}
+	for _, tt := range tests {
+		if got := normalizeDetectedMIME(tt.detected, tt.fileName); got != tt.want {
+			t.Fatalf("normalizeDetectedMIME(%q, %q) = %q, want %q", tt.detected, tt.fileName, got, tt.want)
+		}
+	}
+}
+
 func TestNormalizeDetectedMIMEDowngradesActiveContent(t *testing.T) {
 	tests := []struct {
 		detected string

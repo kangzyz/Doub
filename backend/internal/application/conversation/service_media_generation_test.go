@@ -92,6 +92,86 @@ func TestMediaImageEditInputFileNameMatchesNormalizedMIME(t *testing.T) {
 	}
 }
 
+func TestNormalizeMediaVideoReferenceInputConvertsToTargetPNG(t *testing.T) {
+	src := image.NewNRGBA(image.Rect(0, 0, 4, 2))
+	for y := 0; y < 2; y++ {
+		for x := 0; x < 4; x++ {
+			src.Set(x, y, color.NRGBA{R: uint8(20 + x*40), G: uint8(80 + y*60), B: 160, A: 255})
+		}
+	}
+	var input bytes.Buffer
+	if err := png.Encode(&input, src); err != nil {
+		t.Fatalf("encode source png: %v", err)
+	}
+
+	got, mimeType, err := normalizeMediaVideoReferenceInput(input.Bytes(), "image/png", "720x1280")
+	if err != nil {
+		t.Fatalf("normalize video reference input: %v", err)
+	}
+	if mimeType != "image/png" {
+		t.Fatalf("expected normalized PNG MIME, got %q", mimeType)
+	}
+	decoded, err := png.Decode(bytes.NewReader(got))
+	if err != nil {
+		t.Fatalf("decode normalized video reference PNG: %v", err)
+	}
+	if decoded.Bounds().Dx() != 720 || decoded.Bounds().Dy() != 1280 {
+		t.Fatalf("expected target dimensions 720x1280, got %v", decoded.Bounds())
+	}
+}
+
+func TestNormalizeMediaVideoReferenceInputRejectsUnsupportedImage(t *testing.T) {
+	_, _, err := normalizeMediaVideoReferenceInput([]byte("GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"), "image/gif", "720x1280")
+	if err == nil {
+		t.Fatal("expected GIF video reference input to be rejected")
+	}
+}
+
+func TestNormalizeMediaVideoReferenceVideoInputRequiresMP4(t *testing.T) {
+	data := []byte{0x00, 0x00, 0x00, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'}
+	got, mimeType, err := normalizeMediaVideoReferenceVideoInput(data, "application/octet-stream")
+	if err != nil {
+		t.Fatalf("expected mp4 reference video to pass validation: %v", err)
+	}
+	if !bytes.Equal(got, data) || mimeType != "video/mp4" {
+		t.Fatalf("unexpected validated reference video: %q %#v", mimeType, got)
+	}
+	if _, _, err = normalizeMediaVideoReferenceVideoInput([]byte("not a video"), "video/mp4"); err == nil {
+		t.Fatal("expected non-mp4 reference video to be rejected")
+	}
+}
+
+func TestNormalizeMediaVideoReferenceFileIDsUsesExplicitInputReference(t *testing.T) {
+	got, err := normalizeMediaVideoReferenceFileIDs(nil, " file_123 ")
+	if err != nil {
+		t.Fatalf("normalize video reference file ids: %v", err)
+	}
+	if len(got) != 1 || got[0] != "file_123" {
+		t.Fatalf("expected explicit input reference file id, got %#v", got)
+	}
+}
+
+func TestNormalizeMediaVideoReferenceFileIDsRejectsMismatchedReferences(t *testing.T) {
+	_, err := normalizeMediaVideoReferenceFileIDs([]string{"file_a"}, "file_b")
+	if !errors.Is(err, ErrMediaVideoTooManyInputs) {
+		t.Fatalf("expected too many video inputs error, got %v", err)
+	}
+}
+
+func TestValidateGeneratedVideoBytesRequiresMP4(t *testing.T) {
+	data := []byte{0x00, 0x00, 0x00, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'}
+	got, mimeType, err := validateGeneratedVideoBytes(data, "application/octet-stream")
+	if err != nil {
+		t.Fatalf("expected mp4 bytes to pass validation: %v", err)
+	}
+	if !bytes.Equal(got, data) || mimeType != "video/mp4" {
+		t.Fatalf("unexpected validated video: %q %#v", mimeType, got)
+	}
+	if _, _, err = validateGeneratedVideoBytes([]byte("not a video"), "video/mp4"); err == nil {
+		t.Fatal("expected non-mp4 generated video to be rejected")
+	}
+}
+
 func TestStripBase64DataURLPrefix(t *testing.T) {
 	got := stripBase64DataURLPrefix("data:image/png;base64, aGVsbG8= ")
 	if got != "aGVsbG8=" {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -12,6 +13,15 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+var defaultOpenAIVideoOptionPaths = []string{
+	"aspect_ratio",
+	"aspectRatio",
+	"duration",
+	"resolution",
+	"seconds",
+	"size",
+}
 
 const (
 	defaultJWTSecret                    = "doub-chat-dev-secret"
@@ -89,6 +99,14 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "size",
     "user"
   ],
+  "openai_video_generations": [
+    "aspect_ratio",
+    "aspectRatio",
+    "duration",
+    "resolution",
+    "seconds",
+    "size"
+  ],
   "google_image_generation": [
     "aspect_ratio",
     "aspectRatio",
@@ -134,6 +152,51 @@ func DefaultModelOptionAllowedPathsJSON() string {
     "generationConfig.thinkingConfig.thinkingLevel"
   ]
 }`
+}
+
+// NormalizeModelOptionAllowedPathsJSON keeps runtime model-option policy in
+// step with official video fields added after existing deployments were seeded.
+func NormalizeModelOptionAllowedPathsJSON(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		value = DefaultModelOptionAllowedPathsJSON()
+	}
+	var rules map[string][]string
+	if err := json.Unmarshal([]byte(value), &rules); err != nil {
+		return value
+	}
+	if !appendMissingModelOptionPaths(rules, "openai_video_generations", defaultOpenAIVideoOptionPaths) {
+		return value
+	}
+	normalized, err := json.MarshalIndent(rules, "", "  ")
+	if err != nil {
+		return value
+	}
+	return string(normalized)
+}
+
+func appendMissingModelOptionPaths(rules map[string][]string, protocol string, paths []string) bool {
+	if rules == nil {
+		return false
+	}
+	seen := make(map[string]struct{}, len(rules[protocol]))
+	for _, path := range rules[protocol] {
+		seen[strings.TrimSpace(path)] = struct{}{}
+	}
+	changed := false
+	for _, path := range paths {
+		value := strings.TrimSpace(path)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		rules[protocol] = append(rules[protocol], value)
+		seen[value] = struct{}{}
+		changed = true
+	}
+	return changed
 }
 
 // DefaultModelOptionDeniedPathsJSON 返回所有策略模式都会叠加拦截的默认黑名单。
@@ -580,7 +643,7 @@ func Load() Config {
 		FileImageMaxBytes:                 0,
 		FileDocMaxBytes:                   0,
 		FileFullContextPDFMaxPages:        20,
-		FileAllowedMIMETypes:              "image/jpeg,image/png,image/webp,image/gif,text/plain,text/markdown,text/csv,text/yaml,application/json,application/yaml,application/x-yaml,application/toml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel",
+		FileAllowedMIMETypes:              "image/jpeg,image/png,image/webp,image/gif,video/mp4,text/plain,text/markdown,text/csv,text/yaml,application/json,application/yaml,application/x-yaml,application/toml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel",
 		ExtractEngine:                     "builtin",
 		ExtractOCREngine:                  "rapidocr",
 		ExtractImageOCREnabled:            false,

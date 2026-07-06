@@ -44,6 +44,7 @@ type ChatModelConfigProps = {
   selectedProtocol: string;
   selectedVendor: string;
   selectedModelName: string;
+  mediaTask?: string;
   isMediaMode: boolean;
   onOptionsChange: React.Dispatch<React.SetStateAction<ConversationOptions>>;
   onOptionsReset: () => void;
@@ -135,6 +136,79 @@ function parseNumberInput(value: string): number | string {
   return Number.isFinite(numeric) ? numeric : value;
 }
 
+function isXAIVideoModel(vendor: string, modelName: string): boolean {
+  const value = `${vendor} ${modelName}`.trim().toLowerCase();
+  return value.includes("xai") || value.includes("grok-imagine-video");
+}
+
+function buildBuiltinVideoOptionControls({
+  selectedProtocol,
+  selectedVendor,
+  selectedModelName,
+  t,
+}: {
+  selectedProtocol: string;
+  selectedVendor: string;
+  selectedModelName: string;
+  t: (key: string) => string;
+}): ModelOptionControl[] {
+  if (selectedProtocol.trim() !== "openai_video_generations") {
+    return [];
+  }
+  if (isXAIVideoModel(selectedVendor, selectedModelName)) {
+    return [
+      {
+        path: "duration",
+        label: t("videoOptions.duration"),
+        description: t("videoOptions.durationDescription"),
+        type: "select",
+        options: ["6", "8", "12", "15"],
+      },
+      {
+        path: "aspect_ratio",
+        label: t("videoOptions.aspectRatio"),
+        description: t("videoOptions.aspectRatioDescription"),
+        type: "select",
+        options: ["16:9", "9:16", "1:1"],
+      },
+      {
+        path: "resolution",
+        label: t("videoOptions.resolution"),
+        description: t("videoOptions.resolutionDescription"),
+        type: "select",
+        options: ["720p", "1080p"],
+      },
+    ];
+  }
+  return [
+    {
+      path: "seconds",
+      label: t("videoOptions.seconds"),
+      description: t("videoOptions.secondsDescription"),
+      type: "select",
+      options: ["4", "8", "12"],
+    },
+    {
+      path: "size",
+      label: t("videoOptions.size"),
+      description: t("videoOptions.sizeDescription"),
+      type: "select",
+      options: ["1280x720", "720x1280", "1792x1024", "1024x1792"],
+    },
+  ];
+}
+
+function mergeOptionControls(builtinControls: ModelOptionControl[], configuredControls: ModelOptionControl[]): ModelOptionControl[] {
+  const merged = new Map<string, ModelOptionControl>();
+  for (const control of builtinControls) {
+    merged.set(control.path, control);
+  }
+  for (const control of configuredControls) {
+    merged.set(control.path, control);
+  }
+  return Array.from(merged.values());
+}
+
 export function ChatModelConfig({
   disabled,
   options,
@@ -143,6 +217,7 @@ export function ChatModelConfig({
   selectedProtocol,
   selectedVendor,
   selectedModelName,
+  mediaTask,
   isMediaMode,
   onOptionsChange,
   onOptionsReset,
@@ -163,10 +238,26 @@ export function ChatModelConfig({
   const modes = React.useMemo(() => availableReasoningModes(context), [context]);
   const detectedMode = React.useMemo(() => detectReasoningMode(context, options), [context, options]);
   const selectedMode: ReasoningMode = modes.includes(detectedMode) ? detectedMode : "default";
-  const selectedIsDefault = selectedMode === "default";
+  const builtinOptionControls = React.useMemo(
+    () =>
+      mediaTask === "video_generation"
+        ? buildBuiltinVideoOptionControls({
+            selectedProtocol,
+            selectedVendor,
+            selectedModelName,
+            t: tComposer,
+          })
+        : [],
+    [mediaTask, selectedModelName, selectedProtocol, selectedVendor, tComposer],
+  );
+  const effectiveOptionControls = React.useMemo(
+    () => mergeOptionControls(builtinOptionControls, optionControls),
+    [builtinOptionControls, optionControls],
+  );
+  const selectedIsDefault = isMediaMode ? !hasOptions(options) : selectedMode === "default";
   const selectedLabel = tComposer(`thinkingModes.${selectedMode}`);
   const selectedDescription = tComposer(`thinkingModeDescriptions.${selectedMode}`);
-  const hasCustomConfig = optionControls.length > 0;
+  const hasCustomConfig = effectiveOptionControls.length > 0;
 
   const selectMode = React.useCallback(
     (mode: ReasoningMode) => {
@@ -180,7 +271,7 @@ export function ChatModelConfig({
     [context, onOptionsChange, onOptionsReset],
   );
 
-  if (isMediaMode) {
+  if (isMediaMode && !hasCustomConfig) {
     return null;
   }
 
@@ -198,64 +289,79 @@ export function ChatModelConfig({
                 !selectedIsDefault && "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
               )}
               disabled={disabled}
-              aria-label={tComposer("thinkingMode")}
+              aria-label={isMediaMode ? tComposer("modelOptions") : tComposer("thinkingMode")}
               aria-pressed={!selectedIsDefault}
-              title={tComposer("thinkingModeSelected", { mode: selectedLabel })}
+              title={isMediaMode ? tComposer("modelOptions") : tComposer("thinkingModeSelected", { mode: selectedLabel })}
             >
-              <Lightbulb className="size-5" strokeWidth={1.45} />
+              {isMediaMode ? (
+                <SlidersHorizontal className="size-5" strokeWidth={1.45} />
+              ) : (
+                <Lightbulb className="size-5" strokeWidth={1.45} />
+              )}
             </InputGroupButton>
           </TooltipTrigger>
         </DropdownMenuTrigger>
         <TooltipContent side="top" className="max-w-72 text-xs leading-5">
-          {hasCustomConfig
+          {isMediaMode
+            ? tComposer("videoOptions.tooltip")
+            : hasCustomConfig
             ? tComposer("modelOptions")
             : `${tComposer("thinkingModeSelected", { mode: selectedLabel })} - ${selectedDescription}`}
         </TooltipContent>
       </Tooltip>
 
       <DropdownMenuContent side="bottom" align="start" sideOffset={8} className="w-[320px] max-w-[calc(100vw-1rem)] p-1.5">
-        <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
-          {tComposer("thinkingMode")}
-        </DropdownMenuLabel>
-        {modes.map((mode) => {
-          const selected = mode === selectedMode;
-          return (
-            <DropdownMenuItem
-              key={mode}
-              className={cn(
-                "min-h-10 cursor-pointer items-center gap-2 whitespace-normal rounded-md px-2 py-2",
-                selected && "bg-primary/10 text-primary focus:bg-primary/10 focus:text-primary",
-              )}
-              onSelect={(event) => {
-                event.preventDefault();
-                selectMode(mode);
-              }}
-            >
-              <Lightbulb
-                className={cn("size-3.5 text-muted-foreground", selected && "text-primary")}
-                strokeWidth={1.55}
-              />
-              <span className="grid min-w-0 flex-1 grid-cols-[88px_minmax(0,1fr)] items-center gap-2">
-                <span className="truncate text-sm font-medium">{tComposer(`thinkingModes.${mode}`)}</span>
-                <span className={cn("truncate text-[11px] text-muted-foreground", selected && "text-primary/70")}>
-                  {tComposer(`thinkingModeDescriptions.${mode}`)}
-                </span>
-              </span>
-              {selected ? <Check className="size-3.5 text-primary" strokeWidth={1.8} /> : null}
-            </DropdownMenuItem>
-          );
-        })}
+        {!isMediaMode ? (
+          <>
+            <DropdownMenuLabel className="px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
+              {tComposer("thinkingMode")}
+            </DropdownMenuLabel>
+            {modes.map((mode) => {
+              const selected = mode === selectedMode;
+              return (
+                <DropdownMenuItem
+                  key={mode}
+                  className={cn(
+                    "min-h-10 cursor-pointer items-center gap-2 whitespace-normal rounded-md px-2 py-2",
+                    selected && "bg-primary/10 text-primary focus:bg-primary/10 focus:text-primary",
+                  )}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    selectMode(mode);
+                  }}
+                >
+                  <Lightbulb
+                    className={cn("size-3.5 text-muted-foreground", selected && "text-primary")}
+                    strokeWidth={1.55}
+                  />
+                  <span className="grid min-w-0 flex-1 grid-cols-[88px_minmax(0,1fr)] items-center gap-2">
+                    <span className="truncate text-sm font-medium">{tComposer(`thinkingModes.${mode}`)}</span>
+                    <span className={cn("truncate text-[11px] text-muted-foreground", selected && "text-primary/70")}>
+                      {tComposer(`thinkingModeDescriptions.${mode}`)}
+                    </span>
+                  </span>
+                  {selected ? <Check className="size-3.5 text-primary" strokeWidth={1.8} /> : null}
+                </DropdownMenuItem>
+              );
+            })}
+          </>
+        ) : (
+          <DropdownMenuLabel className="flex items-center gap-1.5 px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
+            <SlidersHorizontal className="size-3.5" />
+            {tComposer("videoOptions.title")}
+          </DropdownMenuLabel>
+        )}
         {hasCustomConfig ? (
           <>
-            {optionControls.length > 0 ? (
+            {effectiveOptionControls.length > 0 ? (
               <>
-                <DropdownMenuSeparator />
+                {!isMediaMode ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuLabel className="flex items-center gap-1.5 px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
                   <SlidersHorizontal className="size-3.5" />
                   {tComposer("optionControls")}
                 </DropdownMenuLabel>
                 <div className="space-y-2 px-2 pb-2">
-                  {optionControls.map((control) => {
+                  {effectiveOptionControls.map((control) => {
                     const path = optionPathSegments(control.path);
                     const value = readOptionAtPath(options, path);
                     const filtered = modelOptionPolicy
@@ -288,7 +394,7 @@ export function ChatModelConfig({
                           </label>
                         ) : control.type === "select" && control.options && control.options.length > 0 ? (
                           <Select
-                            value={typeof value === "string" && value.trim() ? value : undefined}
+                            value={value === undefined || value === null || value === "" ? undefined : String(value)}
                             disabled={disabled || filtered}
                             onValueChange={(nextValue) => updateValue(nextValue)}
                           >

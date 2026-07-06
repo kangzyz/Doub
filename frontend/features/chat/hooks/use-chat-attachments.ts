@@ -4,7 +4,7 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { resolveUploadPolicyRejection } from "@/features/chat/utils/attachments";
+import { inferUploadCategory, resolveUploadPolicyRejection } from "@/features/chat/utils/attachments";
 import { captureScreenshotFile } from "@/features/chat/utils/browser-media";
 import { resolveMaxFilesPerMessage } from "@/features/chat/utils/chat-runtime";
 import type {
@@ -232,6 +232,13 @@ export function useChatAttachments({
             }),
           ),
         );
+        const failedDescriptions = results.flatMap((result, index) => {
+          if (result.status === "fulfilled") {
+            return [];
+          }
+          const fileName = policyAcceptedFiles[index]?.name || t("uploadFailed");
+          return [`${fileName}: ${resolveErrorMessage(result.reason, t("retryLater"))}`];
+        });
         const reusedCount = results.filter((result) => result.status === "fulfilled" && result.value.reused).length;
 
         const uploaded = results.flatMap((result, index) => {
@@ -239,7 +246,7 @@ export function useChatAttachments({
             return [];
           }
           const sourceFile = policyAcceptedFiles[index];
-          const previewURL = sourceFile.type.startsWith("image/") ? URL.createObjectURL(sourceFile) : undefined;
+          const previewURL = inferUploadCategory(sourceFile) === "image" ? URL.createObjectURL(sourceFile) : undefined;
           return [
             {
               fileID: result.value.file.fileID,
@@ -284,8 +291,12 @@ export function useChatAttachments({
         if (reusedCount > 0) {
           toast.success(t("duplicateReused"));
         }
-        if (uploaded.length < policyAcceptedFiles.length) {
-          toast.error(t("partialUploadFailed"), { description: t("retryFailedFiles") });
+        if (failedDescriptions.length > 0) {
+          if (policyAcceptedFiles.length === 1) {
+            toast.error(t("uploadFailed"), { description: failedDescriptions[0] });
+          } else {
+            toast.error(t("partialUploadFailed"), { description: failedDescriptions.slice(0, 3).join("\n") });
+          }
         }
       } catch (error) {
         const description = resolveErrorMessage(error, t("retryLater"));

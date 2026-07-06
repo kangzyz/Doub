@@ -399,6 +399,18 @@ export type MediaImageRequest = {
   branchReason?: "default" | "retry" | "edit";
 };
 
+export type MediaVideoRequest = {
+  prompt: string;
+  model?: string;
+  options?: ConversationOptions;
+  clientRunID?: string;
+  fileIDs?: string[];
+  inputReferenceFileID?: string;
+  parentMessagePublicID?: string;
+  sourceMessagePublicID?: string;
+  branchReason?: "default" | "retry" | "edit";
+};
+
 export type SendMessageResult = {
   userMessage: MessageDTO;
   assistantMessage: MessageDTO;

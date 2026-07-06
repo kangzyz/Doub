@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	domainsettings "github.com/kangzyz/Doub/backend/internal/domain/settings"
@@ -10,6 +11,7 @@ import (
 
 type testSettingsRepo struct {
 	byNamespace map[string][]domainsettings.SystemSetting
+	upserts     []domainsettings.SystemSetting
 }
 
 func (r *testSettingsRepo) ListAll(ctx context.Context) ([]domainsettings.SystemSetting, error) {
@@ -25,6 +27,7 @@ func (r *testSettingsRepo) ListByNamespace(ctx context.Context, namespace string
 }
 
 func (r *testSettingsRepo) Upsert(ctx context.Context, items []domainsettings.SystemSetting) error {
+	r.upserts = append(r.upserts, items...)
 	return nil
 }
 
@@ -34,6 +37,79 @@ func (r *testSettingsRepo) UpsertWithDescription(ctx context.Context, items []do
 
 func (r *testSettingsRepo) Delete(ctx context.Context, namespace, key string) error {
 	return nil
+}
+
+func TestSeedBackfillsVideoMP4IntoLegacyAllowedMIMETypes(t *testing.T) {
+	repo := &testSettingsRepo{byNamespace: map[string][]domainsettings.SystemSetting{
+		"file": {
+			{Namespace: "file", Key: "allowed_mime_types", Value: legacyAllowedMIMETypesWithoutVideo},
+		},
+	}}
+	service := NewService(repo, "test-data-encryption-key")
+
+	if err := service.Seed(context.Background(), config.Config{}); err != nil {
+		t.Fatalf("expected seed to pass, got %v", err)
+	}
+	if len(repo.upserts) != 1 {
+		t.Fatalf("expected one migrated setting, got %#v", repo.upserts)
+	}
+	got := repo.upserts[0]
+	if got.Namespace != "file" || got.Key != "allowed_mime_types" {
+		t.Fatalf("unexpected migrated setting: %#v", got)
+	}
+	if !mimeListContains(got.Value, "video/mp4") {
+		t.Fatalf("expected video/mp4 in migrated MIME list, got %q", got.Value)
+	}
+}
+
+func TestSeedDoesNotBackfillVideoMP4IntoCustomAllowedMIMETypes(t *testing.T) {
+	repo := &testSettingsRepo{byNamespace: map[string][]domainsettings.SystemSetting{
+		"file": {
+			{Namespace: "file", Key: "allowed_mime_types", Value: "image/png,text/plain"},
+		},
+	}}
+	service := NewService(repo, "test-data-encryption-key")
+
+	if err := service.Seed(context.Background(), config.Config{}); err != nil {
+		t.Fatalf("expected seed to pass, got %v", err)
+	}
+	if len(repo.upserts) != 0 {
+		t.Fatalf("expected custom MIME list to stay unchanged, got %#v", repo.upserts)
+	}
+}
+
+func TestSeedBackfillsVideoModelOptionAllowedPaths(t *testing.T) {
+	legacyAllowedPaths := `{"default":["temperature"]}`
+	repo := &testSettingsRepo{byNamespace: map[string][]domainsettings.SystemSetting{
+		"chat": {
+			{Namespace: "chat", Key: "model_option_allowed_paths", Value: legacyAllowedPaths, ValueType: "json"},
+		},
+	}}
+	service := NewService(repo, "test-data-encryption-key")
+
+	if err := service.Seed(context.Background(), config.Config{}); err != nil {
+		t.Fatalf("expected seed to pass, got %v", err)
+	}
+	if len(repo.upserts) != 1 {
+		t.Fatalf("expected one migrated setting, got %#v", repo.upserts)
+	}
+	got := repo.upserts[0]
+	if got.Namespace != "chat" || got.Key != "model_option_allowed_paths" {
+		t.Fatalf("unexpected migrated setting: %#v", got)
+	}
+	var rules map[string][]string
+	if err := json.Unmarshal([]byte(got.Value), &rules); err != nil {
+		t.Fatalf("decode migrated rules: %v", err)
+	}
+	videoRules := map[string]bool{}
+	for _, path := range rules["openai_video_generations"] {
+		videoRules[path] = true
+	}
+	for _, path := range []string{"duration", "aspect_ratio", "resolution", "seconds", "size"} {
+		if !videoRules[path] {
+			t.Fatalf("expected %q in migrated video rules, got %#v", path, rules["openai_video_generations"])
+		}
+	}
 }
 
 func TestApplyEmbeddingDependentCascadesDisablesRAGAndSemanticFeatures(t *testing.T) {
@@ -111,6 +187,32 @@ func TestRuntimeSettingsNormalizeConfigDisablesEmbeddingDependentFeatures(t *tes
 
 	if cfg.RAGEnabled || cfg.MessageEmbeddingEnabled || cfg.SemanticContextEnabled {
 		t.Fatalf("expected embedding dependent features disabled, got rag=%v message=%v semantic=%v", cfg.RAGEnabled, cfg.MessageEmbeddingEnabled, cfg.SemanticContextEnabled)
+	}
+}
+
+func TestRuntimeSettingsNormalizeConfigBackfillsVideoModelOptionAllowedPaths(t *testing.T) {
+	runtimeSettings := NewRuntimeSettings(nil, nil, "test-data-encryption-key")
+	cfg := config.Config{
+		ModelOptionPolicyMode:   "allowlist",
+		ModelOptionAllowedPaths: `{"default":["temperature"]}`,
+		ModelOptionDeniedPaths:  config.DefaultModelOptionDeniedPathsJSON(),
+		NativeToolAllowedTypes:  config.DefaultNativeToolAllowedTypesJSON(),
+	}
+
+	runtimeSettings.normalizeConfig(&cfg)
+
+	var rules map[string][]string
+	if err := json.Unmarshal([]byte(cfg.ModelOptionAllowedPaths), &rules); err != nil {
+		t.Fatalf("decode normalized rules: %v", err)
+	}
+	videoRules := map[string]bool{}
+	for _, path := range rules["openai_video_generations"] {
+		videoRules[path] = true
+	}
+	for _, path := range []string{"duration", "aspect_ratio", "resolution", "seconds", "size"} {
+		if !videoRules[path] {
+			t.Fatalf("expected %q in normalized video rules, got %#v", path, rules["openai_video_generations"])
+		}
 	}
 }
 

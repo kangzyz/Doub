@@ -559,6 +559,45 @@ default native tools, or the model option policy that injects OpenAI Responses
 "openai_responses": {"web_search", "image_generation"}
 ```
 
+## Scenario: Media Image Generation Endpoint
+
+### 1. Scope / Trigger
+
+Use this contract when changing conversation-scoped image generation through
+OpenAI-compatible Images API routes or xAI/Grok image routes.
+
+### 2. Signatures
+
+- HTTP: `POST /api/v1/conversations/:id/media/images/generations/stream`
+- Application: `Service.StreamMediaImage(ctx, MediaImageInput{TaskType:
+  MediaImageTaskGeneration, Prompt, Options, ...})`
+- LLM route protocols: `openai_image_generations`, `xai_image`
+- OpenAI-compatible endpoint: `POST <baseURL>/v1/images/generations`
+- xAI/Grok endpoint: `POST <baseURL>/v1/images/generations`
+
+### 3. Contracts
+
+- Request `prompt` is required and trimmed before use.
+- Image generation accepts no user input image attachments; image attachments
+  route to image editing when the selected model supports it.
+- OpenAI image generation sends `size` for combined output resolution and aspect
+  ratio. Common official values include `auto`, `1024x1024`, `1536x1024`, and
+  `1024x1536`; keep legacy DALL-E sizes allowed for compatible routes.
+- xAI/Grok image generation sends `aspect_ratio` and `resolution`. Official
+  `resolution` values are `1k` and `2k`; keep UI options lowercase and normalize
+  uppercase input during option filtering.
+- User image options must pass through the model option policy and value
+  sanitizer before provider dispatch.
+
+### 4. Good/Base/Bad Cases
+
+- Good: OpenAI image generation selected with wide output sends
+  `size:"1536x1024"` and no separate `aspect_ratio`.
+- Good: xAI/Grok image generation selected with wide output sends
+  `aspect_ratio:"16:9"` and `resolution:"2k"`.
+- Bad: exposing xAI `aspect_ratio` controls for OpenAI Images routes creates
+  fields the OpenAI Images API does not consume.
+
 ## Scenario: Media Image Edit Endpoint
 
 ### 1. Scope / Trigger
@@ -716,6 +755,145 @@ if lastPartialImage != nil {
 // Only the single-partial edit stream fallback is product-accepted as final.
 if taskType == MediaImageTaskEdit && partialImages == 1 && isStreamIdleTimeout(err) {
 	return completeWith(lastPartialImage)
+}
+```
+
+## Scenario: Media Video Generation Endpoint
+
+### 1. Scope / Trigger
+
+Use this contract when implementing or changing conversation-scoped video
+generation, including text-to-video, image-to-video, video model routing,
+provider adapter payloads, polling, download, storage, and frontend stream
+events.
+
+### 2. Signatures
+
+- HTTP: `POST /api/v1/conversations/:id/media/videos/generations/stream`
+- Application: `Service.StreamMediaVideo(ctx, MediaVideoInput{Prompt, FileIDs,
+  InputReferenceFileID, Options, ...})`
+- LLM route protocol: `openai_video_generations`
+- OpenAI/Sora endpoint: `POST <baseURL>/v1/videos`
+- OpenAI/Sora video edit endpoint for uploaded source videos:
+  `POST <baseURL>/v1/videos/edits`
+- xAI/Grok direct endpoint: `POST <baseURL>/v1/videos/generations`
+- xAI/Grok through OpenAI-compatible proxy endpoint:
+  `POST <baseURL>/v1/videos`
+- xAI/Grok video extension endpoint:
+  `POST <baseURL>/v1/videos/extensions`
+- Download output: generated MP4 bytes are returned as
+  `llm.GenerateOutput.GeneratedVideos`
+
+### 3. Contracts
+
+- `prompt` is required and trimmed before use.
+- Video generation accepts at most one reference attachment. It may be a
+  JPEG/PNG/WebP source image for image-to-video, or an MP4 source video for
+  video-to-video extension/editing. The frontend sends both `fileIDs: [fileID]`
+  and `inputReferenceFileID` for compatibility, and the backend deduplicates
+  them before validation.
+- Source images must be user-owned active file objects classified as images and
+  normalized to PNG bytes before provider dispatch.
+- Source videos must be user-owned active MP4 file objects classified as videos;
+  keep the MP4 bytes intact rather than routing them through image normalization.
+- OpenAI/Sora-compatible video requests with a source image use
+  `multipart/form-data` and send the image as the `input_reference` file part.
+- OpenAI/Sora-compatible requests with an uploaded source video use
+  `multipart/form-data` against `/videos/edits` and send the MP4 as the `video`
+  file part. Do not use `/videos/extensions` unless the service has an upstream
+  video id that the provider accepts.
+- xAI/Grok video requests use JSON and send the source image as an
+  `image_url` data URI under the `image` field. Direct `api.x.ai` routes use
+  `/videos/generations`; OpenAI-compatible proxy routes such as
+  `/openai/v1` keep the proxy's `/videos` path. Do not send Grok
+  image-to-video as OpenAI multipart `input_reference`; upstream can ignore it
+  and treat the request as unsupported text-to-video.
+- xAI/Grok MP4 reference videos send the source as
+  `video: {type:"video_url", url:"data:video/mp4;base64,..."}`. Direct
+  `api.x.ai` routes use `/videos/extensions` for this operation, while
+  OpenAI-compatible proxy routes keep the proxy's `/videos` endpoint and add
+  `operation:"extend"` so the proxy does not route the payload as text-to-video.
+  For xAI extension requests pass `duration` only; omit `aspect_ratio` and
+  `resolution` because the upstream extension API does not support them.
+- User video options must pass through the model option policy only for official
+  fields. OpenAI-compatible video uses `size` and `seconds`; xAI/Grok uses
+  `duration`, `aspect_ratio`, and `resolution`, with `seconds` accepted only as
+  a legacy duration alias when it is valid for xAI. For xAI/Grok,
+  generation/image-to-video `duration` accepts 1-15 seconds; video extension
+  `duration` accepts 2-10 seconds.
+- xAI/Grok route detection must use route metadata such as model vendor or the
+  upstream model name, not frontend model-name heuristics.
+- The application service saves completed MP4 output through the normal upload
+  path and persists assistant `contentType="video"` with video attachment rows.
+
+### 4. Validation & Error Matrix
+
+- Missing prompt -> `ErrMediaVideoPromptRequired`
+- More than one source reference, or mismatched `fileIDs` and
+  `inputReferenceFileID` -> `ErrMediaVideoTooManyInputs`
+- Missing, inactive, non-owned, non-image/non-video, or unreadable source file ->
+  `ErrMediaVideoReferenceInvalid` or `ErrInvalidFileReference`
+- Source image/video exceeds upload/reference limits -> `ErrFileTooLarge`
+- No routable `openai_video_generations` model -> `ErrModelRouteNotConfigured`
+- Route protocol is not a video adapter -> `ErrMediaRouteProtocolMismatch`
+- Upstream completes without a downloadable video URL/bytes ->
+  `ErrUpstreamEmptyResponse` or upstream request failure
+
+### 5. Good/Base/Bad Cases
+
+- Good: one uploaded PNG plus a Grok video model on an OpenAI-compatible proxy
+  sends `POST /v1/videos` with JSON `image.url=data:image/png;base64,...`;
+  direct `api.x.ai` sends the same JSON body to `/v1/videos/generations`.
+- Good: one uploaded PNG plus an OpenAI Sora model sends multipart
+  `input_reference` to `/v1/videos`.
+- Good: one uploaded MP4 plus a direct `api.x.ai` Grok video route sends JSON
+  to `/v1/videos/extensions` with `video.url=data:video/mp4;base64,...` and
+  only `duration` from video options.
+- Good: one uploaded MP4 plus a Grok video model on an OpenAI-compatible proxy
+  sends the same JSON video payload plus `operation:"extend"` to `/v1/videos`,
+  not `/v1/videos/extensions`.
+- Good: one uploaded MP4 plus an OpenAI-compatible Sora model sends multipart
+  `video` to `/v1/videos/edits`.
+- Base: prompt-only video generation sends no image field/part and lets the
+  upstream enforce whether text-to-video is supported for that model.
+- Bad: sending a Grok image-to-video request as multipart `input_reference`
+  makes the upstream behave as if no image was provided and can return
+  `Text-to-video is not supported for this model.`
+- Bad: sending an OpenAI-compatible proxy request to `/v1/videos/generations`
+  can fail with HTTP 404 even though `/v1/videos` is available.
+- Bad: sending an OpenAI-compatible proxy extension request to
+  `/v1/videos/extensions` can fail or be routed as unsupported text-to-video
+  even though the proxy's `/v1/videos` endpoint accepts the operation.
+
+### 6. Tests Required
+
+- LLM adapter tests must assert OpenAI multipart `input_reference`, OpenAI
+  multipart `video` edit input, xAI JSON `image.url` data URI, xAI JSON
+  `video.url` extension payload, sanitized debug bodies without source bytes,
+  async polling, video URL download, and MP4 MIME preservation.
+- Conversation tests should cover video reference file ID normalization,
+  source image normalization, source MP4 validation, unsupported reference
+  rejection, generated MP4 validation, and attachment persistence when service
+  fakes are available.
+- Frontend lint/build must pass after changing `MediaVideoRequest`,
+  submission routing, stream event parsing, or visible video UI copy.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+// Grok/xAI video requests do not consume OpenAI multipart input_reference.
+writeOpenAIMultipartFile(writer, "input_reference", fileName, image.MimeType, image.Data)
+```
+
+#### Correct
+
+```go
+// Grok/xAI expects a JSON image_url object; keep source bytes out of debug logs.
+payload["image"] = map[string]interface{}{
+	"type": "image_url",
+	"url":  "data:image/png;base64,...",
 }
 ```
 

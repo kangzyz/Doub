@@ -153,6 +153,15 @@ func mapStreamError(err error) streamError {
 	case errors.Is(err, appconversation.ErrMediaImageEditInputInvalid):
 		status = http.StatusBadRequest
 		message = "image edit input image is invalid"
+	case errors.Is(err, appconversation.ErrMediaVideoPromptRequired):
+		status = http.StatusBadRequest
+		message = "video prompt is required"
+	case errors.Is(err, appconversation.ErrMediaVideoTooManyInputs):
+		status = http.StatusBadRequest
+		message = "video generation accepts one input reference image"
+	case errors.Is(err, appconversation.ErrMediaVideoReferenceInvalid):
+		status = http.StatusBadRequest
+		message = "video reference image is invalid"
 	case errors.Is(err, appconversation.ErrMediaRouteProtocolMismatch):
 		status = http.StatusServiceUnavailable
 		message = "media route protocol does not match task"
@@ -383,7 +392,7 @@ func isPassiveInlineContentType(contentType string) bool {
 	case "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp":
 		return true
 	default:
-		return false
+		return strings.HasPrefix(normalized, "video/") || strings.HasPrefix(normalized, "audio/")
 	}
 }
 

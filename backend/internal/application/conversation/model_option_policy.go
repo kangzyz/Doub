@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/kangzyz/Doub/backend/internal/infra/llm"
@@ -750,13 +751,129 @@ func sanitizeModelOptionValues(options map[string]interface{}, protocolKey strin
 			delete(options, "service_tier")
 		}
 	case "openai_image_generations", "openai_image_edits":
-		value, ok := modelParamIntFromOption(options["partial_images"])
-		if !ok {
-			delete(options, "partial_images")
-			return
+		sanitizeOpenAIImageOptionValues(options)
+	case "xai_image", "xai_image_edits":
+		sanitizeXAIImageOptionValues(options)
+	case "openai_video_generations":
+		if rawSize, ok := options["size"]; ok {
+			value, _ := rawSize.(string)
+			switch strings.TrimSpace(value) {
+			case "720x1280", "1280x720", "1024x1792", "1792x1024":
+				options["size"] = strings.TrimSpace(value)
+			default:
+				delete(options, "size")
+			}
 		}
-		if value < 0 || value > 3 {
+		if rawAspectRatio, ok := options["aspect_ratio"]; ok {
+			value, _ := rawAspectRatio.(string)
+			switch strings.TrimSpace(value) {
+			case "16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3":
+				options["aspect_ratio"] = strings.TrimSpace(value)
+			default:
+				delete(options, "aspect_ratio")
+			}
+		}
+		if rawAspectRatio, ok := options["aspectRatio"]; ok {
+			value, _ := rawAspectRatio.(string)
+			switch strings.TrimSpace(value) {
+			case "16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3":
+				options["aspectRatio"] = strings.TrimSpace(value)
+			default:
+				delete(options, "aspectRatio")
+			}
+		}
+		if rawResolution, ok := options["resolution"]; ok {
+			value, _ := rawResolution.(string)
+			switch strings.TrimSpace(value) {
+			case "480p", "720p", "1080p":
+				options["resolution"] = strings.TrimSpace(value)
+			default:
+				delete(options, "resolution")
+			}
+		}
+		if rawDuration, ok := options["duration"]; ok {
+			value, intOK := modelParamIntFromOption(rawDuration)
+			if !intOK {
+				if text, textOK := rawDuration.(string); textOK {
+					parsed, err := strconv.Atoi(strings.TrimSpace(text))
+					if err == nil {
+						value = parsed
+						intOK = true
+					}
+				}
+			}
+			switch {
+			case !intOK:
+				delete(options, "duration")
+			case value >= 1 && value <= 20:
+				options["duration"] = value
+			default:
+				delete(options, "duration")
+			}
+		}
+		if rawSeconds, ok := options["seconds"]; ok {
+			value, intOK := modelParamIntFromOption(rawSeconds)
+			if !intOK {
+				if text, textOK := rawSeconds.(string); textOK {
+					parsed, err := strconv.Atoi(strings.TrimSpace(text))
+					if err == nil {
+						value = parsed
+						intOK = true
+					}
+				}
+			}
+			switch {
+			case !intOK:
+				delete(options, "seconds")
+			case value == 4 || value == 8 || value == 12:
+				options["seconds"] = value
+			default:
+				delete(options, "seconds")
+			}
+		}
+	}
+}
+
+func sanitizeOpenAIImageOptionValues(options map[string]interface{}) {
+	if rawSize, ok := options["size"]; ok {
+		value, _ := rawSize.(string)
+		switch strings.TrimSpace(value) {
+		case "auto", "256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792":
+			options["size"] = strings.TrimSpace(value)
+		default:
+			delete(options, "size")
+		}
+	}
+	if rawPartialImages, ok := options["partial_images"]; ok {
+		value, valueOK := modelParamIntFromOption(rawPartialImages)
+		switch {
+		case !valueOK:
 			delete(options, "partial_images")
+		case value < 0 || value > 3:
+			delete(options, "partial_images")
+		default:
+			options["partial_images"] = value
+		}
+	}
+}
+
+func sanitizeXAIImageOptionValues(options map[string]interface{}) {
+	if rawAspectRatio, ok := options["aspect_ratio"]; ok {
+		value, _ := rawAspectRatio.(string)
+		switch strings.TrimSpace(value) {
+		case "auto", "16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20":
+			options["aspect_ratio"] = strings.TrimSpace(value)
+		default:
+			delete(options, "aspect_ratio")
+		}
+	}
+	if rawResolution, ok := options["resolution"]; ok {
+		value, _ := rawResolution.(string)
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "1k", "2k":
+			options["resolution"] = strings.ToLower(strings.TrimSpace(value))
+		default:
+			delete(options, "resolution")
 		}
 	}
 }
@@ -786,6 +903,8 @@ func modelOptionPolicyProtocolKey(protocol string) string {
 		return "openai_image_generations"
 	case llm.AdapterOpenAIImageEdits:
 		return "openai_image_edits"
+	case llm.AdapterOpenAIVideoGenerations:
+		return "openai_video_generations"
 	case llm.AdapterAnthropicMessages:
 		return "anthropic_messages"
 	case llm.AdapterXAIImage:

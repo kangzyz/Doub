@@ -2,6 +2,14 @@ import type { ChatFilePolicyDTO } from "@/shared/api/file.types";
 
 export type UploadCategory = "image" | "pdf" | "word" | "excel" | "text" | "unknown";
 
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
 const TEXT_FILE_EXTENSIONS = [
   "txt",
   "js",
@@ -35,6 +43,9 @@ export function normalizeUploadMime(file: File): string {
 
   if (mime.startsWith("image/")) {
     return mime;
+  }
+  if (!mime && IMAGE_MIME_BY_EXTENSION[ext]) {
+    return IMAGE_MIME_BY_EXTENSION[ext];
   }
 
   switch (ext) {
@@ -83,7 +94,7 @@ export function inferUploadCategory(file: File): UploadCategory {
   const mime = file.type.trim().toLowerCase();
   const ext = resolveFileExtension(file.name);
 
-  if (mime.startsWith("image/")) {
+  if (mime.startsWith("image/") || IMAGE_MIME_BY_EXTENSION[ext]) {
     return "image";
   }
   if (mime === "application/pdf" || ext === "pdf") {

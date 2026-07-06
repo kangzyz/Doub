@@ -433,7 +433,7 @@ func TestFilterModelOptionsGeminiPolicyKeyMatchesGoogleAdapter(t *testing.T) {
 
 func TestFilterModelOptionsOpenAIImageGenerationsAllowsImageParams(t *testing.T) {
 	filtered := filterModelOptions(map[string]interface{}{
-		"size":               "1024x1024",
+		"size":               "1536x1024",
 		"quality":            "high",
 		"response_format":    "b64_json",
 		"output_format":      "webp",
@@ -447,7 +447,7 @@ func TestFilterModelOptionsOpenAIImageGenerationsAllowsImageParams(t *testing.T)
 		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
 	})
 
-	if filtered["size"] != "1024x1024" || filtered["quality"] != "high" || filtered["response_format"] != "b64_json" {
+	if filtered["size"] != "1536x1024" || filtered["quality"] != "high" || filtered["response_format"] != "b64_json" {
 		t.Fatalf("expected image generation params to pass, got %#v", filtered)
 	}
 	if filtered["output_format"] != "webp" || filtered["output_compression"] != 80 {
@@ -495,9 +495,38 @@ func TestFilterModelOptionsOpenAIImageEditsAllowsEditParams(t *testing.T) {
 	}
 }
 
+func TestFilterModelOptionsOpenAIVideoAllowsVideoParams(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"aspect_ratio": "16:9",
+		"duration":     "8",
+		"resolution":   "1080p",
+		"seconds":      12,
+		"size":         "1280x720",
+		"prompt":       "override",
+		"stream":       true,
+		"quality":      "high",
+	}, llm.AdapterOpenAIVideoGenerations, modelOptionPolicyConfig{
+		Mode:             modelOptionPolicyAllowlist,
+		AllowedPathsJSON: config.DefaultModelOptionAllowedPathsJSON(),
+		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
+	})
+
+	if filtered["aspect_ratio"] != "16:9" || filtered["resolution"] != "1080p" || filtered["duration"] != 8 {
+		t.Fatalf("expected video extension params to pass, got %#v", filtered)
+	}
+	if filtered["seconds"] != 12 || filtered["size"] != "1280x720" {
+		t.Fatalf("expected OpenAI video params to pass, got %#v", filtered)
+	}
+	for _, key := range []string{"prompt", "stream", "quality"} {
+		if _, ok := filtered[key]; ok {
+			t.Fatalf("expected %s to be removed, got %#v", key, filtered)
+		}
+	}
+}
+
 func TestFilterModelOptionsXAIImageAllowsImageParams(t *testing.T) {
 	filtered := filterModelOptions(map[string]interface{}{
-		"aspect_ratio":    "16:9",
+		"aspect_ratio":    "20:9",
 		"n":               2,
 		"resolution":      "2K",
 		"response_format": "b64_json",
@@ -510,7 +539,7 @@ func TestFilterModelOptionsXAIImageAllowsImageParams(t *testing.T) {
 		DeniedPathsJSON:  config.DefaultModelOptionDeniedPathsJSON(),
 	})
 
-	if filtered["aspect_ratio"] != "16:9" || filtered["resolution"] != "2K" || filtered["response_format"] != "b64_json" {
+	if filtered["aspect_ratio"] != "20:9" || filtered["resolution"] != "2k" || filtered["response_format"] != "b64_json" {
 		t.Fatalf("expected xAI image params to pass, got %#v", filtered)
 	}
 	if filtered["n"] != 2 {

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, ChevronDown, CircleAlert } from "lucide-react";
+import { ArrowUpRight, ChevronDown, CircleAlert, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { AssistantMessageMeta } from "@/features/chat/components/message/message-meta";
@@ -40,7 +40,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { summarizeUpstreamError } from "@/features/chat/utils/chat-runtime";
-import type { FileContentResult } from "@/shared/api/file";
+import { fetchFileContent, type FileContentResult } from "@/shared/api/file";
+import { resolveAccessToken } from "@/shared/auth/resolve-access-token";
 import type { PreviewDialogFile } from "@/features/files/components/preview/file-preview-dialog";
 
 const EMPTY_TRACE_EVENTS: NonNullable<ChatAreaMessage["processTrace"]>["events"] = [];
@@ -56,17 +57,27 @@ function isEditableImageAttachment(attachment: MessageAttachment): boolean {
   );
 }
 
-function resolveFileIDFromImageSrc(src: string): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+function resolveFileIDFromFileContentSrc(src: string): string | null {
+  const fallbackBase = "http://doub.local";
   try {
-    const url = new URL(src, window.location.origin);
+    const url = new URL(src, fallbackBase);
     const match = url.pathname.match(/\/api\/v1\/files\/([^/]+)\/content$/);
     return match?.[1] ? decodeURIComponent(match[1]) : null;
   } catch {
+    const match = src.match(/(?:^|\/)api\/v1\/files\/([^/?#]+)\/content(?:[?#].*)?$/);
+    if (match?.[1]) {
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return match[1];
+      }
+    }
     return null;
   }
+}
+
+function resolveFileIDFromImageSrc(src: string): string | null {
+  return resolveFileIDFromFileContentSrc(src);
 }
 
 function resolveEditableImageAttachment(
@@ -88,6 +99,51 @@ function resolveEditableImageAttachment(
   }
 
   return null;
+}
+
+function isVideoAttachment(attachment: MessageAttachment): boolean {
+  const mimeType = attachment.mimeType.toLowerCase();
+  const detectedMime = attachment.detectedMime?.toLowerCase() || "";
+  return (
+    attachment.kind === "video" ||
+    attachment.fileCategory === "video" ||
+    mimeType.startsWith("video/") ||
+    detectedMime.startsWith("video/")
+  );
+}
+
+function resolveInlineVideoAttachment(
+  attachments: MessageAttachment[] | undefined,
+  contentType: string | undefined,
+): MessageAttachment | null {
+  if (contentType !== "video" || !attachments?.length) {
+    return null;
+  }
+  return attachments.find(isVideoAttachment) ?? null;
+}
+
+function extractSingleMarkdownLinkHref(content: string): string | null {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const match = trimmed.match(/^!?\[[^\]]*]\((<[^>]+>|[^\s)]+)(?:\s+["'][^"']*["'])?\)$/);
+  if (!match?.[1]) {
+    return null;
+  }
+  const rawHref = match[1].trim();
+  return rawHref.startsWith("<") && rawHref.endsWith(">") ? rawHref.slice(1, -1).trim() : rawHref;
+}
+
+function isOnlyGeneratedVideoFileLink(content: string, attachment: MessageAttachment | null): boolean {
+  if (!attachment) {
+    return false;
+  }
+  const href = extractSingleMarkdownLinkHref(content);
+  if (!href) {
+    return false;
+  }
+  return resolveFileIDFromFileContentSrc(href) === attachment.fileID;
 }
 
 type ChatMessageBotProps = {
@@ -148,6 +204,89 @@ function AssistantGeneratedImageList({
   );
 }
 
+function AssistantInlineVideo({
+  attachment,
+  loadContent,
+  aspectRatio = "wide",
+}: {
+  attachment: MessageAttachment;
+  loadContent?: (file: PreviewDialogFile) => Promise<FileContentResult>;
+  aspectRatio?: ChatAreaMessage["imageAspectRatio"];
+}) {
+  const t = useTranslations("chat.messages");
+  const [state, setState] = React.useState<
+    | { status: "loading" }
+    | { status: "ready"; objectURL: string; contentType: string }
+    | { status: "error"; message: string }
+  >({ status: "loading" });
+
+  React.useEffect(() => {
+    let cancelled = false;
+    let objectURL = "";
+    setState({ status: "loading" });
+
+    void (async () => {
+      try {
+        const result = loadContent
+          ? await loadContent(attachment)
+          : await (async () => {
+              const token = await resolveAccessToken();
+              if (!token) {
+                throw new Error("Missing access token");
+              }
+              return fetchFileContent(token, attachment.fileID);
+            })();
+        objectURL = URL.createObjectURL(result.blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectURL);
+          return;
+        }
+        setState({ status: "ready", objectURL, contentType: result.contentType || attachment.mimeType || "video/mp4" });
+      } catch {
+        if (!cancelled) {
+          setState({ status: "error", message: t("videoLoadFailed") });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectURL) {
+        URL.revokeObjectURL(objectURL);
+      }
+    };
+  }, [attachment, loadContent, t]);
+
+  const frameClassName =
+    aspectRatio === "portrait" ? "max-w-[18rem]" : aspectRatio === "square" ? "max-w-[24rem]" : "max-w-[32rem]";
+
+  return (
+    <div className={cn("my-4 w-full overflow-hidden rounded-xl border border-border/60 bg-muted/20", frameClassName)}>
+      {state.status === "ready" ? (
+        <video
+          aria-label={attachment.fileName || t("generatedVideo")}
+          className="block max-h-[min(68vh,720px)] w-full bg-black object-contain"
+          controls
+          playsInline
+          preload="metadata"
+        >
+          <source src={state.objectURL} type={state.contentType} />
+        </video>
+      ) : state.status === "error" ? (
+        <div className="flex min-h-36 items-center gap-2 px-4 py-3 text-[13px] text-muted-foreground">
+          <CircleAlert className="size-4 shrink-0" strokeWidth={1.8} />
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">{state.message}</span>
+        </div>
+      ) : (
+        <div className="flex min-h-36 items-center gap-2 px-4 py-3 text-[13px] text-muted-foreground">
+          <span className="inline-block size-3.5 shrink-0 animate-spin rounded-full border-2 border-muted border-t-foreground/50" />
+          <span className="min-w-0 truncate">{t("videoLoading")}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ChatMessageBot({
   item,
   busy,
@@ -177,7 +316,15 @@ export function ChatMessageBot({
   const messageStreaming = Boolean(item.isStreaming);
   const upstreamThinkStreaming = messageStreaming && upstreamThink?.status === "streaming";
   const toolTraceStreaming = messageStreaming && toolTrace?.status === "streaming";
-  const hasStreamdownContent = item.content.trim().length > 0;
+  const inlineVideoAttachment = React.useMemo(
+    () => resolveInlineVideoAttachment(item.attachments, item.contentType),
+    [item.attachments, item.contentType],
+  );
+  const renderContent = React.useMemo(
+    () => (isOnlyGeneratedVideoFileLink(item.content, inlineVideoAttachment) ? "" : item.content),
+    [inlineVideoAttachment, item.content],
+  );
+  const hasStreamdownContent = renderContent.trim().length > 0;
   const postProcessEvents = React.useMemo(
     () =>
       traceEvents.filter(
@@ -192,6 +339,7 @@ export function ChatMessageBot({
   const hasTraceEvents = postProcessEvents.length > 0;
   const nativeImageGenerationLoading = messageStreaming && !hasStreamdownContent && hasActiveImageGenerationTraceTool(toolTrace);
   const isImageGenerationLoading = messageStreaming && !hasStreamdownContent && (item.contentType === "image" || nativeImageGenerationLoading);
+  const isVideoGenerationLoading = messageStreaming && !hasStreamdownContent && item.contentType === "video";
   const nativeImageGenerationSources = React.useMemo(() => extractImageGenerationTraceImageSources(toolTrace), [toolTrace]);
   const editableImageAttachments = React.useMemo(
     () => (item.attachments ?? []).filter(isEditableImageAttachment),
@@ -224,8 +372,9 @@ export function ChatMessageBot({
   const activeThinkBlock = hasTraceEvents && upstreamThink?.status === "streaming" ? upstreamThink : undefined;
   const activeToolBlock = hasTraceEvents && toolTrace?.status === "streaming" && !nativeImageGenerationLoading ? toolTrace : undefined;
   const showNativeImageGenerationImages = !isImageGenerationLoading && !item.inlineAlert && nativeImageGenerationSources.length > 0;
-  const processAutoCollapseReady = Boolean(hasTraceEvents || upstreamThink || toolTrace || hasStreamdownContent || item.inlineAlert || isImageGenerationLoading);
-  const toolAutoCollapseReady = Boolean(upstreamThink || hasStreamdownContent || item.inlineAlert || isImageGenerationLoading);
+  const hasInlineVideo = Boolean(inlineVideoAttachment);
+  const processAutoCollapseReady = Boolean(hasTraceEvents || upstreamThink || toolTrace || hasStreamdownContent || hasInlineVideo || item.inlineAlert || isImageGenerationLoading || isVideoGenerationLoading);
+  const toolAutoCollapseReady = Boolean(upstreamThink || hasStreamdownContent || hasInlineVideo || item.inlineAlert || isImageGenerationLoading || isVideoGenerationLoading);
 
   return (
     <div className="group/assistant-message flex w-full flex-col items-start">
@@ -268,19 +417,27 @@ export function ChatMessageBot({
         className="w-full min-w-0 max-w-none overflow-hidden text-[15px] leading-8 text-foreground [overflow-wrap:anywhere]"
         style={{ fontFamily: "var(--font-chat)", fontWeight: "var(--font-chat-weight)" }}
       >
-        {isImageGenerationLoading && !item.inlineAlert ? (
+        {inlineVideoAttachment && !item.inlineAlert ? (
+          <AssistantInlineVideo
+            attachment={inlineVideoAttachment}
+            loadContent={attachmentContentLoader}
+            aspectRatio={item.imageAspectRatio}
+          />
+        ) : isVideoGenerationLoading && !item.inlineAlert ? (
+          <AssistantVideoGenerationSkeleton label={item.activityLabel} aspectRatio={item.imageAspectRatio} />
+        ) : isImageGenerationLoading && !item.inlineAlert ? (
           <AssistantImageGenerationSkeleton label={item.activityLabel} aspectRatio={item.imageAspectRatio} />
         ) : item.isStreaming && !hasStreamdownContent && !item.inlineAlert ? (
           <AssistantMessageSkeleton fileProc={item.isFileProc} label={item.activityLabel} />
         ) : hasStreamdownContent && markdownRender ? (
           <StreamdownRender
-            content={item.content}
+            content={renderContent}
             streaming={Boolean(item.isStreaming)}
             imageActions={markdownImageActions}
             artifactActions={artifactActions}
           />
         ) : hasStreamdownContent ? (
-          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.content}</p>
+          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{renderContent}</p>
         ) : null}
         {showNativeImageGenerationImages ? (
           <AssistantGeneratedImageList sources={nativeImageGenerationSources} imageActions={markdownImageActions} />
@@ -575,6 +732,51 @@ export function AssistantImageGenerationSkeleton({
           <span className="select-none text-[clamp(1.75rem,7vw,4rem)] font-semibold tracking-[0.18em] text-white/30 mix-blend-overlay drop-shadow-sm">
             DOUB
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AssistantVideoGenerationSkeleton({
+  label,
+  aspectRatio = "wide",
+}: {
+  label?: string;
+  aspectRatio?: ChatAreaMessage["imageAspectRatio"];
+}) {
+  const t = useTranslations("chat.messages");
+  const frameClassName =
+    aspectRatio === "portrait" ? "max-w-[18rem]" : aspectRatio === "square" ? "max-w-[24rem]" : "max-w-[32rem]";
+  const aspectClassName =
+    aspectRatio === "portrait" ? "aspect-[9/16]" : aspectRatio === "square" ? "aspect-square" : "aspect-video";
+  return (
+    <div className={cn("my-4 w-full space-y-2.5", frameClassName)}>
+      <div className="flex items-center gap-2 pt-1 text-[13px] text-muted-foreground">
+        <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Video className="size-3.5" strokeWidth={1.8} />
+        </span>
+        {label?.trim() || t("videoRunning")}
+      </div>
+      <div className={cn("relative w-full overflow-hidden rounded-xl bg-muted/20 text-primary", aspectClassName)}>
+        <GrainientBackground
+          className="absolute inset-0 text-primary/75"
+          color1="#CFFAFE"
+          color2="#38BDF8"
+          color3="#22C55E"
+          contrast={1.42}
+          saturation={1.0}
+          timeSpeed={2.2}
+          warpAmplitude={68}
+          warpSpeed={1.8}
+        />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-3 rounded-full bg-background/20 px-4 py-2 text-white/45 shadow-sm backdrop-blur-sm">
+            <Video className="size-6" strokeWidth={1.5} />
+            <span className="select-none text-[clamp(1rem,4vw,2.5rem)] font-semibold tracking-[0.14em] mix-blend-overlay">
+              DOUB
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -140,6 +140,7 @@ func (h *Handler) GetModelOptionPolicy(c *gin.Context) {
 	if allowedPathsJSON == "" {
 		allowedPathsJSON = config.DefaultModelOptionAllowedPathsJSON()
 	}
+	allowedPathsJSON = config.NormalizeModelOptionAllowedPathsJSON(allowedPathsJSON)
 	deniedPathsJSON := strings.TrimSpace(items["model_option_denied_paths"])
 	if deniedPathsJSON == "" {
 		deniedPathsJSON = config.DefaultModelOptionDeniedPathsJSON()

@@ -49,7 +49,11 @@ function buildPendingMessages({
             fileName: att.fileName,
             mimeType: att.mimeType,
             sizeBytes: att.sizeBytes,
-            kind: att.mimeType.startsWith("image/") ? ("image" as const) : ("file" as const),
+            kind: att.mimeType.startsWith("image/")
+              ? ("image" as const)
+              : att.mimeType.startsWith("video/")
+                ? ("video" as const)
+                : ("file" as const),
             previewURL: att.previewURL,
           }))
         : undefined;
@@ -192,6 +196,7 @@ export function useChatBranchState({
           generationInterrupted: t("generationInterrupted"),
           streamInterrupted: t("streamInterrupted"),
           imageRunning: t("imageRunning"),
+          videoRunning: t("videoRunning"),
         }),
       ),
     [messages, t],

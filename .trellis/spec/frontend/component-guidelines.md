@@ -254,6 +254,56 @@ application text.
   the first streamed token can replace the placeholder without shifting the
   surrounding chat layout.
 
+## Chat Generated Media
+
+Generated media must be visible in the formal assistant message body, while
+the normal attachment row remains available for preview/download workflows.
+
+- Assistant `contentType="video"` messages with a video attachment should render
+  an inline `<video controls playsInline>` player from the attachment bytes.
+  The persisted Markdown may still contain `[Generated video](/api/v1/files/.../content)`
+  for compatibility, but the UI should hide that link when it is only pointing
+  at the same video attachment.
+- Do not set a protected `/api/v1/files/:id/content` URL directly as a video
+  `src`. The frontend may be hosted on `localhost:3000` while the Go API runs
+  elsewhere, and the file endpoint requires auth. Load through the existing
+  file content path (`attachmentContentLoader` for shared views, otherwise
+  `fetchFileContent(resolveAccessToken(), fileID)`) and use a revoked
+  `URL.createObjectURL(blob)` as the media source.
+- Keep source parsing hydration-stable. Link-to-file matching should parse the
+  URL/path without reading `window` during render, otherwise server prerender
+  and client hydration can disagree.
+- Video generation composer routing accepts at most one reference attachment:
+  JPEG/PNG/WebP as a first frame, or MP4 as a source video to extend. Keep the
+  attachment card visible and label MP4 references as source videos rather than
+  first-frame images.
+- Do not hide all model parameters in media mode. Image and video generation
+  models must expose compact bottom-bar option controls directly in the
+  composer, not only behind the generic model-configuration button. OpenAI
+  image generation exposes `size` because OpenAI combines resolution and aspect
+  ratio into one field; xAI/Grok image generation exposes `aspect_ratio` and
+  `resolution`. OpenAI-style video models expose `seconds`/`size`; xAI/Grok
+  prompt or image-to-video exposes `duration`, `aspect_ratio`, and `resolution`;
+  xAI/Grok video extension exposes `duration` only because extension does not
+  support aspect ratio or resolution. xAI/Grok generation duration choices
+  should include the 1-15 second official range's common values, including 4
+  seconds; extension choices should stay within 2-10 seconds.
+
+Wrong:
+
+```tsx
+<StreamdownRender content="[Generated video](/api/v1/files/file_123/content)" />
+```
+
+Correct:
+
+```tsx
+const result = await fetchFileContent(accessToken, attachment.fileID);
+const objectURL = URL.createObjectURL(result.blob);
+
+return <video src={objectURL} controls playsInline />;
+```
+
 ## Feature UI Examples
 
 - `features/chat/components/app-chat-area.tsx` coordinates feature hooks and

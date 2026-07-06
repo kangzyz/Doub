@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -31,9 +32,12 @@ func (s *LocalStore) Put(ctx context.Context, key string, body io.Reader, opts P
 	if err = os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return ObjectInfo{}, err
 	}
+	if runtime.GOOS == "windows" {
+		return putLocalDirect(path, key, body, opts)
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
 	if err != nil {
-		return ObjectInfo{}, err
+		return putLocalDirect(path, key, body, opts)
 	}
 	tmpName := tmp.Name()
 	defer func() {
@@ -48,11 +52,33 @@ func (s *LocalStore) Put(ctx context.Context, key string, body io.Reader, opts P
 		return ObjectInfo{}, err
 	}
 	if err = os.Rename(tmpName, path); err != nil {
-		return ObjectInfo{}, err
+		tmpReader, openErr := os.Open(tmpName)
+		if openErr != nil {
+			return ObjectInfo{}, err
+		}
+		defer tmpReader.Close() //nolint:errcheck
+		return putLocalDirect(path, key, tmpReader, opts)
 	}
 	return ObjectInfo{Key: normalizeKey(key), SizeBytes: written, ContentType: strings.TrimSpace(opts.ContentType), ModTime: time.Now()}, nil
 }
 
+func putLocalDirect(path string, key string, body io.Reader, opts PutOptions) (ObjectInfo, error) {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return ObjectInfo{}, err
+	}
+	written, copyErr := io.Copy(file, body)
+	closeErr := file.Close()
+	if copyErr != nil {
+		_ = os.Remove(path)
+		return ObjectInfo{}, copyErr
+	}
+	if closeErr != nil {
+		_ = os.Remove(path)
+		return ObjectInfo{}, closeErr
+	}
+	return ObjectInfo{Key: normalizeKey(key), SizeBytes: written, ContentType: strings.TrimSpace(opts.ContentType), ModTime: time.Now()}, nil
+}
 func (s *LocalStore) Open(ctx context.Context, key string) (io.ReadCloser, ObjectInfo, error) {
 	_ = ctx
 	path, err := s.resolve(key)

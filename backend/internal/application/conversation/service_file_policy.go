@@ -12,6 +12,7 @@ import (
 
 const (
 	fileCategoryImage   = "image"
+	fileCategoryVideo   = "video"
 	fileCategoryPDF     = "pdf"
 	fileCategoryWord    = "word"
 	fileCategoryExcel   = "excel"
@@ -26,6 +27,24 @@ func normalizeDetectedMIME(detected string, fileName string) string {
 		return "text/plain"
 	}
 	switch ext {
+	case "jpg", "jpeg":
+		if value == "" || value == "application/octet-stream" {
+			return "image/jpeg"
+		}
+	case "png":
+		if value == "" || value == "application/octet-stream" {
+			return "image/png"
+		}
+	case "webp":
+		if value == "" || value == "application/octet-stream" {
+			return "image/webp"
+		}
+	case "gif":
+		if value == "" || value == "application/octet-stream" {
+			return "image/gif"
+		}
+	case "mp4":
+		return "video/mp4"
 	case "pdf":
 		return "application/pdf"
 	case "docx":
@@ -110,6 +129,8 @@ func inferFileCategory(mimeType string, fileName string) string {
 	switch {
 	case strings.HasPrefix(mime, "image/"):
 		return fileCategoryImage
+	case strings.HasPrefix(mime, "video/") || ext == "mp4":
+		return fileCategoryVideo
 	case mime == "application/pdf" || ext == "pdf":
 		return fileCategoryPDF
 	case strings.Contains(mime, "wordprocessingml") || strings.Contains(mime, "msword") || ext == "docx" || ext == "doc":
@@ -148,6 +169,9 @@ func isAllowedMIME(mimeType string, cfg config.Config) bool {
 func maxBytesForCategory(category string, cfg config.Config) int64 {
 	if category == fileCategoryImage {
 		return cfg.FileImageMaxBytes
+	}
+	if category == fileCategoryVideo {
+		return 0
 	}
 	return cfg.FileDocMaxBytes
 }

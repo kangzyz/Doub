@@ -413,9 +413,12 @@ export function SettingsChat() {
     () => [
       { label: t("defaultModel.systemRecommended"), value: SYSTEM_RECOMMENDED_MODEL, iconUrl: null },
       ...vendorGroups.flatMap(([, items]) =>
-        items
-          .filter((model) => model.platformModelName.trim() && parseKindsJSON(model.kindsJSON).includes("chat"))
-          .map((model) => ({
+        items.flatMap((model) => {
+          const kinds = parseKindsJSON(model.kindsJSON);
+          if (!model.platformModelName.trim() || !kinds.includes("chat")) {
+            return [];
+          }
+          return [{
             label: resolveModelOptionLabel(model.platformModelName),
             value: model.platformModelName,
             iconUrl: resolveModelOptionIconUrl({
@@ -423,7 +426,9 @@ export function SettingsChat() {
               vendor: model.vendor ?? "",
               icon: model.icon ?? "",
             }),
-          })),
+            kinds,
+          }];
+        }),
       ),
     ],
     [t, vendorGroups],

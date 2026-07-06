@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, ChevronLeft } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,6 +68,7 @@ function ChatModelIdentity({
   );
   const iconURL = React.useMemo(() => resolveLobeHubIconURL(identity.modelIcon), [identity.modelIcon]);
   const compact = density === "compact";
+  const supportsVideoGeneration = model.kinds.includes("video_gen");
 
   return (
     <div className={cn("flex min-w-0 items-center", compact ? "gap-2" : "gap-2.5")}>
@@ -82,6 +83,15 @@ function ChatModelIdentity({
           >
             {platformModelName}
           </p>
+          {supportsVideoGeneration ? (
+            <span
+              className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary"
+              title="Video generation"
+            >
+              <Video className="size-3" strokeWidth={1.8} />
+              <span className="sr-only">Video generation</span>
+            </span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -171,6 +181,7 @@ function ChatModelMenuItem({
     [model.icon, model.platformModelName, model.vendor],
   );
   const iconURL = React.useMemo(() => resolveLobeHubIconURL(identity.modelIcon), [identity.modelIcon]);
+  const supportsVideoGeneration = model.kinds.includes("video_gen");
 
   return (
     <DropdownMenuItem
@@ -182,6 +193,15 @@ function ChatModelMenuItem({
       <span className="min-w-0 flex-1 truncate leading-4">
         {platformModelName}
       </span>
+      {supportsVideoGeneration ? (
+        <span
+          className="flex size-3.5 shrink-0 items-center justify-center text-primary"
+          title="Video generation"
+        >
+          <Video className="size-3.5" strokeWidth={1.7} />
+          <span className="sr-only">Video generation</span>
+        </span>
+      ) : null}
       <span className="flex size-3 shrink-0 items-center justify-center">
         {selected ? <Check className="size-3 text-current" strokeWidth={1.7} /> : null}
       </span>

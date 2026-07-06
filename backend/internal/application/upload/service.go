@@ -210,6 +210,9 @@ func (s *Service) UploadFile(ctx context.Context, input UploadFileInput) (*Uploa
 	}
 	store, err := s.openObjectStore(ctx)
 	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("upload_open_object_store_failed", zap.Uint("user_id", input.UserID), zap.String("file_name", normalizedName), zap.Error(err))
+		}
 		return nil, err
 	}
 	relativePath, detectedMIME, shaValue, sizeBytes, err := saveUploadedFile(
@@ -225,6 +228,9 @@ func (s *Service) UploadFile(ctx context.Context, input UploadFileInput) (*Uploa
 	if err != nil {
 		if errors.Is(err, errLocalFileTooLarge) {
 			return nil, s.errFileTooLarge()
+		}
+		if s.logger != nil {
+			s.logger.Error("upload_save_file_failed", zap.Uint("user_id", input.UserID), zap.String("file_name", normalizedName), zap.String("declared_mime", normalizedMIME), zap.Error(err))
 		}
 		return nil, err
 	}
@@ -250,6 +256,9 @@ func (s *Service) UploadFile(ctx context.Context, input UploadFileInput) (*Uploa
 
 	if result, reused, reuseErr := s.tryReuseExistingFile(ctx, store, input.UserID, shaValue, sizeBytes, cfg.UserStorageQuotaBytes); reuseErr != nil {
 		logRemoveErr(relativePath, store.Delete(ctx, relativePath))
+		if s.logger != nil {
+			s.logger.Error("upload_reuse_lookup_failed", zap.Uint("user_id", input.UserID), zap.String("file_name", normalizedName), zap.String("detected_mime", detectedMIME), zap.String("sha256", shaValue), zap.Int64("size_bytes", sizeBytes), zap.Error(reuseErr))
+		}
 		return nil, reuseErr
 	} else if reused {
 		logRemoveErr(relativePath, store.Delete(ctx, relativePath))
@@ -290,11 +299,17 @@ func (s *Service) UploadFile(ctx context.Context, input UploadFileInput) (*Uploa
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicate) {
 			logRemoveErr(relativePath, store.Delete(ctx, relativePath))
+			if s.logger != nil {
+				s.logger.Error("upload_create_duplicate_unresolved", zap.Uint("user_id", input.UserID), zap.String("file_name", normalizedName), zap.String("detected_mime", detectedMIME), zap.String("sha256", shaValue), zap.Int64("size_bytes", sizeBytes), zap.Error(err))
+			}
 			return nil, err
 		}
 		logRemoveErr(relativePath, store.Delete(ctx, relativePath))
 		if errors.Is(err, s.errors.StorageQuotaExceeded) {
 			return nil, s.errStorageQuotaExceeded()
+		}
+		if s.logger != nil {
+			s.logger.Error("upload_create_file_failed", zap.Uint("user_id", input.UserID), zap.String("file_name", normalizedName), zap.String("detected_mime", detectedMIME), zap.String("category", category), zap.String("sha256", shaValue), zap.Int64("size_bytes", sizeBytes), zap.Error(err))
 		}
 		return nil, err
 	}
@@ -305,7 +320,7 @@ func (s *Service) UploadFile(ctx context.Context, input UploadFileInput) (*Uploa
 				zap.Error(initErr),
 			)
 		}
-	} else if category != fileCategoryImage {
+	} else if category != fileCategoryImage && category != fileCategoryVideo {
 		fileItem.ProcessingStatus = "queued"
 		fileItem.ProcessingReady = false
 		fileItem.ProcessingErrorCode = ""
@@ -535,6 +550,7 @@ func (s *Service) OpenFileContent(ctx context.Context, userID uint, fileID strin
 
 const (
 	fileCategoryImage   = "image"
+	fileCategoryVideo   = "video"
 	fileCategoryPDF     = "pdf"
 	fileCategoryWord    = "word"
 	fileCategoryExcel   = "excel"
@@ -649,6 +665,24 @@ func normalizeDetectedMIME(detected string, fileName string) string {
 		return "text/plain"
 	}
 	switch ext {
+	case "jpg", "jpeg":
+		if value == "" || value == "application/octet-stream" {
+			return "image/jpeg"
+		}
+	case "png":
+		if value == "" || value == "application/octet-stream" {
+			return "image/png"
+		}
+	case "webp":
+		if value == "" || value == "application/octet-stream" {
+			return "image/webp"
+		}
+	case "gif":
+		if value == "" || value == "application/octet-stream" {
+			return "image/gif"
+		}
+	case "mp4":
+		return "video/mp4"
 	case "pdf":
 		return "application/pdf"
 	case "docx":
@@ -733,6 +767,8 @@ func inferFileCategory(mimeType string, fileName string) string {
 	switch {
 	case strings.HasPrefix(mimeType, "image/"):
 		return fileCategoryImage
+	case strings.HasPrefix(mimeType, "video/") || ext == "mp4":
+		return fileCategoryVideo
 	case mimeType == "application/pdf" || ext == "pdf":
 		return fileCategoryPDF
 	case strings.Contains(mimeType, "wordprocessingml") || strings.Contains(mimeType, "msword") || ext == "docx" || ext == "doc":
@@ -766,6 +802,9 @@ func isAllowedMIME(mimeType string, cfg config.Config) bool {
 func maxBytesForCategory(category string, cfg config.Config) int64 {
 	if category == fileCategoryImage {
 		return cfg.FileImageMaxBytes
+	}
+	if category == fileCategoryVideo {
+		return 0
 	}
 	return cfg.FileDocMaxBytes
 }
@@ -860,7 +899,7 @@ func saveUploadedFile(
 		normalizedUserID,
 		now.Format("2006"),
 		now.Format("01"),
-		fileID+"_"+sanitizeFileName(fileName),
+		fileID,
 	)
 	relativePath = filepath.ToSlash(relativePath)
 	if _, err = tmpFile.Seek(0, io.SeekStart); err != nil {

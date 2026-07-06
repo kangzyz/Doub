@@ -82,7 +82,108 @@ func (s *Service) Seed(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	return s.repo.UpsertWithDescription(ctx, items)
+	if err := s.repo.UpsertWithDescription(ctx, items); err != nil {
+		return err
+	}
+	return s.backfillSeededSettingAdditions(ctx)
+}
+
+func (s *Service) backfillSeededSettingAdditions(ctx context.Context) error {
+	fileItems, err := s.repo.ListByNamespace(ctx, "file")
+	if err != nil {
+		return err
+	}
+	for _, item := range fileItems {
+		if item.Key == "allowed_mime_types" {
+			if err := s.backfillVideoMIMEType(ctx, item); err != nil {
+				return err
+			}
+			break
+		}
+	}
+	chatItems, err := s.repo.ListByNamespace(ctx, "chat")
+	if err != nil {
+		return err
+	}
+	for _, item := range chatItems {
+		if item.Key == "model_option_allowed_paths" {
+			return s.backfillVideoModelOptionPaths(ctx, item)
+		}
+	}
+	return nil
+}
+
+func (s *Service) backfillVideoMIMEType(ctx context.Context, item domainsettings.SystemSetting) error {
+	value := strings.TrimSpace(item.Value)
+	if value == "" || mimeListContains(value, "video/mp4") {
+		return nil
+	}
+	if !sameMIMEList(value, legacyAllowedMIMETypesWithoutVideo) {
+		return nil
+	}
+	item.Value = appendMIMEType(value, "video/mp4")
+	return s.repo.Upsert(ctx, []domainsettings.SystemSetting{item})
+}
+
+func (s *Service) backfillVideoModelOptionPaths(ctx context.Context, item domainsettings.SystemSetting) error {
+	value := strings.TrimSpace(item.Value)
+	if value == "" {
+		return nil
+	}
+	normalized := config.NormalizeModelOptionAllowedPathsJSON(value)
+	if normalized == value {
+		return nil
+	}
+	item.Value = normalized
+	return s.repo.Upsert(ctx, []domainsettings.SystemSetting{item})
+}
+
+func appendMIMEType(raw string, mimeType string) string {
+	value := strings.TrimSpace(raw)
+	mimeType = strings.ToLower(strings.TrimSpace(mimeType))
+	if value == "" {
+		return mimeType
+	}
+	return value + "," + mimeType
+}
+
+func mimeListContains(raw string, mimeType string) bool {
+	mimeType = strings.ToLower(strings.TrimSpace(mimeType))
+	if mimeType == "" {
+		return false
+	}
+	for _, item := range strings.Split(raw, ",") {
+		if strings.ToLower(strings.TrimSpace(item)) == mimeType {
+			return true
+		}
+	}
+	return false
+}
+
+func sameMIMEList(left string, right string) bool {
+	leftSet := mimeListSet(left)
+	rightSet := mimeListSet(right)
+	if len(leftSet) != len(rightSet) {
+		return false
+	}
+	for item := range leftSet {
+		if _, ok := rightSet[item]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func mimeListSet(raw string) map[string]struct{} {
+	result := make(map[string]struct{})
+	for _, item := range strings.Split(raw, ",") {
+		value := strings.ToLower(strings.TrimSpace(item))
+		if value == "" {
+			continue
+		}
+		result[value] = struct{}{}
+	}
+	return result
 }
 
 // ListAll 查询全部配置，按 namespace 分组。

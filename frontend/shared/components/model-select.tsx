@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ export type OptionSelectOption = {
 
 export type ModelSelectOption = OptionSelectOption & {
   iconUrl?: string | null;
+  kinds?: string[];
 };
 
 type OptionSelectAlign = "start" | "end";
@@ -192,6 +193,21 @@ function ModelSelectIcon({
   return <ModelOptionIcon iconUrl={option.iconUrl} label={option.label} />;
 }
 
+function ModelCapabilityIcons({ option }: { option?: ModelSelectOption }) {
+  if (!option?.kinds?.includes("video_gen")) {
+    return null;
+  }
+  return (
+    <span
+      className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary"
+      title="Video generation"
+    >
+      <Video className="size-3" strokeWidth={1.8} />
+      <span className="sr-only">Video generation</span>
+    </span>
+  );
+}
+
 export function ModelSelect({
   id,
   value,
@@ -243,11 +259,17 @@ export function ModelSelect({
       contentClassName={contentClassName}
       triggerClassName={triggerClassName}
       valueClassName={valueClassName}
-      renderIcon={(option) => <ModelSelectIcon option={option} fallbackValue={fallbackValue} />}
+      renderIcon={(option) => (
+        <>
+          <ModelSelectIcon option={option} fallbackValue={fallbackValue} />
+          <ModelCapabilityIcons option={option} />
+        </>
+      )}
       renderOption={(item) => (
         <>
           <ModelSelectIcon option={item} fallbackValue={fallbackValue} />
           <span className={cn("min-w-0 flex-1 truncate leading-5", itemTextClass)}>{item.label}</span>
+          <ModelCapabilityIcons option={item} />
         </>
       )}
       onChange={onChange}

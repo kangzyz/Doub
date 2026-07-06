@@ -29,6 +29,7 @@ import type {
   ReorderConversationProjectsRequest,
   SendMessageRequest,
   MediaImageRequest,
+  MediaVideoRequest,
   SendMessageResult,
   SetConversationArchiveRequest,
   SetConversationProjectRequest,
@@ -931,6 +932,21 @@ export async function streamImageEdit(
     accessToken,
     conversationPublicID,
     "/media/images/edits/stream",
+    payload,
+    options,
+  );
+}
+
+export async function streamVideoGeneration(
+  accessToken: string,
+  conversationPublicID: string,
+  payload: MediaVideoRequest,
+  options: ConversationStreamOptions = {},
+): Promise<SendMessageResult> {
+  return postConversationStream(
+    accessToken,
+    conversationPublicID,
+    "/media/videos/generations/stream",
     payload,
     options,
   );

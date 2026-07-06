@@ -375,6 +375,10 @@ func normalizeModelProbeTaskType(raw string, kindsJSON string, protocol string) 
 	kinds := parseKinds(kindsJSON)
 	supportsImageGeneration := llm.IsImageGenerationAdapter(protocol)
 	supportsImageEdit := llm.IsImageEditAdapter(protocol)
+	supportsVideoGeneration := llm.IsVideoGenerationAdapter(protocol)
+	if supportsVideoGeneration && hasModelKind(kinds, modelKindVideoGen) {
+		return TaskTypeVideoGeneration
+	}
 	if supportsImageGeneration && hasModelKind(kinds, modelKindImageGen) {
 		return TaskTypeImageGeneration
 	}
@@ -387,8 +391,14 @@ func normalizeModelProbeTaskType(raw string, kindsJSON string, protocol string) 
 	if supportsImageEdit {
 		return TaskTypeImageEdit
 	}
+	if supportsVideoGeneration {
+		return TaskTypeVideoGeneration
+	}
 	if hasModelKind(kinds, modelKindImageGen) {
 		return TaskTypeImageGeneration
+	}
+	if hasModelKind(kinds, modelKindVideoGen) {
+		return TaskTypeVideoGeneration
 	}
 	return TaskTypeChat
 }
