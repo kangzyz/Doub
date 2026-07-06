@@ -759,7 +759,7 @@ function ChatInputComponent({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {!modelOptionPolicyDisabled && (submitTask === "image_generation" || submitTask === "video_generation") ? (
+            {submitTask === "image_generation" || submitTask === "video_generation" ? (
               <ChatMediaOptions
                 disabled={sending || loading || uploading || modelLoading}
                 options={options}

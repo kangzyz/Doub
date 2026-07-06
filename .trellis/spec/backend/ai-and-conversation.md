@@ -809,10 +809,11 @@ events.
   image-to-video as OpenAI multipart `input_reference`; upstream can ignore it
   and treat the request as unsupported text-to-video.
 - xAI/Grok MP4 reference videos send the source as
-  `video: {type:"video_url", url:"data:video/mp4;base64,..."}`. Direct
+  `video: {url:"data:video/mp4;base64,..."}`. Direct
   `api.x.ai` routes use `/videos/extensions` for this operation, while
   OpenAI-compatible proxy routes keep the proxy's `/videos` endpoint and add
-  `operation:"extend"` so the proxy does not route the payload as text-to-video.
+  `operation:"extend"`, `mode:"extend-video"`, and `video_url`/`videoUrl`
+  aliases so the proxy does not route the payload as text-to-video.
   For xAI extension requests pass `duration` only; omit `aspect_ratio` and
   `resolution` because the upstream extension API does not support them.
 - User video options must pass through the model option policy only for official

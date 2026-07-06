@@ -45,11 +45,11 @@ func filterModelOptions(options map[string]interface{}, protocol string, cfg mod
 	if mode == "" {
 		mode = modelOptionPolicyAllowlist
 	}
-	if mode == modelOptionPolicyDisabled {
-		return nil
-	}
 
 	protocolKey := modelOptionPolicyProtocolKey(protocol)
+	if mode == modelOptionPolicyDisabled {
+		return filterBuiltInMediaModelOptions(options, protocolKey)
+	}
 	nativeTools := nativeProviderToolsFromOption(protocolKey, options["tools"], cfg.ModelCapabilitiesJSON, cfg.NativeToolAllowedTypesJSON)
 	policyOptions := cloneModelOptionMap(options)
 	delete(policyOptions, "tools")
@@ -77,6 +77,76 @@ func filterModelOptions(options map[string]interface{}, protocol string, cfg mod
 		}
 		filtered["tools"] = nativeTools
 	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
+}
+
+var builtInMediaModelOptionPaths = map[string][][]string{
+	"openai_image_generations": {
+		{"background"},
+		{"moderation"},
+		{"n"},
+		{"output_compression"},
+		{"output_format"},
+		{"partial_images"},
+		{"quality"},
+		{"response_format"},
+		{"size"},
+		{"style"},
+		{"user"},
+	},
+	"openai_image_edits": {
+		{"background"},
+		{"input_fidelity"},
+		{"moderation"},
+		{"n"},
+		{"output_compression"},
+		{"output_format"},
+		{"partial_images"},
+		{"quality"},
+		{"response_format"},
+		{"size"},
+		{"user"},
+	},
+	"xai_image": {
+		{"aspect_ratio"},
+		{"n"},
+		{"resolution"},
+		{"response_format"},
+	},
+	"xai_image_edits": {
+		{"aspect_ratio"},
+		{"n"},
+		{"resolution"},
+		{"response_format"},
+	},
+	"openai_video_generations": {
+		{"aspect_ratio"},
+		{"aspectRatio"},
+		{"duration"},
+		{"resolution"},
+		{"seconds"},
+		{"size"},
+	},
+}
+
+func filterBuiltInMediaModelOptions(options map[string]interface{}, protocolKey string) map[string]interface{} {
+	paths := builtInMediaModelOptionPaths[protocolKey]
+	if len(paths) == 0 {
+		return nil
+	}
+	policyOptions := cloneModelOptionMap(options)
+	delete(policyOptions, "tools")
+	filtered := make(map[string]interface{})
+	for _, path := range paths {
+		copyModelOptionPath(filtered, policyOptions, path)
+	}
+	for _, path := range hardDeniedModelOptionPaths {
+		deleteModelOptionPath(filtered, path)
+	}
+	sanitizeModelOptionValues(filtered, protocolKey)
 	if len(filtered) == 0 {
 		return nil
 	}

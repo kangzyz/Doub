@@ -39,6 +39,7 @@ import {
   isConversationOptionsObject,
   sanitizeConversationOptions,
 } from "@/features/chat/model/conversation-options";
+import { isMediaSubmitTask, resolveChatSubmitDecision } from "@/features/chat/model/chat-task";
 import { normalizeReasoningOptionsForContext } from "@/features/chat/model/reasoning-options";
 import { useSidebarRecents } from "@/features/recent/context/sidebar-recents-context";
 import { useChatData } from "@/features/chat/hooks/use-chat-data";
@@ -308,6 +309,12 @@ export function AppChatArea() {
   const selectedModelDefaultOptions = selectedModel?.defaultOptions ?? EMPTY_CONVERSATION_OPTIONS;
   const modelOptionPolicyDisabled = modelOptionPolicy?.mode?.trim() === "disabled";
   const [options, setOptions] = React.useState<ConversationOptions>({});
+  const submitDecision = React.useMemo(
+    () => resolveChatSubmitDecision(selectedModel, attachments),
+    [attachments, selectedModel],
+  );
+  const keepOptionsForMediaTask = isMediaSubmitTask(submitDecision.task);
+  const effectiveOptions = modelOptionPolicyDisabled && !keepOptionsForMediaTask ? EMPTY_CONVERSATION_OPTIONS : options;
   const [availableTools, setAvailableTools] = React.useState<MCPToolDTO[]>([]);
   const [toolsLoading, setToolsLoading] = React.useState(true);
   const [selectedToolIDs, setSelectedToolIDs] = React.useState<number[]>([]);
@@ -484,7 +491,7 @@ export function AppChatArea() {
     modelOptions,
     selectedToolIDs,
     htmlVisualPromptEnabled: htmlVisualPrompt.enabled,
-    options: modelOptionPolicyDisabled ? EMPTY_CONVERSATION_OPTIONS : options,
+    options: effectiveOptions,
     draft,
     attachments,
     maxFilesPerMessage,
@@ -828,8 +835,6 @@ export function AppChatArea() {
     document.addEventListener("visibilitychange", stopResizeWhenHidden);
     resizeHandle.addEventListener("lostpointercapture", stopResize);
   }, [artifactWorkspace]);
-
-  const effectiveOptions = modelOptionPolicyDisabled ? EMPTY_CONVERSATION_OPTIONS : options;
 
   const chatInputProps = {
     draft,

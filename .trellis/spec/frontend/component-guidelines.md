@@ -279,7 +279,10 @@ the normal attachment row remains available for preview/download workflows.
   first-frame images.
 - Do not hide all model parameters in media mode. Image and video generation
   models must expose compact bottom-bar option controls directly in the
-  composer, not only behind the generic model-configuration button. OpenAI
+  composer, not only behind the generic model-configuration button. These
+  media controls remain visible for media tasks even when the generic model
+  option drawer is disabled by policy; the backend still sanitizes them through
+  a built-in official-field allowlist. OpenAI
   image generation exposes `size` because OpenAI combines resolution and aspect
   ratio into one field; xAI/Grok image generation exposes `aspect_ratio` and
   `resolution`. OpenAI-style video models expose `seconds`/`size`; xAI/Grok

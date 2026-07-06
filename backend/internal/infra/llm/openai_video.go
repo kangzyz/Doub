@@ -404,6 +404,13 @@ func applyXAIVideoProxyOperation(payload map[string]interface{}, route RouteConf
 		return
 	}
 	payload["operation"] = string(operation)
+	payload["mode"] = "extend-video"
+	if video, ok := payload["video"].(map[string]interface{}); ok {
+		if videoURL, _ := video["url"].(string); strings.TrimSpace(videoURL) != "" {
+			payload["video_url"] = videoURL
+			payload["videoUrl"] = videoURL
+		}
+	}
 }
 
 func normalizeOpenAIVideoSize(options map[string]interface{}) (string, error) {
@@ -499,8 +506,7 @@ func xAIVideoImagePayload(image ContentPart) map[string]interface{} {
 		mimeType = "image/jpeg"
 	}
 	return map[string]interface{}{
-		"type": "image_url",
-		"url":  "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(image.Data),
+		"url": "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(image.Data),
 	}
 }
 
@@ -510,8 +516,7 @@ func xAIVideoVideoPayload(video ContentPart) map[string]interface{} {
 		mimeType = "video/mp4"
 	}
 	return map[string]interface{}{
-		"type": "video_url",
-		"url":  "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(video.Data),
+		"url": "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(video.Data),
 	}
 }
 

@@ -176,9 +176,6 @@ func TestBuildXAIVideoCreateRequestWithImage(t *testing.T) {
 		}
 	}
 	image := asMap(payload["image"])
-	if image["type"] != "image_url" {
-		t.Fatalf("expected image_url type, got %#v", image)
-	}
 	if url := getString(image["url"]); !strings.HasPrefix(url, "data:image/png;base64,cG5nLWRhdGE=") {
 		t.Fatalf("expected base64 image data uri, got %q", url)
 	}
@@ -215,9 +212,6 @@ func TestBuildXAIVideoCreateRequestWithVideoUsesExtensionPayload(t *testing.T) {
 		t.Fatalf("extension payload must not include resolution: %#v", payload)
 	}
 	video := asMap(payload["video"])
-	if video["type"] != "video_url" {
-		t.Fatalf("expected video_url type, got %#v", video)
-	}
 	if url := getString(video["url"]); !strings.HasPrefix(url, "data:video/mp4;base64,bXA0LWRhdGE=") {
 		t.Fatalf("expected base64 video data uri, got %q", url)
 	}
@@ -340,7 +334,7 @@ func TestXAIVideoGenerationsUsesImageEndpointAndDownloadsMP4(t *testing.T) {
 		t.Fatalf("unexpected request body: %#v", requestBody)
 	}
 	image := asMap(requestBody["image"])
-	if image["type"] != "image_url" || !strings.HasPrefix(getString(image["url"]), "data:image/png;base64,c291cmNl") {
+	if !strings.HasPrefix(getString(image["url"]), "data:image/png;base64,c291cmNl") {
 		t.Fatalf("expected image data uri, got %#v", requestBody)
 	}
 	if requestBody["duration"] != float64(4) || requestBody["aspect_ratio"] != "3:4" || requestBody["resolution"] != "480p" {
@@ -403,11 +397,18 @@ func TestXAIVideoGenerationsUsesProxyVideoEndpointForVideoInput(t *testing.T) {
 		t.Fatalf("expected OpenAI-compatible proxy video endpoint, got %q", requestPath)
 	}
 	video := asMap(requestBody["video"])
-	if video["type"] != "video_url" || !strings.HasPrefix(getString(video["url"]), "data:video/mp4;base64,c291cmNlLXZpZGVv") {
+	videoURL := getString(video["url"])
+	if !strings.HasPrefix(videoURL, "data:video/mp4;base64,c291cmNlLXZpZGVv") {
 		t.Fatalf("expected video data uri, got %#v", requestBody)
 	}
 	if requestBody["operation"] != "extend" {
 		t.Fatalf("expected proxy extension operation, got %#v", requestBody)
+	}
+	if requestBody["mode"] != "extend-video" {
+		t.Fatalf("expected proxy extension mode alias, got %#v", requestBody)
+	}
+	if requestBody["video_url"] != videoURL || requestBody["videoUrl"] != videoURL {
+		t.Fatalf("expected proxy video URL aliases, got %#v", requestBody)
 	}
 	if requestBody["duration"] != float64(10) {
 		t.Fatalf("expected duration on extension payload, got %#v", requestBody)

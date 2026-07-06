@@ -33,6 +33,7 @@ type MediaOptionControl = {
 
 const XAI_IMAGE_ASPECT_RATIOS = ["auto", "16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20"];
 const XAI_VIDEO_ASPECT_RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"];
+const MEDIA_OPTION_UNSET_VALUE = "__doub_media_option_unset__";
 
 function optionPathSegments(path: string): string[] {
   return path.split(".").map((item) => item.trim()).filter(Boolean);
@@ -77,6 +78,34 @@ function setOptionAtPath(options: ConversationOptions, path: string[], value: un
     current = current[segment] as Record<string, unknown>;
   }
   current[path[path.length - 1]] = cloneOptionValue(value);
+  return next;
+}
+
+function deleteOptionAtPath(options: ConversationOptions, path: string[]): ConversationOptions {
+  if (path.length === 0) {
+    return options;
+  }
+  const next: ConversationOptions = { ...options };
+  const stack: Array<{ object: Record<string, unknown>; key: string }> = [];
+  let current = next as Record<string, unknown>;
+  for (const segment of path.slice(0, -1)) {
+    const child = current[segment];
+    if (child === null || typeof child !== "object" || Array.isArray(child)) {
+      return next;
+    }
+    const cloned = { ...(child as Record<string, unknown>) };
+    current[segment] = cloned;
+    stack.push({ object: current, key: segment });
+    current = cloned;
+  }
+  delete current[path[path.length - 1]];
+  for (let index = stack.length - 1; index >= 0; index -= 1) {
+    const { object, key } = stack[index];
+    const child = object[key];
+    if (child !== null && typeof child === "object" && !Array.isArray(child) && Object.keys(child).length === 0) {
+      delete object[key];
+    }
+  }
   return next;
 }
 
@@ -242,12 +271,17 @@ export function ChatMediaOptions({
       {controls.map((control) => {
         const path = optionPathSegments(control.path);
         const value = readOptionAtPath(options, path);
+        const selectedValue = value === undefined || value === null || value === "" ? MEDIA_OPTION_UNSET_VALUE : String(value);
         return (
           <Select
             key={control.path}
-            value={value === undefined || value === null || value === "" ? undefined : String(value)}
+            value={selectedValue}
             disabled={disabled}
             onValueChange={(nextValue) => {
+              if (nextValue === MEDIA_OPTION_UNSET_VALUE) {
+                onOptionsChange((previous) => deleteOptionAtPath(previous, path));
+                return;
+              }
               onOptionsChange((previous) => setOptionAtPath(previous, path, nextValue));
             }}
           >
@@ -260,6 +294,9 @@ export function ChatMediaOptions({
               <SelectValue placeholder={control.label} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={MEDIA_OPTION_UNSET_VALUE}>
+                {control.label}
+              </SelectItem>
               {control.values.map((item) => (
                 <SelectItem key={item} value={item}>
                   {item}

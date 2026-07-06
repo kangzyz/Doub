@@ -524,6 +524,34 @@ func TestFilterModelOptionsOpenAIVideoAllowsVideoParams(t *testing.T) {
 	}
 }
 
+func TestFilterModelOptionsDisabledKeepsBuiltInVideoParams(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"aspect_ratio": "16:9",
+		"duration":     "8",
+		"resolution":   "1080p",
+		"seconds":      12,
+		"size":         "1280x720",
+		"prompt":       "override",
+		"stream":       true,
+		"quality":      "high",
+		"tools":        []interface{}{map[string]interface{}{"type": "web_search"}},
+	}, llm.AdapterOpenAIVideoGenerations, modelOptionPolicyConfig{
+		Mode: modelOptionPolicyDisabled,
+	})
+
+	if filtered["aspect_ratio"] != "16:9" || filtered["resolution"] != "1080p" || filtered["duration"] != 8 {
+		t.Fatalf("expected built-in video params to pass with policy disabled, got %#v", filtered)
+	}
+	if filtered["seconds"] != 12 || filtered["size"] != "1280x720" {
+		t.Fatalf("expected OpenAI video params to pass with policy disabled, got %#v", filtered)
+	}
+	for _, key := range []string{"prompt", "stream", "quality", "tools"} {
+		if _, ok := filtered[key]; ok {
+			t.Fatalf("expected %s to be removed with policy disabled, got %#v", key, filtered)
+		}
+	}
+}
+
 func TestFilterModelOptionsXAIImageAllowsImageParams(t *testing.T) {
 	filtered := filterModelOptions(map[string]interface{}{
 		"aspect_ratio":    "20:9",
@@ -548,6 +576,33 @@ func TestFilterModelOptionsXAIImageAllowsImageParams(t *testing.T) {
 	for _, key := range []string{"prompt", "stream", "quality"} {
 		if _, ok := filtered[key]; ok {
 			t.Fatalf("expected %s to be removed, got %#v", key, filtered)
+		}
+	}
+}
+
+func TestFilterModelOptionsDisabledKeepsBuiltInImageParams(t *testing.T) {
+	filtered := filterModelOptions(map[string]interface{}{
+		"aspect_ratio":    "20:9",
+		"n":               2,
+		"resolution":      "2K",
+		"response_format": "b64_json",
+		"prompt":          "override",
+		"stream":          true,
+		"quality":         "high",
+		"tools":           []interface{}{map[string]interface{}{"type": "web_search"}},
+	}, llm.AdapterXAIImage, modelOptionPolicyConfig{
+		Mode: modelOptionPolicyDisabled,
+	})
+
+	if filtered["aspect_ratio"] != "20:9" || filtered["resolution"] != "2k" || filtered["response_format"] != "b64_json" {
+		t.Fatalf("expected built-in xAI image params to pass with policy disabled, got %#v", filtered)
+	}
+	if filtered["n"] != 2 {
+		t.Fatalf("expected xAI n param to pass with policy disabled, got %#v", filtered)
+	}
+	for _, key := range []string{"prompt", "stream", "quality", "tools"} {
+		if _, ok := filtered[key]; ok {
+			t.Fatalf("expected %s to be removed with policy disabled, got %#v", key, filtered)
 		}
 	}
 }
