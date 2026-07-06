@@ -263,6 +263,7 @@ func TestFilterModelOptionsPreservesOpenAIResponsesNativeTools(t *testing.T) {
 		"tools": []interface{}{
 			map[string]interface{}{"type": "web_search_preview", "extra": true},
 			map[string]interface{}{"type": "shell"},
+			map[string]interface{}{"type": "code_interpreter", "extra": true},
 		},
 	}, llm.AdapterOpenAIResponses, modelOptionPolicyConfig{
 		Mode:             modelOptionPolicyAllowlist,
@@ -289,7 +290,14 @@ func TestFilterModelOptionsPreservesOpenAIResponsesNativeTools(t *testing.T) {
 	if !ok || environment["type"] != "container_auto" {
 		t.Fatalf("expected shell environment to be normalized, got %#v", shellTool)
 	}
-	for _, toolType := range []string{"web_search", "image_generation", "code_interpreter"} {
+	codeTool, ok := toolsByType(tools, "code_interpreter")
+	if !ok {
+		t.Fatalf("expected explicit code_interpreter to pass, got %#v", tools)
+	}
+	if _, ok := codeTool["extra"]; ok {
+		t.Fatalf("expected arbitrary code_interpreter fields to be removed, got %#v", codeTool)
+	}
+	for _, toolType := range []string{"web_search", "image_generation"} {
 		if _, ok := toolsByType(tools, toolType); !ok {
 			t.Fatalf("expected daily OpenAI tool %s, got %#v", toolType, tools)
 		}
@@ -305,18 +313,18 @@ func TestFilterModelOptionsInjectsDailyChatNativeToolsByProtocol(t *testing.T) {
 		})
 
 		tools, ok := filtered["tools"].([]map[string]interface{})
-		if !ok || len(tools) != 3 {
+		if !ok || len(tools) != 2 {
 			t.Fatalf("expected OpenAI daily chat tools, got %#v", filtered)
 		}
-		expected := []string{"web_search", "image_generation", "code_interpreter"}
+		expected := []string{"web_search", "image_generation"}
 		for index, toolType := range expected {
 			if tools[index]["type"] != toolType {
 				t.Fatalf("expected tool %d to be %q, got %#v", index, toolType, tools[index])
 			}
 		}
 		for _, tool := range tools {
-			if tool["type"] == "web_search_preview" || tool["type"] == "shell" {
-				t.Fatalf("expected preview and shell to stay out of daily defaults, got %#v", tools)
+			if tool["type"] == "web_search_preview" || tool["type"] == "shell" || tool["type"] == "code_interpreter" {
+				t.Fatalf("expected preview, shell, and code_interpreter to stay out of daily defaults, got %#v", tools)
 			}
 		}
 	})

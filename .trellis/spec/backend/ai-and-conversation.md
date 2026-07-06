@@ -470,6 +470,78 @@ details.
 Keep prompt and trace data safe. Trace should explain process status without
 leaking hidden prompts, raw file contents, API keys, or tool secrets.
 
+## Scenario: OpenAI Responses Daily Native Tool Defaults
+
+### 1. Scope / Trigger
+
+Use this contract when changing provider-native tool definitions, daily chat
+default native tools, or the model option policy that injects OpenAI Responses
+`tools`.
+
+### 2. Signatures
+
+- Catalog:
+  `backend/internal/shared/nativetool.DailyChatDefaultDefinitions(protocol string)`
+- Application policy:
+  `nativeProviderToolsFromOption(protocolKey, rawTools, capabilitiesJSON, allowedTypesJSON)`
+- OpenAI Responses request field:
+  `tools: [{"type":"web_search"}, {"type":"image_generation"}, ...]`
+
+### 3. Contracts
+
+- `openai_responses` daily chat defaults are safe, broadly useful tools only.
+  The default set is `web_search` and `image_generation`.
+- `code_interpreter` is high risk and upstream/model support is not uniform; it
+  must remain explicit opt-in through model capabilities or `options.tools`.
+- Keep the `code_interpreter` catalog definition, sanitizer, and global
+  allowed-tool policy so supported upstreams can still enable it intentionally.
+- If an upstream rejects a native tool with an unsupported-tool validation
+  error, the conversation service may remove that named tool and retry once per
+  tool type.
+
+### 4. Validation & Error Matrix
+
+- Default `openai_responses` options -> no `code_interpreter` in filtered
+  `tools`.
+- Explicit allowed `code_interpreter` option -> sanitized payload with
+  `container.type=auto`.
+- Upstream `Unsupported tool type: code_interpreter` -> remove
+  `code_interpreter` from request options and retry when present.
+- Unsupported tool is not present in request options -> return the upstream
+  error; do not invent a fallback payload.
+
+### 5. Good/Base/Bad Cases
+
+- Good: ordinary GPT-5.5 chat sends `web_search` and `image_generation` but not
+  `code_interpreter`.
+- Base: an admin configures a model capability with `openai.code_interpreter`;
+  the policy preserves the tool after sanitizing unsafe fields.
+- Bad: adding every known OpenAI Responses hosted tool to daily defaults causes
+  model-specific HTTP 400 failures for normal chat.
+
+### 6. Tests Required
+
+- `model_option_policy_test.go` must assert the OpenAI Responses daily default
+  tool list and explicitly reject `code_interpreter` in that default list.
+- Tests must also cover explicit `code_interpreter` preservation and sanitizer
+  behavior.
+- Helper tests must continue to cover unsupported native tool error parsing and
+  request option removal.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```go
+"openai_responses": {"web_search", "image_generation", "code_interpreter"}
+```
+
+#### Correct
+
+```go
+"openai_responses": {"web_search", "image_generation"}
+```
+
 ## Scenario: Media Image Edit Endpoint
 
 ### 1. Scope / Trigger

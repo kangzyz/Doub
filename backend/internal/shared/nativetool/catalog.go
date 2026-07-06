@@ -300,7 +300,6 @@ var dailyChatDefaultNativeToolTypesByProtocol = map[string][]string{
 	"openai_responses": {
 		"web_search",
 		"image_generation",
-		"code_interpreter",
 	},
 	"gemini_generate_content": {
 		"google_search",
