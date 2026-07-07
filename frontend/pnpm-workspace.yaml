@@ -1,0 +1,15 @@
+packages:
+  - .
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  sharp: true
+  unrs-resolver: true
+
+overrides:
+  dompurify: 3.4.0
+  mermaid: 11.15.0
+  picomatch: 4.0.4
+  postcss: 8.5.10
+  uuid: 11.1.1
