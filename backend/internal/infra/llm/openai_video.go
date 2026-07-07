@@ -32,6 +32,11 @@ const (
 	xAIVideoOperationExtend   xAIVideoOperation = "extend"
 )
 
+type xAIVideoRequestAttempt struct {
+	URL                    string
+	ApplyProxyFallbackBody bool
+}
+
 // openAIVideoGenerationsAdapter 负责 OpenAI Videos API 的视频生成端点。
 type openAIVideoGenerationsAdapter struct {
 	client *Client
@@ -142,80 +147,96 @@ func (c *Client) generateXAIVideoGenerations(ctx context.Context, route RouteCon
 	if err != nil {
 		return nil, err
 	}
-	createURL := buildXAIVideoRequestURL(route, operation)
-	if createURL == "" {
+	attempts := buildXAIVideoRequestAttempts(route, operation)
+	if len(attempts) == 0 || strings.TrimSpace(attempts[0].URL) == "" {
 		return nil, fmt.Errorf("invalid base url")
-	}
-	applyXAIVideoProxyOperation(requestBody, route, operation)
-	payload, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, err
-	}
-	if len(debugBody) == 0 {
-		debugBody = payload
 	}
 
 	videoCtx, cancel := context.WithTimeout(ctx, resolveOpenAIVideoTimeout(route.ReadTimeoutMS))
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(videoCtx, http.MethodPost, createURL, bytes.NewReader(payload))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if apiKey := strings.TrimSpace(route.APIKey); apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-	setOpenRouterAttributionHeaders(req, route)
-	setAdditionalHeaders(req, route.HeadersJSON)
-
-	resp, err := c.httpClientForRoute(route).Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	body, err := readUpstreamBody(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, parseUpstreamError(resp.StatusCode, body, upstreamDebugSnapshot(req, debugBody, resp, body))
-	}
-
-	job, err := parseXAIVideoJob(body)
-	if err != nil {
-		return nil, err
-	}
-	if strings.TrimSpace(job.ID) == "" {
-		return nil, fmt.Errorf("video generation response missing request id")
-	}
-	job, err = c.pollXAIVideoJob(videoCtx, route, job)
-	if err != nil {
-		return nil, err
-	}
-	var data []byte
-	var mimeType string
-	if strings.TrimSpace(job.VideoURL) != "" {
-		data, mimeType, err = c.downloadXAIVideoContent(videoCtx, route, job.VideoURL)
+	var lastErr error
+	for index, attempt := range attempts {
+		attemptBody := cloneXAIVideoRequestPayload(requestBody)
+		attemptDebugBody := debugBody
+		if attempt.ApplyProxyFallbackBody {
+			applyXAIVideoProxyFallbackBody(attemptBody, operation)
+			attemptDebugBody = buildXAIVideoDebugBody(attemptBody, input.Messages, operation)
+		}
+		payload, err := json.Marshal(attemptBody)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		data, mimeType, err = c.downloadOpenAIVideoContent(videoCtx, route, job.ID)
+		if len(attemptDebugBody) == 0 {
+			attemptDebugBody = payload
+		}
+
+		req, err := http.NewRequestWithContext(videoCtx, http.MethodPost, attempt.URL, bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
 		}
+		req.Header.Set("Content-Type", "application/json")
+		if apiKey := strings.TrimSpace(route.APIKey); apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+		setOpenRouterAttributionHeaders(req, route)
+		setAdditionalHeaders(req, route.HeadersJSON)
+
+		resp, err := c.httpClientForRoute(route).Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, readErr := readUpstreamBody(resp.Body)
+		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, readErr
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = parseUpstreamError(resp.StatusCode, body, upstreamDebugSnapshot(req, attemptDebugBody, resp, body))
+			if shouldRetryXAIVideoRequestAttempt(resp.StatusCode, operation, index, attempts) {
+				continue
+			}
+			return nil, lastErr
+		}
+
+		job, err := parseXAIVideoJob(body)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(job.ID) == "" {
+			return nil, fmt.Errorf("video generation response missing request id")
+		}
+		job, err = c.pollXAIVideoJob(videoCtx, route, job)
+		if err != nil {
+			return nil, err
+		}
+		var data []byte
+		var mimeType string
+		if strings.TrimSpace(job.VideoURL) != "" {
+			data, mimeType, err = c.downloadXAIVideoContent(videoCtx, route, job.VideoURL)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			data, mimeType, err = c.downloadOpenAIVideoContent(videoCtx, route, job.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &GenerateOutput{
+			ResponseID: job.ID,
+			GeneratedVideos: []GeneratedVideo{{
+				ID:       job.ID,
+				Data:     data,
+				MIMEType: mimeType,
+			}},
+			RawJSON: job.RawJSON,
+		}, nil
 	}
-	return &GenerateOutput{
-		ResponseID: job.ID,
-		GeneratedVideos: []GeneratedVideo{{
-			ID:       job.ID,
-			Data:     data,
-			MIMEType: mimeType,
-		}},
-		RawJSON: job.RawJSON,
-	}, nil
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, fmt.Errorf("video generation request failed")
 }
 
 func buildOpenAIVideoRequest(route RouteConfig, input GenerateInput) (string, []byte, string, []byte, error) {
@@ -379,11 +400,16 @@ func buildXAIVideoRequest(model string, input GenerateInput) (map[string]interfa
 		return nil, nil, "", err
 	}
 
+	debugBody := buildXAIVideoDebugBody(payload, input.Messages, operation)
+	return payload, debugBody, operation, nil
+}
+
+func buildXAIVideoDebugBody(payload map[string]interface{}, messages []Message, operation xAIVideoOperation) []byte {
 	debug := map[string]interface{}{
 		"model":       payload["model"],
 		"prompt":      payload["prompt"],
-		"image_count": len(images),
-		"video_count": len(videos),
+		"image_count": len(collectImageInputParts(messages)),
+		"video_count": len(collectVideoInputParts(messages)),
 		"operation":   string(operation),
 	}
 	if duration, ok := payload["duration"]; ok {
@@ -396,21 +422,64 @@ func buildXAIVideoRequest(model string, input GenerateInput) (map[string]interfa
 		debug["resolution"] = resolution
 	}
 	debugBody, _ := json.Marshal(debug)
-	return payload, debugBody, operation, nil
+	return debugBody
 }
 
-func applyXAIVideoProxyOperation(payload map[string]interface{}, route RouteConfig, operation xAIVideoOperation) {
-	if payload == nil || operation != xAIVideoOperationExtend || useDirectXAIVideoEndpoint(route.BaseURL) {
+func cloneXAIVideoRequestPayload(src map[string]interface{}) map[string]interface{} {
+	if len(src) == 0 {
+		return nil
+	}
+	dst := make(map[string]interface{}, len(src))
+	for key, value := range src {
+		if nested, ok := value.(map[string]interface{}); ok {
+			cloned := make(map[string]interface{}, len(nested))
+			for nestedKey, nestedValue := range nested {
+				cloned[nestedKey] = nestedValue
+			}
+			dst[key] = cloned
+			continue
+		}
+		dst[key] = value
+	}
+	return dst
+}
+
+func applyXAIVideoProxyFallbackBody(payload map[string]interface{}, operation xAIVideoOperation) {
+	if payload == nil || operation != xAIVideoOperationExtend {
 		return
 	}
 	payload["operation"] = string(operation)
-	payload["mode"] = "extend-video"
+	payload["mode"] = string(operation)
+	payload["task"] = "video_extension"
 	if video, ok := payload["video"].(map[string]interface{}); ok {
 		if videoURL, _ := video["url"].(string); strings.TrimSpace(videoURL) != "" {
+			video["type"] = "video_url"
 			payload["video_url"] = videoURL
 			payload["videoUrl"] = videoURL
+			payload["input_reference"] = map[string]interface{}{
+				"type": "video_url",
+				"url":  videoURL,
+			}
+			payload["input"] = []map[string]interface{}{
+				{
+					"type": "input_text",
+					"text": strings.TrimSpace(modelParamString(payload, "prompt")),
+				},
+				{
+					"type":      "input_video",
+					"url":       videoURL,
+					"video_url": videoURL,
+					"videoUrl":  videoURL,
+				},
+			}
 		}
 	}
+}
+
+func shouldRetryXAIVideoRequestAttempt(statusCode int, operation xAIVideoOperation, attemptIndex int, attempts []xAIVideoRequestAttempt) bool {
+	return operation == xAIVideoOperationExtend &&
+		statusCode == http.StatusNotFound &&
+		attemptIndex < len(attempts)-1
 }
 
 func normalizeOpenAIVideoSize(options map[string]interface{}) (string, error) {
@@ -824,11 +893,29 @@ func buildXAIVideoGenerationURL(route RouteConfig) string {
 	return buildXAIVideoRequestURL(route, xAIVideoOperationGenerate)
 }
 
-func buildXAIVideoRequestURL(route RouteConfig, operation xAIVideoOperation) string {
-	if useDirectXAIVideoEndpoint(route.BaseURL) {
-		if operation == xAIVideoOperationExtend {
-			return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/extensions")
+func buildXAIVideoRequestAttempts(route RouteConfig, operation xAIVideoOperation) []xAIVideoRequestAttempt {
+	primaryURL := buildXAIVideoRequestURL(route, operation)
+	if strings.TrimSpace(primaryURL) == "" {
+		return nil
+	}
+	attempts := []xAIVideoRequestAttempt{{URL: primaryURL}}
+	if operation == xAIVideoOperationExtend && !useDirectXAIVideoEndpoint(route.BaseURL) {
+		fallbackURL := buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
+		if strings.TrimSpace(fallbackURL) != "" && fallbackURL != primaryURL {
+			attempts = append(attempts, xAIVideoRequestAttempt{
+				URL:                    fallbackURL,
+				ApplyProxyFallbackBody: true,
+			})
 		}
+	}
+	return attempts
+}
+
+func buildXAIVideoRequestURL(route RouteConfig, operation xAIVideoOperation) string {
+	if operation == xAIVideoOperationExtend {
+		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/extensions")
+	}
+	if useDirectXAIVideoEndpoint(route.BaseURL) {
 		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/generations")
 	}
 	return buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
