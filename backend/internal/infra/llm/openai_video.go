@@ -421,6 +421,18 @@ func buildXAIVideoDebugBody(payload map[string]interface{}, messages []Message, 
 	if resolution, ok := payload["resolution"]; ok {
 		debug["resolution"] = resolution
 	}
+	if video := asMap(payload["video"]); strings.TrimSpace(getString(video["url"])) != "" {
+		debug["video_reference"] = true
+	}
+	if mode := strings.TrimSpace(modelParamString(payload, "mode")); mode != "" {
+		debug["mode"] = mode
+	}
+	if task := strings.TrimSpace(modelParamString(payload, "task")); task != "" {
+		debug["task"] = task
+	}
+	if providerOptions := asMap(payload["providerOptions"]); len(asMap(providerOptions["xai"])) > 0 {
+		debug["provider_options_xai"] = true
+	}
 	debugBody, _ := json.Marshal(debug)
 	return debugBody
 }
@@ -449,13 +461,26 @@ func applyXAIVideoProxyFallbackBody(payload map[string]interface{}, operation xA
 		return
 	}
 	payload["operation"] = string(operation)
-	payload["mode"] = string(operation)
+	payload["mode"] = "extend-video"
 	payload["task"] = "video_extension"
 	if video, ok := payload["video"].(map[string]interface{}); ok {
 		if videoURL, _ := video["url"].(string); strings.TrimSpace(videoURL) != "" {
 			video["type"] = "video_url"
 			payload["video_url"] = videoURL
 			payload["videoUrl"] = videoURL
+			payload["providerOptions"] = map[string]interface{}{
+				"xai": map[string]interface{}{
+					"mode":     "extend-video",
+					"videoUrl": videoURL,
+				},
+			}
+			payload["provider_options"] = map[string]interface{}{
+				"xai": map[string]interface{}{
+					"mode":      "extend-video",
+					"video_url": videoURL,
+					"videoUrl":  videoURL,
+				},
+			}
 			payload["input_reference"] = map[string]interface{}{
 				"type": "video_url",
 				"url":  videoURL,
@@ -898,8 +923,8 @@ func buildXAIVideoRequestAttempts(route RouteConfig, operation xAIVideoOperation
 	if strings.TrimSpace(primaryURL) == "" {
 		return nil
 	}
-	attempts := []xAIVideoRequestAttempt{{URL: primaryURL}}
-	if operation == xAIVideoOperationExtend && !useXAIVideoStandardEndpoint(route.BaseURL) {
+	attempts := []xAIVideoRequestAttempt{{URL: primaryURL, ApplyProxyFallbackBody: operation == xAIVideoOperationExtend && useXAIVideoOpenAIPathProxy(route.BaseURL)}}
+	if operation == xAIVideoOperationExtend && !useDirectXAIVideoEndpoint(route.BaseURL) && !useXAIVideoOpenAIPathProxy(route.BaseURL) {
 		fallbackURL := buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
 		if strings.TrimSpace(fallbackURL) != "" && fallbackURL != primaryURL {
 			attempts = append(attempts, xAIVideoRequestAttempt{
@@ -912,10 +937,13 @@ func buildXAIVideoRequestAttempts(route RouteConfig, operation xAIVideoOperation
 }
 
 func buildXAIVideoRequestURL(route RouteConfig, operation xAIVideoOperation) string {
+	if useXAIVideoOpenAIPathProxy(route.BaseURL) {
+		return buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
+	}
 	if operation == xAIVideoOperationExtend {
 		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/extensions")
 	}
-	if useXAIVideoStandardEndpoint(route.BaseURL) {
+	if useDirectXAIVideoEndpoint(route.BaseURL) {
 		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/generations")
 	}
 	return buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
@@ -1077,10 +1105,7 @@ func useDirectXAIVideoEndpoint(baseURL string) bool {
 	return host == "api.x.ai" || strings.HasSuffix(host, ".api.x.ai")
 }
 
-func useXAIVideoStandardEndpoint(baseURL string) bool {
-	if useDirectXAIVideoEndpoint(baseURL) {
-		return true
-	}
+func useXAIVideoOpenAIPathProxy(baseURL string) bool {
 	parsed, err := url.Parse(strings.TrimSpace(baseURL))
 	if err != nil {
 		return false

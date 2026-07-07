@@ -776,11 +776,10 @@ events.
 - OpenAI/Sora endpoint: `POST <baseURL>/v1/videos`
 - OpenAI/Sora video edit endpoint for uploaded source videos:
   `POST <baseURL>/v1/videos/edits`
-- xAI/Grok standard endpoint: `POST <baseURL>/v1/videos/generations`
-- xAI/Grok through generic OpenAI-compatible proxy endpoint:
+- xAI/Grok direct generation endpoint: `POST <baseURL>/v1/videos/generations`
+- xAI/Grok direct extension endpoint: `POST <baseURL>/v1/videos/extensions`
+- xAI/Grok through OpenAI-path proxy endpoint:
   `POST <baseURL>/v1/videos`
-- xAI/Grok video extension endpoint:
-  `POST <baseURL>/v1/videos/extensions`
 - Download output: generated MP4 bytes are returned as
   `llm.GenerateOutput.GeneratedVideos`
 
@@ -803,22 +802,24 @@ events.
   file part. Do not use `/videos/extensions` unless the service has an upstream
   video id that the provider accepts.
 - xAI/Grok video requests use JSON and send the source image as an
-  `image_url` data URI under the `image` field. Direct `api.x.ai` routes and
-  xAI-standard path proxies whose base URL contains an `/openai/` path segment
-  use `/videos/generations`; other generic OpenAI-compatible proxy routes keep
-  the proxy's `/videos` path. Do not send Grok image-to-video as OpenAI
+  `image_url` data URI under the `image` field. Direct `api.x.ai` routes use
+  `/videos/generations`; OpenAI-path proxies whose base URL contains an
+  `/openai/` path segment keep the proxy's unified `/videos` path while still
+  using xAI-shaped JSON fields. Do not send Grok image-to-video as OpenAI
   multipart `input_reference`; upstream can ignore it and treat the request as
   unsupported text-to-video.
 - xAI/Grok MP4 reference videos send the source as
   `video: {url:"data:video/mp4;base64,..."}`. Video extension is a distinct
   xAI operation from text/image-to-video generation. Direct `api.x.ai` routes
-  and xAI-standard path proxies whose base URL contains `/openai/` send only
-  `/videos/extensions`; do not fall back to `/videos` because that can route as
-  unsupported text-to-video. Other generic OpenAI-compatible proxy routes try
-  `/videos/extensions` first, then retry `/videos` with explicit fallback
-  selectors (`operation:"extend"`, `mode:"extend"`, `task:"video_extension"`,
-  `video_url`/`videoUrl`, and `input`/`input_reference` aliases) when the
-  extension path returns 404.
+  send `/videos/extensions`. OpenAI-path proxies whose base URL contains
+  `/openai/` may expose only a unified `/videos` endpoint; for those routes,
+  send `/videos` first with explicit xAI extension selectors
+  (`operation:"extend"`, `mode:"extend-video"`, `task:"video_extension"`),
+  `video_url`/`videoUrl`, `input`/`input_reference` aliases, and
+  `providerOptions.xai.videoUrl` / `provider_options.xai.video_url` so the
+  proxy does not route the payload as text-to-video. Other generic
+  OpenAI-compatible proxy routes try `/videos/extensions` first, then retry
+  `/videos` with the same fallback body when the extension path returns 404.
   For xAI extension requests pass `duration` only; omit `aspect_ratio` and
   `resolution` because the upstream extension API does not support them.
 - User video options must pass through the model option policy only for official
@@ -847,16 +848,18 @@ events.
 
 ### 5. Good/Base/Bad Cases
 
-- Good: one uploaded PNG plus a direct `api.x.ai` Grok video route or an
-  xAI-standard `/openai/v1` proxy sends JSON
+- Good: one uploaded PNG plus a direct `api.x.ai` Grok video route sends JSON
   `image.url=data:image/png;base64,...` to `/v1/videos/generations`.
-- Good: one uploaded PNG plus a Grok video model on a generic
+- Good: one uploaded PNG plus a Grok video model on an `/openai/v1` or generic
   OpenAI-compatible proxy sends the same JSON image payload to `/v1/videos`.
 - Good: one uploaded PNG plus an OpenAI Sora model sends multipart
   `input_reference` to `/v1/videos`.
-- Good: one uploaded MP4 plus a direct `api.x.ai` Grok video route or an
-  xAI-standard `/openai/v1` proxy sends JSON to `/v1/videos/extensions` with
-  `video.url=data:video/mp4;base64,...` and only `duration` from video options.
+- Good: one uploaded MP4 plus a direct `api.x.ai` Grok video route sends JSON
+  to `/v1/videos/extensions` with `video.url=data:video/mp4;base64,...` and
+  only `duration` from video options.
+- Good: one uploaded MP4 plus a Grok video model on an `/openai/v1` proxy sends
+  JSON to `/v1/videos` with `video.url=data:video/mp4;base64,...`,
+  `mode:"extend-video"`, and xAI provider option aliases.
 - Good: one uploaded MP4 plus a Grok video model on a generic
   OpenAI-compatible proxy may retry `/v1/videos` with the same video payload
   plus `operation:"extend"` only after `/v1/videos/extensions` returns 404.
@@ -869,9 +872,11 @@ events.
   `Text-to-video is not supported for this model.`
 - Bad: sending an OpenAI-compatible proxy request to `/v1/videos/generations`
   can fail with HTTP 404 even though `/v1/videos` is available.
-- Bad: sending an xAI-standard `/openai/v1` proxy request to `/v1/videos`
-  can be routed as text-to-video and return
-  `Text-to-video is not supported for this model.`
+- Bad: sending an `/openai/v1` proxy request to `/v1/videos/extensions` can
+  return 404 because that proxy may expose only unified `/videos`.
+- Bad: sending an `/openai/v1` proxy request to `/v1/videos` without the
+  `extend-video` selectors and provider option aliases can be routed as
+  text-to-video and return `Text-to-video is not supported for this model.`
 - Bad: sending an OpenAI-compatible proxy extension request to
   `/v1/videos/extensions` can fail or be routed as unsupported text-to-video
   even though the proxy's `/v1/videos` endpoint accepts the operation.

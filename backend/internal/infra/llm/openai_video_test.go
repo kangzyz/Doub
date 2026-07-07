@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -480,11 +479,15 @@ func TestXAIVideoGenerationsFallsBackToProxyVideoEndpointWhenExtension404(t *tes
 	if video["type"] != "video_url" || !strings.HasPrefix(videoURL, "data:video/mp4;base64,c291cmNlLXZpZGVv") {
 		t.Fatalf("expected fallback video_url payload, got %#v", fallbackBody)
 	}
-	if fallbackBody["operation"] != "extend" || fallbackBody["mode"] != "extend" || fallbackBody["task"] != "video_extension" {
+	if fallbackBody["operation"] != "extend" || fallbackBody["mode"] != "extend-video" || fallbackBody["task"] != "video_extension" {
 		t.Fatalf("expected fallback extension selectors, got %#v", fallbackBody)
 	}
 	if fallbackBody["video_url"] != videoURL || fallbackBody["videoUrl"] != videoURL {
 		t.Fatalf("expected fallback video URL aliases, got %#v", fallbackBody)
+	}
+	providerOptions := asMap(asMap(fallbackBody["providerOptions"])["xai"])
+	if providerOptions["mode"] != "extend-video" || providerOptions["videoUrl"] != videoURL {
+		t.Fatalf("expected fallback xAI provider options, got %#v", fallbackBody)
 	}
 	input := fallbackBody["input"].([]interface{})
 	if len(input) != 2 {
@@ -495,23 +498,34 @@ func TestXAIVideoGenerationsFallsBackToProxyVideoEndpointWhenExtension404(t *tes
 	}
 }
 
-func TestXAIVideoGenerationsDoesNotFallbackForOpenAIPathXAIStandardProxy(t *testing.T) {
+func TestXAIVideoGenerationsUsesUnifiedVideoEndpointForOpenAIPathXAIProxy(t *testing.T) {
 	var requestPaths []string
+	var requestBody map[string]interface{}
+	mp4Bytes := []byte{0x00, 0x00, 0x00, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestPaths = append(requestPaths, r.URL.Path)
 		switch r.URL.Path {
 		case "/openai/v1/videos/extensions":
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(`{"error":"not found"}`))
+			t.Fatalf("unexpected xAI native extension path for /openai proxy")
 		case "/openai/v1/videos":
-			t.Fatalf("unexpected OpenAI-compatible fallback path for xAI standard proxy")
+			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"request_id":"video_req_4","status":"queued"}`))
+		case "/openai/v1/videos/video_req_4":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"request_id":"video_req_4","status":"done","response":{"video":{"url":"` + serverURL(r) + `/download/video_req_4.mp4"}}}`))
+		case "/download/video_req_4.mp4":
+			w.Header().Set("Content-Type", "video/mp4")
+			_, _ = w.Write(mp4Bytes)
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 	}))
 	defer server.Close()
 
-	_, err := NewClient().Generate(context.Background(), RouteConfig{
+	output, err := NewClient().Generate(context.Background(), RouteConfig{
 		Protocol:      AdapterOpenAIVideoGenerations,
 		BaseURL:       server.URL + "/openai/v1",
 		APIKey:        "xai-key",
@@ -528,24 +542,35 @@ func TestXAIVideoGenerationsDoesNotFallbackForOpenAIPathXAIStandardProxy(t *test
 		}},
 		Options: map[string]interface{}{"duration": 8},
 	})
-	if err == nil {
-		t.Fatal("expected extension 404 error")
+	if err != nil {
+		t.Fatalf("extend xAI video through /openai proxy: %v", err)
 	}
-	var upstreamErr *UpstreamError
-	if !errors.As(err, &upstreamErr) || upstreamErr.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected upstream 404 error, got %T %v", err, err)
+	if len(requestPaths) == 0 || requestPaths[0] != "/openai/v1/videos" {
+		t.Fatalf("expected unified /openai video endpoint, got %#v", requestPaths)
 	}
-	if len(requestPaths) != 1 || requestPaths[0] != "/openai/v1/videos/extensions" {
-		t.Fatalf("expected only xAI standard extension path, got %#v", requestPaths)
+	video := asMap(requestBody["video"])
+	videoURL := getString(video["url"])
+	if video["type"] != "video_url" || !strings.HasPrefix(videoURL, "data:video/mp4;base64,c291cmNlLXZpZGVv") {
+		t.Fatalf("expected xAI video URL payload, got %#v", requestBody)
+	}
+	if requestBody["operation"] != "extend" || requestBody["mode"] != "extend-video" || requestBody["task"] != "video_extension" {
+		t.Fatalf("expected xAI extension selectors, got %#v", requestBody)
+	}
+	providerOptions := asMap(asMap(requestBody["providerOptions"])["xai"])
+	if providerOptions["mode"] != "extend-video" || providerOptions["videoUrl"] != videoURL {
+		t.Fatalf("expected xAI provider options, got %#v", requestBody)
+	}
+	if output.ResponseID != "video_req_4" || len(output.GeneratedVideos) != 1 {
+		t.Fatalf("expected generated video output, got %#v", output)
 	}
 }
 
-func TestBuildXAIVideoGenerationURLUsesXAIStandardEndpointForXAIHostAndOpenAIPath(t *testing.T) {
+func TestBuildXAIVideoGenerationURLUsesDirectXAIEndpointOnlyForXAIHost(t *testing.T) {
 	if got := buildXAIVideoGenerationURL(RouteConfig{BaseURL: "https://api.x.ai/v1"}); got != "https://api.x.ai/v1/videos/generations" {
 		t.Fatalf("expected direct xAI endpoint, got %q", got)
 	}
-	if got := buildXAIVideoGenerationURL(RouteConfig{BaseURL: "https://cpa.vexown.com/openai/v1"}); got != "https://cpa.vexown.com/openai/v1/videos/generations" {
-		t.Fatalf("expected xAI standard proxy endpoint, got %q", got)
+	if got := buildXAIVideoGenerationURL(RouteConfig{BaseURL: "https://cpa.vexown.com/openai/v1"}); got != "https://cpa.vexown.com/openai/v1/videos" {
+		t.Fatalf("expected /openai proxy video endpoint, got %q", got)
 	}
 	if got := buildXAIVideoGenerationURL(RouteConfig{BaseURL: "https://proxy.example.com/v1"}); got != "https://proxy.example.com/v1/videos" {
 		t.Fatalf("expected OpenAI-compatible proxy endpoint, got %q", got)
@@ -553,12 +578,12 @@ func TestBuildXAIVideoGenerationURLUsesXAIStandardEndpointForXAIHostAndOpenAIPat
 	if got := buildXAIVideoRequestURL(RouteConfig{BaseURL: "https://api.x.ai/v1"}, xAIVideoOperationExtend); got != "https://api.x.ai/v1/videos/extensions" {
 		t.Fatalf("expected direct xAI extension endpoint, got %q", got)
 	}
-	if got := buildXAIVideoRequestURL(RouteConfig{BaseURL: "https://cpa.vexown.com/openai/v1"}, xAIVideoOperationExtend); got != "https://cpa.vexown.com/openai/v1/videos/extensions" {
-		t.Fatalf("expected xAI standard proxy extension endpoint, got %q", got)
+	if got := buildXAIVideoRequestURL(RouteConfig{BaseURL: "https://cpa.vexown.com/openai/v1"}, xAIVideoOperationExtend); got != "https://cpa.vexown.com/openai/v1/videos" {
+		t.Fatalf("expected /openai proxy video endpoint, got %q", got)
 	}
 	attempts := buildXAIVideoRequestAttempts(RouteConfig{BaseURL: "https://cpa.vexown.com/openai/v1"}, xAIVideoOperationExtend)
-	if len(attempts) != 1 || attempts[0].URL != "https://cpa.vexown.com/openai/v1/videos/extensions" || attempts[0].ApplyProxyFallbackBody {
-		t.Fatalf("expected xAI standard proxy extension attempt without fallback, got %#v", attempts)
+	if len(attempts) != 1 || attempts[0].URL != "https://cpa.vexown.com/openai/v1/videos" || !attempts[0].ApplyProxyFallbackBody {
+		t.Fatalf("expected /openai proxy video attempt with xAI extension body, got %#v", attempts)
 	}
 	proxyAttempts := buildXAIVideoRequestAttempts(RouteConfig{BaseURL: "https://proxy.example.com/v1"}, xAIVideoOperationExtend)
 	if len(proxyAttempts) != 2 || proxyAttempts[0].URL != "https://proxy.example.com/v1/videos/extensions" || proxyAttempts[1].URL != "https://proxy.example.com/v1/videos" || !proxyAttempts[1].ApplyProxyFallbackBody {
