@@ -107,7 +107,7 @@ func (s *Service) backfillSeededSettingAdditions(ctx context.Context) error {
 	}
 	for _, item := range chatItems {
 		if item.Key == "model_option_allowed_paths" {
-			return s.backfillVideoModelOptionPaths(ctx, item)
+			return s.backfillMediaModelOptionPaths(ctx, item)
 		}
 	}
 	return nil
@@ -125,7 +125,7 @@ func (s *Service) backfillVideoMIMEType(ctx context.Context, item domainsettings
 	return s.repo.Upsert(ctx, []domainsettings.SystemSetting{item})
 }
 
-func (s *Service) backfillVideoModelOptionPaths(ctx context.Context, item domainsettings.SystemSetting) error {
+func (s *Service) backfillMediaModelOptionPaths(ctx context.Context, item domainsettings.SystemSetting) error {
 	value := strings.TrimSpace(item.Value)
 	if value == "" {
 		return nil

@@ -117,7 +117,10 @@ function isXAIImageModel(protocol: string, vendor: string, modelName: string): b
   if (protocol.trim() === "xai_image") {
     return true;
   }
-  if (protocol.trim() === "openai_image_generations") {
+  if (protocol.trim() === "xai_image_edits") {
+    return true;
+  }
+  if (protocol.trim() === "openai_image_generations" || protocol.trim() === "openai_image_edits") {
     return false;
   }
   const value = modelSignal(vendor, modelName);
@@ -157,7 +160,7 @@ function buildImageOptionControls({
       },
     ];
   }
-  if (protocol === "openai_image_generations") {
+  if (protocol === "openai_image_generations" || protocol === "openai_image_edits") {
     return [
       {
         path: "size",
@@ -242,7 +245,7 @@ export function ChatMediaOptions({
 }: ChatMediaOptionsProps) {
   const tComposer = useTranslations("chat.composer");
   const controls = React.useMemo(() => {
-    if (mediaTask === "image_generation") {
+    if (mediaTask === "image_generation" || mediaTask === "image_edit") {
       return buildImageOptionControls({
         selectedProtocol,
         selectedVendor,

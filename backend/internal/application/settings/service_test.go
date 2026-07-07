@@ -78,7 +78,7 @@ func TestSeedDoesNotBackfillVideoMP4IntoCustomAllowedMIMETypes(t *testing.T) {
 	}
 }
 
-func TestSeedBackfillsVideoModelOptionAllowedPaths(t *testing.T) {
+func TestSeedBackfillsMediaModelOptionAllowedPaths(t *testing.T) {
 	legacyAllowedPaths := `{"default":["temperature"]}`
 	repo := &testSettingsRepo{byNamespace: map[string][]domainsettings.SystemSetting{
 		"chat": {
@@ -101,15 +101,12 @@ func TestSeedBackfillsVideoModelOptionAllowedPaths(t *testing.T) {
 	if err := json.Unmarshal([]byte(got.Value), &rules); err != nil {
 		t.Fatalf("decode migrated rules: %v", err)
 	}
-	videoRules := map[string]bool{}
-	for _, path := range rules["openai_video_generations"] {
-		videoRules[path] = true
-	}
-	for _, path := range []string{"duration", "aspect_ratio", "resolution", "seconds", "size"} {
-		if !videoRules[path] {
-			t.Fatalf("expected %q in migrated video rules, got %#v", path, rules["openai_video_generations"])
-		}
-	}
+	assertModelOptionRulesContain(t, rules, "openai_image_generations", "size", "quality", "partial_images", "output_format")
+	assertModelOptionRulesContain(t, rules, "openai_image_edits", "size", "input_fidelity", "partial_images", "output_format")
+	assertModelOptionRulesContain(t, rules, "xai_image", "aspect_ratio", "resolution", "response_format")
+	assertModelOptionRulesContain(t, rules, "xai_image_edits", "aspect_ratio", "resolution", "response_format")
+	assertModelOptionRulesContain(t, rules, "google_image_generation", "imageConfig.aspectRatio", "generationConfig.imageConfig.imageSize")
+	assertModelOptionRulesContain(t, rules, "openai_video_generations", "duration", "aspect_ratio", "resolution", "seconds", "size")
 }
 
 func TestApplyEmbeddingDependentCascadesDisablesRAGAndSemanticFeatures(t *testing.T) {
@@ -190,7 +187,7 @@ func TestRuntimeSettingsNormalizeConfigDisablesEmbeddingDependentFeatures(t *tes
 	}
 }
 
-func TestRuntimeSettingsNormalizeConfigBackfillsVideoModelOptionAllowedPaths(t *testing.T) {
+func TestRuntimeSettingsNormalizeConfigBackfillsMediaModelOptionAllowedPaths(t *testing.T) {
 	runtimeSettings := NewRuntimeSettings(nil, nil, "test-data-encryption-key")
 	cfg := config.Config{
 		ModelOptionPolicyMode:   "allowlist",
@@ -205,13 +202,23 @@ func TestRuntimeSettingsNormalizeConfigBackfillsVideoModelOptionAllowedPaths(t *
 	if err := json.Unmarshal([]byte(cfg.ModelOptionAllowedPaths), &rules); err != nil {
 		t.Fatalf("decode normalized rules: %v", err)
 	}
-	videoRules := map[string]bool{}
-	for _, path := range rules["openai_video_generations"] {
-		videoRules[path] = true
+	assertModelOptionRulesContain(t, rules, "openai_image_generations", "size", "quality", "partial_images", "output_format")
+	assertModelOptionRulesContain(t, rules, "openai_image_edits", "size", "input_fidelity", "partial_images", "output_format")
+	assertModelOptionRulesContain(t, rules, "xai_image", "aspect_ratio", "resolution", "response_format")
+	assertModelOptionRulesContain(t, rules, "xai_image_edits", "aspect_ratio", "resolution", "response_format")
+	assertModelOptionRulesContain(t, rules, "google_image_generation", "imageConfig.aspectRatio", "generationConfig.imageConfig.imageSize")
+	assertModelOptionRulesContain(t, rules, "openai_video_generations", "duration", "aspect_ratio", "resolution", "seconds", "size")
+}
+
+func assertModelOptionRulesContain(t *testing.T, rules map[string][]string, protocol string, expectedPaths ...string) {
+	t.Helper()
+	seen := map[string]bool{}
+	for _, path := range rules[protocol] {
+		seen[path] = true
 	}
-	for _, path := range []string{"duration", "aspect_ratio", "resolution", "seconds", "size"} {
-		if !videoRules[path] {
-			t.Fatalf("expected %q in normalized video rules, got %#v", path, rules["openai_video_generations"])
+	for _, path := range expectedPaths {
+		if !seen[path] {
+			t.Fatalf("expected %q in %s rules, got %#v", path, protocol, rules[protocol])
 		}
 	}
 }

@@ -14,13 +14,67 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var defaultOpenAIVideoOptionPaths = []string{
-	"aspect_ratio",
-	"aspectRatio",
-	"duration",
-	"resolution",
-	"seconds",
-	"size",
+var defaultMediaModelOptionPaths = map[string][]string{
+	"openai_image_generations": {
+		"background",
+		"moderation",
+		"n",
+		"output_compression",
+		"output_format",
+		"partial_images",
+		"quality",
+		"response_format",
+		"size",
+		"style",
+		"user",
+	},
+	"openai_image_edits": {
+		"background",
+		"input_fidelity",
+		"moderation",
+		"n",
+		"output_compression",
+		"output_format",
+		"partial_images",
+		"quality",
+		"response_format",
+		"size",
+		"user",
+	},
+	"google_image_generation": {
+		"aspect_ratio",
+		"aspectRatio",
+		"image_size",
+		"imageSize",
+		"imageConfig.aspectRatio",
+		"imageConfig.imageSize",
+		"responseFormat.image.aspectRatio",
+		"responseFormat.image.imageSize",
+		"generationConfig.imageConfig.aspectRatio",
+		"generationConfig.imageConfig.imageSize",
+		"generationConfig.responseFormat.image.aspectRatio",
+		"generationConfig.responseFormat.image.imageSize",
+	},
+	"openai_video_generations": {
+		"aspect_ratio",
+		"aspectRatio",
+		"duration",
+		"resolution",
+		"seconds",
+		"size",
+	},
+	"xai_image": {
+		"aspect_ratio",
+		"n",
+		"resolution",
+		"response_format",
+	},
+	"xai_image_edits": {
+		"aspect_ratio",
+		"n",
+		"resolution",
+		"response_format",
+	},
 }
 
 const (
@@ -155,7 +209,7 @@ func DefaultModelOptionAllowedPathsJSON() string {
 }
 
 // NormalizeModelOptionAllowedPathsJSON keeps runtime model-option policy in
-// step with official video fields added after existing deployments were seeded.
+// step with official media fields added after existing deployments were seeded.
 func NormalizeModelOptionAllowedPathsJSON(raw string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -165,7 +219,13 @@ func NormalizeModelOptionAllowedPathsJSON(raw string) string {
 	if err := json.Unmarshal([]byte(value), &rules); err != nil {
 		return value
 	}
-	if !appendMissingModelOptionPaths(rules, "openai_video_generations", defaultOpenAIVideoOptionPaths) {
+	changed := false
+	for protocol, paths := range defaultMediaModelOptionPaths {
+		if appendMissingModelOptionPaths(rules, protocol, paths) {
+			changed = true
+		}
+	}
+	if !changed {
 		return value
 	}
 	normalized, err := json.MarshalIndent(rules, "", "  ")

@@ -285,6 +285,58 @@ function resolveComposerModeIndicator(
   return null;
 }
 
+function hasModelKind(kinds: string[], kind: string): boolean {
+  return kinds.some((item) => item.trim() === kind);
+}
+
+function includesProtocol(protocols: string[], protocol: string): boolean {
+  return protocols.some((item) => item.trim() === protocol);
+}
+
+function resolveMediaTaskProtocol(protocols: string[], kinds: string[], task: ChatSubmitDecision["task"]): string {
+  const normalizedProtocols = protocols.map((item) => item.trim()).filter(Boolean);
+  const hasImageGeneration = hasModelKind(kinds, "image_gen");
+  const hasImageEdit = hasModelKind(kinds, "image_edit");
+
+  if (task === "image_generation") {
+    for (const protocol of ["openai_image_generations", "google_image_generation", "xai_image"]) {
+      if (includesProtocol(normalizedProtocols, protocol)) {
+        return protocol;
+      }
+    }
+    if (hasImageGeneration && hasImageEdit) {
+      if (includesProtocol(normalizedProtocols, "openai_image_edits")) {
+        return "openai_image_generations";
+      }
+      if (includesProtocol(normalizedProtocols, "xai_image_edits")) {
+        return "xai_image";
+      }
+    }
+  }
+
+  if (task === "image_edit") {
+    for (const protocol of ["openai_image_edits", "google_image_generation", "xai_image_edits"]) {
+      if (includesProtocol(normalizedProtocols, protocol)) {
+        return protocol;
+      }
+    }
+    if (hasImageGeneration && hasImageEdit) {
+      if (includesProtocol(normalizedProtocols, "openai_image_generations")) {
+        return "openai_image_edits";
+      }
+      if (includesProtocol(normalizedProtocols, "xai_image")) {
+        return "xai_image_edits";
+      }
+    }
+  }
+
+  if (task === "video_generation" && includesProtocol(normalizedProtocols, "openai_video_generations")) {
+    return "openai_video_generations";
+  }
+
+  return normalizedProtocols[0] ?? "";
+}
+
 function clipboardFilesFromPaste(event: React.ClipboardEvent<HTMLTextAreaElement>): File[] {
   const itemFiles = Array.from(event.clipboardData.items ?? [])
     .filter((item) => item.kind === "file")
@@ -377,12 +429,12 @@ function ChatInputComponent({
     () => modelOptions.find((item) => item.platformModelName === selectedPlatformModelName) ?? null,
     [modelOptions, selectedPlatformModelName],
   );
-  const selectedProtocol = selectedModel?.protocols[0]?.trim() ?? "";
+  const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
+  const submitTask = submitDecision.task;
+  const selectedProtocol = resolveMediaTaskProtocol(selectedModel?.protocols ?? [], selectedModel?.kinds ?? [], submitTask);
   const selectedVendor = selectedModel?.vendor?.trim() ?? "";
   const selectedModelName = selectedModel?.platformModelName || selectedPlatformModelName;
   const selectedReferenceModelName = selectedModel?.referenceModelName || selectedModelName;
-  const submitDecision = resolveChatSubmitDecision(selectedModel, attachments);
-  const submitTask = submitDecision.task;
   const isMediaMode = isMediaSubmitTask(submitTask);
   const textareaPlaceholder =
     !speechInput.active && submitTask === "video_generation"
@@ -759,7 +811,7 @@ function ChatInputComponent({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {submitTask === "image_generation" || submitTask === "video_generation" ? (
+            {submitTask === "image_generation" || submitTask === "image_edit" || submitTask === "video_generation" ? (
               <ChatMediaOptions
                 disabled={sending || loading || uploading || modelLoading}
                 options={options}
