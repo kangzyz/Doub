@@ -899,7 +899,7 @@ func buildXAIVideoRequestAttempts(route RouteConfig, operation xAIVideoOperation
 		return nil
 	}
 	attempts := []xAIVideoRequestAttempt{{URL: primaryURL}}
-	if operation == xAIVideoOperationExtend && !useDirectXAIVideoEndpoint(route.BaseURL) {
+	if operation == xAIVideoOperationExtend && !useXAIVideoStandardEndpoint(route.BaseURL) {
 		fallbackURL := buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
 		if strings.TrimSpace(fallbackURL) != "" && fallbackURL != primaryURL {
 			attempts = append(attempts, xAIVideoRequestAttempt{
@@ -915,7 +915,7 @@ func buildXAIVideoRequestURL(route RouteConfig, operation xAIVideoOperation) str
 	if operation == xAIVideoOperationExtend {
 		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/extensions")
 	}
-	if useDirectXAIVideoEndpoint(route.BaseURL) {
+	if useXAIVideoStandardEndpoint(route.BaseURL) {
 		return buildVersionedEndpointURL(route.BaseURL, "v1", "/videos/generations")
 	}
 	return buildOpenAIRequestURL(route.BaseURL, EndpointVideoGenerations)
@@ -1075,4 +1075,20 @@ func useDirectXAIVideoEndpoint(baseURL string) bool {
 	}
 	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
 	return host == "api.x.ai" || strings.HasSuffix(host, ".api.x.ai")
+}
+
+func useXAIVideoStandardEndpoint(baseURL string) bool {
+	if useDirectXAIVideoEndpoint(baseURL) {
+		return true
+	}
+	parsed, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil {
+		return false
+	}
+	for _, segment := range strings.Split(strings.ToLower(parsed.EscapedPath()), "/") {
+		if segment == "openai" {
+			return true
+		}
+	}
+	return false
 }
